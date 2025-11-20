@@ -31,6 +31,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
+          port: 2121
           source: ".,!node_modules,!vendor,!storage,!tests,!phpunit.xml,!composer.lock,!package-lock.json"
           target: ~/motionbase/
           strip_components: 0
@@ -41,6 +42,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
+          port: 2121
           script: |
             cd ~/motionbase/
             /opt/php83/bin/composer install --no-dev --optimize-autoloader
