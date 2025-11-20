@@ -1,0 +1,50 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: |
+          npm ci
+          composer install --no-dev --optimize-autoloader
+
+      - name: Build Assets
+        run: npm run build
+
+      - name: Deploy to Server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          source: ".,!node_modules,!vendor,!storage,!tests,!phpunit.xml,!composer.lock,!package-lock.json"
+          target: ~/motionbase/
+          strip_components: 0
+
+      - name: Execute Remote Commands
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd ~/motionbase/
+            /opt/php83/bin/composer install --no-dev --optimize-autoloader
+            /opt/php83/bin/php artisan storage:link
+            /opt/php83/bin/php artisan config:cache
+            /opt/php83/bin/php artisan route:cache
+            /opt/php83/bin/php artisan view:cache
