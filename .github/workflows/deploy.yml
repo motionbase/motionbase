@@ -49,4 +49,3 @@ jobs:
             /opt/php83/bin/php artisan storage:link
             /opt/php83/bin/php artisan config:cache
             /opt/php83/bin/php artisan route:cache
-            /opt/php83/bin/php artisan view:cache
