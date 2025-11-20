@@ -1,0 +1,35 @@
+<?php
+
+use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\PublicTopicController;
+use App\Http\Controllers\SectionController;
+use App\Http\Controllers\TopicController;
+use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
+
+Route::get('/', [PublicTopicController::class, 'index'])->name('home');
+Route::get('themen', [PublicTopicController::class, 'index'])->name('public.topics.index');
+Route::get('themen/{topic}/{section?}', [PublicTopicController::class, 'show'])->name('public.topics.show');
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('dashboard', function () {
+        return Inertia::render('dashboard');
+    })->name('dashboard');
+
+    Route::resource('categories', CategoryController::class)->only([
+        'index',
+        'store',
+        'update',
+        'destroy',
+    ]);
+
+    Route::resource('topics', TopicController::class)->except(['show']);
+
+    // Sections routes
+    Route::post('topics/{topic}/sections', [SectionController::class, 'store'])->name('topics.sections.store');
+    Route::post('topics/{topic}/sections/reorder', [SectionController::class, 'reorder'])->name('topics.sections.reorder');
+    Route::patch('sections/{section}', [SectionController::class, 'update'])->name('sections.update');
+    Route::delete('sections/{section}', [SectionController::class, 'destroy'])->name('sections.destroy');
+});
+
+require __DIR__.'/settings.php';
