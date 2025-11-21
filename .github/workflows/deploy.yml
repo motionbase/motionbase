@@ -47,5 +47,3 @@ jobs:
             cd ~/motionbase/
             /opt/php83/bin/php /usr/bin/composer install --no-dev --optimize-autoloader
             /opt/php83/bin/php artisan storage:link
-            /opt/php83/bin/php artisan config:cache
-            /opt/php83/bin/php artisan route:cache

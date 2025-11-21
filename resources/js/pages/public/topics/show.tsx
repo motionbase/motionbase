@@ -6,6 +6,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import type { OutputBlockData } from '@editorjs/editorjs';
 import { createElement, useMemo } from 'react';
 import { cn } from '@/lib/utils';
+import { ArrowLeft, ChevronRight, Menu, Hash, List } from 'lucide-react';
 
 interface PublicTopicShowProps {
     topic: Topic & {
@@ -31,95 +32,122 @@ export default function PublicTopicShow({ topic }: PublicTopicShowProps) {
 
     return (
         <PublicLayout>
-            <Head title={`${topic.title} – Thema`} />
-            <div className="mb-10 space-y-3">
-                <div className="flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.3em] text-white/60">
-                    {topic.category && (
-                        <Badge variant="outline" className="border-white/30 text-white/80">
-                            {topic.category.name}
-                        </Badge>
-                    )}
-                    <span>{formatDate(topic.updated_at)}</span>
-                    {topic.author && <span>• {topic.author.name}</span>}
-                </div>
+            <Head title={`${topic.title} – ${activeSection?.title ?? 'Thema'}`} />
+            
+            {/* Mobile Header / Breadcrumbs */}
+            <div className="mb-8 flex flex-wrap items-center gap-2 text-sm text-white/60">
+                <Link href="/themen" className="hover:text-white transition-colors">Themen</Link>
+                <ChevronRight className="w-4 h-4 text-white/20" />
+                <span className="text-white">{topic.title}</span>
             </div>
 
-            <div className="grid gap-6 lg:grid-cols-[240px_1fr_240px]">
-                <div className="space-y-2 rounded-3xl border border-white/10 bg-white/5 p-5">
-                    <p className="text-xs uppercase tracking-[0.3em] text-white/50">Abschnitte</p>
-                    <ul className="space-y-2">
-                        {topic.sections.map((section, index) => {
-                            const isActive = section.id === activeSection?.id;
-                            return (
-                                <li key={section.id}>
+            <div className="grid gap-8 lg:grid-cols-[280px_1fr_240px] items-start">
+                {/* Left Sidebar: Sections */}
+                <div className="space-y-6 lg:sticky lg:top-32">
+                    <div className="rounded-2xl border border-white/10 bg-white/5 p-1">
+                        <div className="px-4 py-3 border-b border-white/5 mb-1">
+                            <h3 className="text-xs font-bold uppercase tracking-widest text-white/40 flex items-center gap-2">
+                                <List className="w-3 h-3" /> Kursinhalt
+                            </h3>
+                        </div>
+                        <div className="p-1 space-y-0.5">
+                            {topic.sections.map((section, index) => {
+                                const isActive = section.id === activeSection?.id;
+                                return (
                                     <button
+                                        key={section.id}
                                         type="button"
                                         onClick={() => navigateToSection(section.id)}
                                         className={cn(
-                                            'flex w-full items-center gap-2 rounded-2xl border border-white/10 px-3 py-2 text-sm transition',
+                                            'group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all',
                                             isActive
-                                                ? 'bg-[#ff0055]/30 text-white'
-                                                : 'text-white/70 hover:bg-white/10',
+                                                ? 'bg-white text-black shadow-lg shadow-white/10'
+                                                : 'text-white/60 hover:bg-white/5 hover:text-white'
                                         )}
                                     >
-                                        <span className="flex h-6 w-6 items-center justify-center rounded-full border border-white/10 text-xs">
+                                        <span className={cn(
+                                            "flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold transition-colors",
+                                            isActive ? "bg-black/10 text-black" : "bg-white/10 text-white/60 group-hover:bg-white/20 group-hover:text-white"
+                                        )}>
                                             {index + 1}
                                         </span>
-                                        <span className="truncate">{section.title}</span>
+                                        <span className="truncate text-left">{section.title}</span>
                                     </button>
-                                </li>
-                            );
-                        })}
-                    </ul>
+                                );
+                            })}
+                        </div>
+                    </div>
+                    
+                    {topic.category && (
+                        <div className="px-2">
+                            <Badge variant="outline" className="border-white/10 bg-white/5 text-white/60 hover:bg-white/10">
+                                {topic.category.name}
+                            </Badge>
+                        </div>
+                    )}
                 </div>
 
-                <article className="rounded-3xl border border-white/10 bg-white/5 p-8 shadow-[0_40px_60px_rgba(0,0,0,0.45)]">
-                    <h1 className="mb-6 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
-                        {activeSection?.title ?? topic.title}
-                    </h1>
-                    <div className="space-y-6 text-lg leading-relaxed text-white/80">
-                        {renderBlocks(activeSection?.content?.blocks ?? [])}
+                {/* Main Content */}
+                <article className="min-w-0">
+                    <div className="rounded-3xl border border-white/10 bg-white/5 p-8 sm:p-12 shadow-2xl shadow-black/50">
+                        <header className="mb-10 border-b border-white/5 pb-8">
+                            <div className="flex items-center gap-2 text-xs font-medium text-[#ff0055] mb-4 uppercase tracking-wider">
+                                <span className="h-px w-8 bg-[#ff0055]/50"></span>
+                                Abschnitt
+                            </div>
+                            <h1 className="text-3xl font-bold tracking-tight text-white sm:text-5xl leading-tight">
+                                {activeSection?.title ?? topic.title}
+                            </h1>
+                        </header>
+                        
+                        <div className="prose prose-invert max-w-none prose-headings:font-bold prose-headings:tracking-tight prose-p:text-white/70 prose-p:leading-relaxed prose-li:text-white/70 prose-strong:text-white">
+                            {renderBlocks(activeSection?.content?.blocks ?? [])}
+                        </div>
+                    </div>
+
+                    {/* Navigation Footer */}
+                    <div className="mt-8 flex justify-between gap-4">
+                        <Button variant="ghost" className="text-white/60 hover:text-white" asChild>
+                            <Link href="/themen">
+                                <ArrowLeft className="mr-2 h-4 w-4" /> Zurück
+                            </Link>
+                        </Button>
+                        
+                        {/* Next Section Logic could go here */}
                     </div>
                 </article>
 
-                <div className="hidden rounded-3xl border border-white/10 bg-white/5 p-5 lg:block">
-                    <p className="mb-4 text-xs uppercase tracking-[0.3em] text-white/50">Inhalt</p>
-                    {tocItems.length === 0 ? (
-                        <p className="text-sm text-white/50">
-                            Dieses Kapitel enthält noch keine Überschriften.
-                        </p>
-                    ) : (
-                        <ul className="space-y-3 text-sm text-white/80">
-                            {tocItems.map((block, index) => {
-                                const level = block.data?.level ?? 2;
-                                return (
-                                    <li
-                                        key={block.id ?? index}
-                                        className={cn(
-                                            'border-l border-white/10 pl-3',
-                                            level === 3 && 'ml-3 text-white/70',
-                                            level >= 4 && 'ml-6 text-white/60',
-                                        )}
-                                        dangerouslySetInnerHTML={{ __html: block.data?.text ?? '' }}
-                                    />
-                                );
-                            })}
-                        </ul>
+                {/* Right Sidebar: TOC */}
+                <div className="hidden lg:block lg:sticky lg:top-32">
+                    {tocItems.length > 0 && (
+                        <div className="space-y-4 pl-4 border-l border-white/5">
+                            <h4 className="text-xs font-bold uppercase tracking-widest text-white/40 flex items-center gap-2">
+                                <Hash className="w-3 h-3" /> Auf dieser Seite
+                            </h4>
+                            <ul className="space-y-2.5 text-sm">
+                                {tocItems.map((block, index) => {
+                                    const level = block.data?.level ?? 2;
+                                    return (
+                                        <li key={block.id ?? index}>
+                                            <a 
+                                                href="#" 
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    // Smooth scroll logic would be here
+                                                }}
+                                                className={cn(
+                                                    "block transition-colors hover:text-[#ff0055]",
+                                                    level === 2 ? "text-white/80 font-medium" : "text-white/50 pl-3 text-xs"
+                                                )}
+                                                dangerouslySetInnerHTML={{ __html: block.data?.text ?? '' }}
+                                            />
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        </div>
                     )}
                 </div>
-            </div>
-
-            <div className="mt-10 flex flex-wrap gap-3">
-                <Button
-                    variant="outline"
-                    className="border-white/40 text-white hover:bg-white/10 hover:text-white"
-                    asChild
-                >
-                    <Link href="/themen">Zur Übersicht</Link>
-                </Button>
-                <Button className="bg-[#ff0055] text-white hover:bg-[#ff0055]/90" asChild>
-                    <Link href="/register">Eigenes Projekt starten</Link>
-                </Button>
             </div>
         </PublicLayout>
     );
@@ -127,7 +155,11 @@ export default function PublicTopicShow({ topic }: PublicTopicShowProps) {
 
 function renderBlocks(blocks: OutputBlockData[]) {
     if (!blocks.length) {
-        return <p className="text-white/60">Dieser Abschnitt ist noch leer.</p>;
+        return (
+            <div className="flex flex-col items-center justify-center py-12 text-white/40 border border-dashed border-white/10 rounded-xl bg-white/[0.02]">
+                <p>Dieser Abschnitt ist noch leer.</p>
+            </div>
+        );
     }
 
     return blocks.map((block, index) => {
@@ -144,7 +176,7 @@ function renderBlocks(blocks: OutputBlockData[]) {
 
                 return createElement(headingTagMap[level] ?? 'h2', {
                     key,
-                    className: 'mt-10 text-white',
+                    className: 'scroll-mt-20 mt-12 first:mt-0 mb-4', // Added scroll-margin for anchored links
                     dangerouslySetInnerHTML: { __html: block.data.text ?? '' },
                 });
             }
@@ -155,7 +187,7 @@ function renderBlocks(blocks: OutputBlockData[]) {
                     Tag,
                     {
                         key,
-                        className: 'my-6 list-outside space-y-2 pl-6 text-white/80',
+                        className: 'my-6 space-y-2 pl-6 marker:text-[#ff0055]', // Styled markers
                     },
                     block.data.items?.map((item: string, itemIndex: number) => (
                         <li key={`${key}-${itemIndex}`} dangerouslySetInnerHTML={{ __html: item }} />
@@ -169,21 +201,9 @@ function renderBlocks(blocks: OutputBlockData[]) {
                     <p
                         key={key}
                         dangerouslySetInnerHTML={{ __html: block.data.text ?? '' }}
-                        className="text-white/80"
+                        className="mb-6 last:mb-0"
                     />
                 );
         }
     });
 }
-
-function formatDate(value?: string) {
-    if (!value) {
-        return 'Aktualisierung unbekannt';
-    }
-
-    return new Intl.DateTimeFormat('de-DE', {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-    }).format(new Date(value));
-}
-

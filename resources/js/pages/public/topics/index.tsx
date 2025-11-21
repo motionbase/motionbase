@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import PublicLayout from '@/layouts/public-layout';
 import { type Category, type Topic } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
+import { ArrowRight, BookOpen, Clock, Search } from 'lucide-react';
 
 interface PublicTopicsIndexProps {
     topics: Topic[];
@@ -23,72 +24,101 @@ export default function PublicTopicsIndex({ topics, categories, filters }: Publi
 
     return (
         <PublicLayout
-            headline="Themen entdecken"
-            description="Ein modernes, dunkles Showcase deiner Inhalte. Nutze es als Vorlage für dein eigenes Branding."
+            headline="Wissen entdecken"
+            description="Durchstöbere unsere Sammlung an Kursen und Themen. Finde genau das, was du suchst."
         >
             <Head title="Themen entdecken" />
-            <div className="mb-10 flex flex-wrap items-center gap-3">
-                <Button
-                    variant={filters.category ? 'ghost' : 'secondary'}
-                    className={filters.category ? 'border border-white/20 text-white' : 'bg-[#ff0055] text-white'}
-                    onClick={() => handleFilterChange('')}
-                >
-                    Alle Kategorien
-                </Button>
-                {categories.map((category) => (
-                    <Button
-                        key={category.id}
-                        variant={String(filters.category) === String(category.id) ? 'secondary' : 'ghost'}
-                        className={
-                            String(filters.category) === String(category.id)
-                                ? 'bg-[#ff0055] text-white'
-                                : 'border border-white/20 text-white'
-                        }
-                        onClick={() => handleFilterChange(String(category.id))}
+            
+            {/* Filter Bar */}
+            <div className="mb-12 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/5 p-2 backdrop-blur-md">
+                <div className="flex flex-wrap gap-2 px-2">
+                    <button
+                        onClick={() => handleFilterChange('')}
+                        className={`rounded-xl px-4 py-2 text-sm font-medium transition-all ${
+                            !filters.category 
+                                ? 'bg-white text-black shadow-lg' 
+                                : 'text-white/60 hover:bg-white/5 hover:text-white'
+                        }`}
                     >
-                        {category.name}
-                    </Button>
-                ))}
+                        Alle
+                    </button>
+                    {categories.map((category) => (
+                        <button
+                            key={category.id}
+                            onClick={() => handleFilterChange(String(category.id))}
+                            className={`rounded-xl px-4 py-2 text-sm font-medium transition-all ${
+                                String(filters.category) === String(category.id)
+                                    ? 'bg-white text-black shadow-lg'
+                                    : 'text-white/60 hover:bg-white/5 hover:text-white'
+                            }`}
+                        >
+                            {category.name}
+                        </button>
+                    ))}
+                </div>
+                <div className="hidden sm:flex items-center px-4 text-white/40">
+                    <Search className="w-4 h-4" />
+                </div>
             </div>
+
             {topics.length === 0 ? (
                 <Card className="border border-white/10 bg-white/5 text-white">
-                    <CardContent className="py-12 text-center text-white/60">
-                        Noch keine Themen vorhanden. Lege im Dashboard neue Inhalte an und sie erscheinen hier automatisch.
+                    <CardContent className="py-24 text-center">
+                        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-white/5">
+                            <BookOpen className="h-8 w-8 text-white/20" />
+                        </div>
+                        <h3 className="text-xl font-semibold mb-2">Keine Themen gefunden</h3>
+                        <p className="text-white/60 max-w-sm mx-auto">
+                            Aktuell sind keine Themen in dieser Kategorie verfügbar. 
+                            Schau später nochmal vorbei oder wähle eine andere Kategorie.
+                        </p>
                     </CardContent>
                 </Card>
             ) : (
-                <div className="grid gap-6 sm:grid-cols-2">
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                     {topics.map((topic) => (
-                        <article
+                        <Link
                             key={topic.id}
-                            className="group relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_20px_45px_rgba(0,0,0,0.35)] transition hover:-translate-y-1 hover:border-[#ff0055]/60"
+                            href={`/themen/${topic.id}`}
+                            className="group relative flex flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/5 transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-white/10"
                         >
-                            <div className="absolute inset-0 bg-gradient-to-br from-white/0 via-white/0 to-white/5 opacity-0 transition group-hover:opacity-100" />
-                            <div className="relative flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.3em] text-white/50">
-                                {topic.category && (
-                                    <Badge variant="outline" className="border-white/30 text-white/80">
-                                        {topic.category.name}
-                                    </Badge>
+                            <div className="flex flex-1 flex-col p-8">
+                                <div className="mb-6 flex items-start justify-between gap-4">
+                                    {topic.category ? (
+                                        <Badge variant="outline" className="border-white/10 bg-white/5 text-xs font-medium text-white/80 hover:bg-white/10">
+                                            {topic.category.name}
+                                        </Badge>
+                                    ) : <div />}
+                                    <div className="flex items-center gap-1.5 text-xs font-medium text-white/40">
+                                        <Clock className="w-3.5 h-3.5" />
+                                        <span>{formatDate(topic.updated_at)}</span>
+                                    </div>
+                                </div>
+                                
+                                <h3 className="mb-3 text-xl font-bold leading-tight text-white group-hover:text-[#ff0055] transition-colors">
+                                    {topic.title}
+                                </h3>
+                                
+                                {topic.excerpt && (
+                                    <p className="mb-6 text-sm leading-relaxed text-white/60 line-clamp-3">
+                                        {topic.excerpt}
+                                    </p>
                                 )}
-                                <span>{formatDate(topic.updated_at)}</span>
-                            </div>
-                            <h2 className="relative mt-6 text-2xl font-semibold tracking-tight text-white">
-                                {topic.title}
-                            </h2>
-                            {topic.excerpt && (
-                                <p className="relative mt-3 text-sm leading-relaxed text-white/70">{topic.excerpt}</p>
-                            )}
 
-                            <div className="relative mt-6 flex flex-wrap items-center justify-between gap-3 text-sm text-white/70">
-                                <div>{topic.author ? `von ${topic.author.name}` : 'Autor unbekannt'}</div>
-                                <Button
-                                    className="rounded-full bg-[#ff0055] px-5 text-sm font-medium text-white hover:bg-[#ff0055]/90"
-                                    asChild
-                                >
-                                    <Link href={`/themen/${topic.id}`}>Ansehen</Link>
-                                </Button>
+                                <div className="mt-auto pt-6 border-t border-white/5 flex items-center justify-between text-sm font-medium text-white/80">
+                                    <div className="flex items-center gap-2">
+                                        {topic.author && (
+                                            <span className="text-xs text-white/40">
+                                                von {topic.author.name}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <span className="flex items-center gap-1 text-[#ff0055] opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300">
+                                        Ansehen <ArrowRight className="w-4 h-4" />
+                                    </span>
+                                </div>
                             </div>
-                        </article>
+                        </Link>
                     ))}
                 </div>
             )}
@@ -97,13 +127,9 @@ export default function PublicTopicsIndex({ topics, categories, filters }: Publi
 }
 
 function formatDate(value?: string) {
-    if (!value) {
-        return 'Aktualisierung unbekannt';
-    }
-
+    if (!value) return '';
     return new Intl.DateTimeFormat('de-DE', {
-        dateStyle: 'medium',
-        timeStyle: 'short',
+        month: 'short',
+        day: 'numeric',
     }).format(new Date(value));
 }
-

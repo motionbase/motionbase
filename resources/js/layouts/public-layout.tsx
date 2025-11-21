@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Link } from '@inertiajs/react';
+import { ArrowLeft, Github, Twitter } from 'lucide-react';
 import { type PropsWithChildren, type ReactNode } from 'react';
 
 interface PublicLayoutProps {
@@ -17,50 +18,87 @@ export default function PublicLayout({
     className,
 }: PropsWithChildren<PublicLayoutProps>) {
     return (
-        <div className="min-h-screen bg-black text-white">
-            <div className="relative flex min-h-screen flex-col overflow-hidden">
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,#ff0055_0%,rgba(0,0,0,0)_55%)] opacity-60" />
-                <header className="relative border-b border-white/10 bg-black/70 py-6 backdrop-blur">
-                    <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4">
-                        <Link href="/" className="flex items-center gap-3 text-2xl font-bold tracking-tight sm:text-3xl">
-                            MotionBase
-                        </Link>
-                        <div className="flex gap-2">
-                            <Button
-                                variant="ghost"
-                                className="text-white hover:bg-white/10 hover:text-white"
+        <div className="min-h-screen bg-black text-white font-sans antialiased selection:bg-[#ff0055] selection:text-white">
+            <div className="fixed inset-0 pointer-events-none z-0">
+                <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-[#ff0055] opacity-[0.03] blur-[120px] rounded-full mix-blend-screen" />
+            </div>
+
+            <header className="sticky top-0 z-50 w-full border-b border-white/5 bg-black/50 backdrop-blur-xl">
+                <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-6">
+                    <Link 
+                        href="/" 
+                        className="flex items-center gap-2 text-lg font-bold tracking-tight hover:opacity-80 transition-opacity"
+                    >
+                        MotionBase
+                    </Link>
+                    
+                    <div className="flex items-center gap-4">
+                        <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-white/60">
+                            <Link href="/themen" className="hover:text-white transition-colors">Themen</Link>
+                            <a href="#" className="hover:text-white transition-colors">Features</a>
+                            <a href="#" className="hover:text-white transition-colors">Community</a>
+                        </nav>
+                        <div className="h-4 w-px bg-white/10 hidden md:block" />
+                        <div className="flex gap-3">
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="text-white/70 hover:text-white hover:bg-white/5" 
                                 asChild
                             >
-                                <Link href="/">Startseite</Link>
+                                <Link href="/login">Login</Link>
                             </Button>
-                            <Button className="bg-[#ff0055] text-white hover:bg-[#ff0055]/90" asChild>
-                                <Link href="/login">Zum Dashboard</Link>
+                            <Button 
+                                size="sm" 
+                                className="bg-[#ff0055] text-white hover:bg-[#ff0055]/90 shadow-[0_0_20px_-5px_#ff0055]" 
+                                asChild
+                            >
+                                <Link href="/register">Get Started</Link>
                             </Button>
                         </div>
                     </div>
-                    {(headline || description) && (
-                        <div className="mx-auto mt-10 w-full max-w-4xl px-4 text-center">
+                </div>
+            </header>
+
+            {(headline || description) && (
+                <div className="relative border-b border-white/5 bg-white/[0.02]">
+                    <div className="mx-auto max-w-7xl px-6 py-20 lg:py-28">
+                        <div className="max-w-3xl">
                             {headline && (
-                                <p className="text-sm uppercase tracking-[0.3em] text-white/60">Showcase</p>
-                            )}
-                            {headline && (
-                                <h1 className="mt-3 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+                                <h1 className="text-4xl font-bold tracking-tight text-white sm:text-6xl mb-6">
                                     {headline}
                                 </h1>
                             )}
                             {description && (
-                                <p className="mt-4 text-lg text-white/70">{description}</p>
+                                <p className="text-lg text-white/60 leading-relaxed max-w-2xl">
+                                    {description}
+                                </p>
                             )}
                         </div>
-                    )}
-                </header>
+                    </div>
+                </div>
+            )}
 
-                <main className={cn('relative mx-auto w-full px-4 py-16 lg:px-10', className)}>{children}</main>
+            <main className={cn('relative mx-auto w-full max-w-7xl px-6 py-12', className)}>
+                {children}
+            </main>
 
-                <footer className="relative mt-auto border-t border-white/10 bg-black/70 py-6 text-center text-xs text-white/60">
-                    © {new Date().getFullYear()} Motionbase. Gestalte deine Themen im eigenen Branding.
-                </footer>
-            </div>
+            <footer className="border-t border-white/5 bg-black py-12 mt-auto">
+                <div className="mx-auto max-w-7xl px-6 flex flex-col md:flex-row justify-between items-center gap-6">
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-white">MotionBase</span>
+                        <span className="text-sm text-white/40">© {new Date().getFullYear()}</span>
+                    </div>
+                    <div className="flex gap-6">
+                        <a href="#" className="text-white/40 hover:text-white transition-colors">
+                            <Github className="w-5 h-5" />
+                        </a>
+                        <a href="#" className="text-white/40 hover:text-white transition-colors">
+                            <Twitter className="w-5 h-5" />
+                        </a>
+                    </div>
+                </div>
+            </footer>
         </div>
     );
 }
