@@ -163,7 +163,11 @@ export default function PublicTopicShow({ topic }: PublicTopicShowProps) {
                                                         }}
                                                 className={cn(
                                                     'block transition-colors hover:text-[#ff0055]',
-                                                    level === 2 ? 'text-zinc-800 font-medium' : 'text-zinc-500 pl-3 text-xs'
+                                                    level === 2
+                                                        ? 'text-zinc-800 font-medium'
+                                                        : level === 3
+                                                            ? 'text-zinc-600 pl-3 text-xs'
+                                                            : 'text-zinc-500 pl-6 text-xs'
                                                 )}
                                                 dangerouslySetInnerHTML={{ __html: block.data?.text ?? '' }}
                                             />
