@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Link } from '@inertiajs/react';
-import { Github, Twitter } from 'lucide-react';
+import { Github } from 'lucide-react';
 import { type PropsWithChildren, type ReactNode } from 'react';
 
 interface PublicLayoutProps {
@@ -96,16 +96,17 @@ export default function PublicLayout({
             >
                 <div className="mx-auto flex h-full w-full max-w-[1600px] items-center justify-between px-6 text-sm text-zinc-500">
                     <span>© {new Date().getFullYear()} MotionBase</span>
-                    <div className="flex items-center gap-4">
-                        <a href="#" className="flex items-center gap-2 hover:text-zinc-900 transition-colors">
-                            <Github className="h-4 w-4" />
-                            Github
-                        </a>
-                        <a href="#" className="flex items-center gap-2 hover:text-zinc-900 transition-colors">
-                            <Twitter className="h-4 w-4" />
-                            Twitter
-                        </a>
-                    </div>
+                            <div className="flex items-center gap-4">
+                                <a
+                                    href="https://github.com/motionbase/motionbase"
+                                    className="flex items-center gap-2 hover:text-zinc-900 transition-colors"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    <Github className="h-4 w-4" />
+                                    Github
+                                </a>
+                            </div>
                 </div>
             </footer>
         </div>

@@ -3,7 +3,7 @@ import PublicLayout from '@/layouts/public-layout';
 import { type Section, type Topic } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import type { OutputBlockData } from '@editorjs/editorjs';
-import { createElement, type ReactNode, useMemo } from 'react';
+import { createElement, type ReactNode, useMemo, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { Hash, List } from 'lucide-react';
 
@@ -19,10 +19,44 @@ type ListStyle = 'ordered' | 'unordered';
 
 export default function PublicTopicShow({ topic }: PublicTopicShowProps) {
     const activeSection = topic.activeSection;
+    const contentRef = useRef<HTMLElement | null>(null);
+    const scrollToHeading = (headingId: string) => {
+        const heading = document.getElementById(headingId);
+        if (!heading) {
+            return;
+        }
+
+        const container = contentRef.current;
+        if (container && container.contains(heading)) {
+            const offset = Math.max(heading.offsetTop - 24, 0);
+            container.scrollTo({
+                top: offset,
+                behavior: 'smooth',
+            });
+            return;
+        }
+
+        const headerOffset = 90;
+        const elementPosition = heading.getBoundingClientRect().top + window.scrollY;
+        window.scrollTo({
+            top: elementPosition - headerOffset,
+            behavior: 'smooth',
+        });
+    };
+
 
     const tocItems = useMemo(() => {
         const blocks = activeSection?.content?.blocks ?? [];
-        return blocks.filter((block) => block.type === 'header');
+        return blocks
+            .map((block, index) => ({
+                block,
+                index,
+            }))
+            .filter(({ block }) => block.type === 'header')
+            .map(({ block, index }) => ({
+                id: getHeadingId(block, index),
+                block,
+            }));
     }, [activeSection]);
 
     const navigateToSection = (sectionId: number) => {
@@ -89,7 +123,10 @@ export default function PublicTopicShow({ topic }: PublicTopicShowProps) {
                         </div>
                     </aside>
 
-                    <section className="px-4 py-8 sm:px-8 lg:px-12 lg:py-12 lg:max-h-[calc(100vh-140px)] lg:overflow-y-auto lg:scrollbar-thin lg:scrollbar-thumb-zinc-200">
+                    <section
+                        ref={contentRef}
+                        className="px-4 py-8 sm:px-8 lg:px-12 lg:py-12 lg:max-h-[calc(100vh-140px)] lg:overflow-y-auto lg:scrollbar-thin lg:scrollbar-thumb-zinc-200"
+                    >
                         <header className="pb-6 space-y-3">
                             <div className="flex items-center gap-2 text-xs font-medium text-[#ff0055] uppercase tracking-wider">
                                 <span className="h-px w-8 bg-[#ff0055]/50"></span>
@@ -112,15 +149,18 @@ export default function PublicTopicShow({ topic }: PublicTopicShowProps) {
                                 <Hash className="w-3 h-3" /> Auf dieser Seite
                             </h4>
                         </div>
-                        <ul className="space-y-2.5 text-sm">
+                                <ul className="space-y-2.5 text-sm">
                             {tocItems.length > 0 ? (
-                                tocItems.map((block, index) => {
-                                    const level = block.data?.level ?? 2;
+                                        tocItems.map(({ block, id }) => {
+                                            const level = block.data?.level ?? 2;
                                     return (
-                                        <li key={block.id ?? index}>
+                                                <li key={id}>
                                             <a
-                                                href="#"
-                                                onClick={(e) => e.preventDefault()}
+                                                        href={`#${id}`}
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            scrollToHeading(id);
+                                                        }}
                                                 className={cn(
                                                     'block transition-colors hover:text-[#ff0055]',
                                                     level === 2 ? 'text-zinc-800 font-medium' : 'text-zinc-500 pl-3 text-xs'
@@ -166,9 +206,11 @@ function renderBlocks(blocks: OutputBlockData[]) {
                     3: 'text-lg sm:text-xl font-semibold text-zinc-900 leading-tight',
                     4: 'text-base sm:text-lg font-semibold text-zinc-900',
                 };
+                const headingId = getHeadingId(block, index);
 
                 return createElement(headingTagMap[level] ?? 'h2', {
                     key,
+                    id: headingId,
                     className: cn(
                         'scroll-mt-20 mt-12 first:mt-0 mb-4',
                         headingClassMap[level] ?? '',
@@ -236,5 +278,30 @@ function renderListItems(
             </li>
         );
     });
+}
+
+function getHeadingId(block: OutputBlockData, fallbackIndex: number): string {
+    if (block.id) {
+        return String(block.id);
+    }
+
+    const rawText =
+        typeof block.data?.text === 'string'
+            ? block.data.text.replace(/<[^>]*>/g, '').trim().toLowerCase()
+            : '';
+
+    if (rawText) {
+        const slug = rawText
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+
+        if (slug) {
+            return `${slug}-${fallbackIndex}`;
+        }
+    }
+
+    return `heading-${fallbackIndex}`;
 }
 
