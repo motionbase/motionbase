@@ -34,6 +34,20 @@ export default function PublicTopicShow({ topic }: PublicTopicShowProps) {
             Prism.highlightAllUnder(contentRef.current);
         }
     }, [activeSection?.id]);
+
+    useEffect(() => {
+        if (!contentRef.current) {
+            return;
+        }
+
+        const prefersDesktop = window.matchMedia('(min-width: 1024px)').matches;
+        if (prefersDesktop) {
+            contentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+        } else {
+            const top = contentRef.current.getBoundingClientRect().top + window.scrollY - 80;
+            window.scrollTo({ top: top < 0 ? 0 : top, behavior: 'smooth' });
+        }
+    }, [activeSection?.id]);
     const scrollToHeading = (headingId: string) => {
         const heading = document.getElementById(headingId);
         if (!heading) {
