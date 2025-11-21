@@ -199,7 +199,12 @@ export default function PublicTopicShow({ topic }: PublicTopicShowProps) {
     );
 }
 
-function renderBlocks(blocks: OutputBlockData[]) {
+type RenderTheme = {
+    textClass?: string;
+    headingClass?: Partial<Record<2 | 3 | 4, string>>;
+};
+
+function renderBlocks(blocks: OutputBlockData[], theme?: RenderTheme) {
     if (!blocks.length) {
         return (
             <div className="flex flex-col items-center justify-center py-12 text-zinc-400 border border-dashed border-zinc-200 rounded-xl bg-zinc-50">
@@ -232,6 +237,7 @@ function renderBlocks(blocks: OutputBlockData[]) {
                     className: cn(
                         'scroll-mt-20 mt-12 first:mt-0 mb-4',
                         headingClassMap[level] ?? '',
+                        theme?.headingClass?.[level] ?? '',
                     ),
                     dangerouslySetInnerHTML: { __html: block.data.text ?? '' },
                 });
@@ -244,8 +250,42 @@ function renderBlocks(blocks: OutputBlockData[]) {
                         key={key}
                         className="my-6 list-none space-y-2"
                     >
-                        {renderListItems(block.data.items as EditorListItem[] | undefined, key, style)}
+                        {renderListItems(block.data.items as EditorListItem[] | undefined, key, style, theme)}
                     </ul>
+                );
+            }
+
+            case 'alert': {
+                const type = (block.data?.type ?? 'info') as 'info' | 'warning' | 'danger' | 'neutral';
+                const innerBlocks = (block.data?.contentBlocks?.blocks ?? []) as OutputBlockData[];
+                const hasStructuredContent = innerBlocks.length > 0;
+                const fallbackMessage = block.data?.content ?? '';
+                const alertClassMap: Record<typeof type, string> = {
+                    info: 'border-sky-200 bg-sky-50 text-sky-900',
+                    warning: 'border-amber-200 bg-amber-50 text-amber-900',
+                    danger: 'border-rose-200 bg-rose-50 text-rose-950',
+                    neutral: 'border-zinc-200 bg-white text-zinc-900',
+                };
+
+                return (
+                    <div
+                        key={key}
+                        className={cn(
+                            'mb-6 rounded-2xl border px-4 py-4 text-sm leading-relaxed lg:px-5 lg:py-5',
+                            alertClassMap[type],
+                        )}
+                    >
+                        {hasStructuredContent ? (
+                            <div className="space-y-4">
+                                {renderBlocks(innerBlocks, alertThemes[type])}
+                            </div>
+                        ) : (
+                            <div
+                                className={alertThemes[type]?.textClass}
+                                dangerouslySetInnerHTML={{ __html: fallbackMessage.replace(/\n/g, '<br />') }}
+                            />
+                        )}
+                    </div>
                 );
             }
 
@@ -275,7 +315,7 @@ function renderBlocks(blocks: OutputBlockData[]) {
                     <p
                         key={key}
                         dangerouslySetInnerHTML={{ __html: block.data.text ?? '' }}
-                        className="mb-6 last:mb-0"
+                        className={cn('mb-6 last:mb-0', theme?.textClass ?? 'text-zinc-600')}
                     />
                 );
         }
@@ -286,6 +326,7 @@ function renderListItems(
     items: EditorListItem[] = [],
     keyPrefix = '',
     style: ListStyle = 'unordered',
+    theme?: RenderTheme,
 ): ReactNode[] {
     return items.map((item, index) => {
         const itemKey = `${keyPrefix}-${index}`;
@@ -304,19 +345,57 @@ function renderListItems(
 
         return (
             <li key={itemKey} className="list-none space-y-1.5">
-                <div className="flex gap-3 text-zinc-900">
-                    <span className="text-zinc-900 font-normal">{bullet}</span>
+                <div className={cn('flex gap-3', theme?.textClass ?? 'text-zinc-900')}>
+                    <span className="font-normal">{bullet}</span>
                     <div className="flex-1" dangerouslySetInnerHTML={{ __html: content }} />
                 </div>
                 {childItems.length > 0 && (
                     <ul className="ml-6 list-none space-y-1.5">
-                        {renderListItems(childItems, `${itemKey}-child`, style)}
+                        {renderListItems(childItems, `${itemKey}-child`, style, theme)}
                     </ul>
                 )}
             </li>
         );
     });
 }
+
+const alertThemes: Record<
+    'info' | 'warning' | 'danger' | 'neutral',
+    RenderTheme
+> = {
+    info: {
+        textClass: 'text-sky-900',
+        headingClass: {
+            2: '!text-sky-900',
+            3: '!text-sky-900',
+            4: '!text-sky-900',
+        },
+    },
+    warning: {
+        textClass: 'text-amber-900',
+        headingClass: {
+            2: '!text-amber-900',
+            3: '!text-amber-900',
+            4: '!text-amber-900',
+        },
+    },
+    danger: {
+        textClass: 'text-rose-950',
+        headingClass: {
+            2: '!text-rose-950',
+            3: '!text-rose-950',
+            4: '!text-rose-950',
+        },
+    },
+    neutral: {
+        textClass: 'text-zinc-900',
+        headingClass: {
+            2: '!text-zinc-900',
+            3: '!text-zinc-900',
+            4: '!text-zinc-900',
+        },
+    },
+};
 
 function getHeadingId(block: OutputBlockData, fallbackIndex: number): string {
     if (block.id) {

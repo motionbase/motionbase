@@ -64,6 +64,7 @@ export function RichTextEditor({
                 { default: List },
                 { default: Paragraph },
                 { default: CodeWithLanguage },
+                { default: AlertBlock },
             ] =
                 await Promise.all([
                     import('@editorjs/editorjs'),
@@ -71,6 +72,7 @@ export function RichTextEditor({
                     import('@editorjs/list'),
                     import('@editorjs/paragraph'),
                     import('@/components/editor/tools/code-with-language'),
+                    import('@/components/editor/tools/alert-block'),
                 ]);
 
             if (!isActive || !holderRef.current) {
@@ -111,6 +113,13 @@ export function RichTextEditor({
                                 { label: 'Shell', value: 'bash' },
                             ],
                             defaultLanguage: 'javascript',
+                        },
+                    },
+                    alert: {
+                        class: AlertBlock as unknown as ToolConstructable,
+                        config: {
+                            defaultType: 'info',
+                            placeholder: 'Beschreibe deinen Hinweis…',
                         },
                     },
                 },
