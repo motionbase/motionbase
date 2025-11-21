@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Link } from '@inertiajs/react';
-import { ArrowLeft, Github, Twitter } from 'lucide-react';
+import { Github, Twitter } from 'lucide-react';
 import { type PropsWithChildren, type ReactNode } from 'react';
 
 interface PublicLayoutProps {
@@ -9,6 +9,7 @@ interface PublicLayoutProps {
     headline?: string;
     description?: string;
     className?: string;
+    stickyFooter?: boolean;
 }
 
 export default function PublicLayout({
@@ -16,41 +17,39 @@ export default function PublicLayout({
     headline,
     description,
     className,
+    stickyFooter = false,
 }: PropsWithChildren<PublicLayoutProps>) {
     return (
-        <div className="min-h-screen bg-black text-white font-sans antialiased selection:bg-[#ff0055] selection:text-white">
-            <div className="fixed inset-0 pointer-events-none z-0">
-                <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-[#ff0055] opacity-[0.03] blur-[120px] rounded-full mix-blend-screen" />
-            </div>
+        <div className="min-h-screen bg-white text-zinc-950 font-sans antialiased selection:bg-[#ff0055] selection:text-white">
 
-            <header className="sticky top-0 z-50 w-full border-b border-white/5 bg-black/50 backdrop-blur-xl">
-                <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-6">
+            <header className="sticky top-0 z-50 w-full border-b border-zinc-100 bg-white/85 backdrop-blur-xl">
+                <div className="mx-auto flex h-20 w-full max-w-[1600px] items-center justify-between px-6 lg:px-12">
                     <Link 
                         href="/" 
-                        className="flex items-center gap-2 text-lg font-bold tracking-tight hover:opacity-80 transition-opacity"
+                        className="flex items-center gap-2 text-lg font-bold tracking-tight text-zinc-900 hover:opacity-80 transition-opacity"
                     >
                         MotionBase
                     </Link>
                     
                     <div className="flex items-center gap-4">
-                        <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-white/60">
-                            <Link href="/themen" className="hover:text-white transition-colors">Themen</Link>
-                            <a href="#" className="hover:text-white transition-colors">Features</a>
-                            <a href="#" className="hover:text-white transition-colors">Community</a>
+                        <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-zinc-600">
+                            <Link href="/themen" className="hover:text-zinc-900 transition-colors">Themen</Link>
+                            <a href="#" className="hover:text-zinc-900 transition-colors">Features</a>
+                            <a href="#" className="hover:text-zinc-900 transition-colors">Community</a>
                         </nav>
-                        <div className="h-4 w-px bg-white/10 hidden md:block" />
+                        <div className="h-4 w-px bg-zinc-200 hidden md:block" />
                         <div className="flex gap-3">
                             <Button 
                                 variant="ghost" 
                                 size="sm" 
-                                className="text-white/70 hover:text-white hover:bg-white/5" 
+                                className="text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100" 
                                 asChild
                             >
                                 <Link href="/login">Login</Link>
                             </Button>
                             <Button 
                                 size="sm" 
-                                className="bg-[#ff0055] text-white hover:bg-[#ff0055]/90 shadow-[0_0_20px_-5px_#ff0055]" 
+                                className="bg-[#ff0055] text-white hover:bg-[#ff0055]/90 shadow-[0_4px_14px_-4px_#ff0055]" 
                                 asChild
                             >
                                 <Link href="/register">Get Started</Link>
@@ -61,16 +60,16 @@ export default function PublicLayout({
             </header>
 
             {(headline || description) && (
-                <div className="relative border-b border-white/5 bg-white/[0.02]">
+                <div className="relative border-b border-zinc-100 bg-zinc-50/50">
                     <div className="mx-auto max-w-7xl px-6 py-20 lg:py-28">
                         <div className="max-w-3xl">
                             {headline && (
-                                <h1 className="text-4xl font-bold tracking-tight text-white sm:text-6xl mb-6">
+                                <h1 className="text-4xl font-bold tracking-tight text-zinc-900 sm:text-6xl mb-6">
                                     {headline}
                                 </h1>
                             )}
                             {description && (
-                                <p className="text-lg text-white/60 leading-relaxed max-w-2xl">
+                                <p className="text-lg text-zinc-600 leading-relaxed max-w-2xl">
                                     {description}
                                 </p>
                             )}
@@ -79,22 +78,32 @@ export default function PublicLayout({
                 </div>
             )}
 
-            <main className={cn('relative mx-auto w-full max-w-7xl px-6 py-12', className)}>
+            <main
+                className={cn(
+                    'relative mx-auto w-full max-w-[1600px] px-6 lg:px-12',
+                    stickyFooter ? 'pt-0 pb-0' : 'pt-12 pb-16',
+                    className,
+                )}
+            >
                 {children}
             </main>
 
-            <footer className="border-t border-white/5 bg-black py-12 mt-auto">
-                <div className="mx-auto max-w-7xl px-6 flex flex-col md:flex-row justify-between items-center gap-6">
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-white">MotionBase</span>
-                        <span className="text-sm text-white/40">© {new Date().getFullYear()}</span>
-                    </div>
-                    <div className="flex gap-6">
-                        <a href="#" className="text-white/40 hover:text-white transition-colors">
-                            <Github className="w-5 h-5" />
+            <footer
+                className={cn(
+                    'h-[60px] w-full border-t border-zinc-100 bg-white',
+                    stickyFooter && 'sticky bottom-0 z-50 bg-white/90 backdrop-blur-md',
+                )}
+            >
+                <div className="mx-auto flex h-full w-full max-w-[1600px] items-center justify-between px-6 text-sm text-zinc-500">
+                    <span>© {new Date().getFullYear()} MotionBase</span>
+                    <div className="flex items-center gap-4">
+                        <a href="#" className="flex items-center gap-2 hover:text-zinc-900 transition-colors">
+                            <Github className="h-4 w-4" />
+                            Github
                         </a>
-                        <a href="#" className="text-white/40 hover:text-white transition-colors">
-                            <Twitter className="w-5 h-5" />
+                        <a href="#" className="flex items-center gap-2 hover:text-zinc-900 transition-colors">
+                            <Twitter className="h-4 w-4" />
+                            Twitter
                         </a>
                     </div>
                 </div>

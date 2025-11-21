@@ -30,14 +30,14 @@ export default function PublicTopicsIndex({ topics, categories, filters }: Publi
             <Head title="Themen entdecken" />
             
             {/* Filter Bar */}
-            <div className="mb-12 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/5 p-2 backdrop-blur-md">
+            <div className="mb-12 flex flex-col sm:flex-row items-center justify-between gap-4 rounded-2xl border border-zinc-100 bg-white p-2 shadow-sm">
                 <div className="flex flex-wrap gap-2 px-2">
                     <button
                         onClick={() => handleFilterChange('')}
                         className={`rounded-xl px-4 py-2 text-sm font-medium transition-all ${
                             !filters.category 
-                                ? 'bg-white text-black shadow-lg' 
-                                : 'text-white/60 hover:bg-white/5 hover:text-white'
+                                ? 'bg-zinc-900 text-white shadow-lg shadow-zinc-900/20' 
+                                : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900'
                         }`}
                     >
                         Alle
@@ -48,27 +48,27 @@ export default function PublicTopicsIndex({ topics, categories, filters }: Publi
                             onClick={() => handleFilterChange(String(category.id))}
                             className={`rounded-xl px-4 py-2 text-sm font-medium transition-all ${
                                 String(filters.category) === String(category.id)
-                                    ? 'bg-white text-black shadow-lg'
-                                    : 'text-white/60 hover:bg-white/5 hover:text-white'
+                                    ? 'bg-zinc-900 text-white shadow-lg shadow-zinc-900/20'
+                                    : 'text-zinc-500 hover:bg-zinc-50 hover:text-zinc-900'
                             }`}
                         >
                             {category.name}
                         </button>
                     ))}
                 </div>
-                <div className="hidden sm:flex items-center px-4 text-white/40">
+                <div className="hidden sm:flex items-center px-4 text-zinc-300">
                     <Search className="w-4 h-4" />
                 </div>
             </div>
 
             {topics.length === 0 ? (
-                <Card className="border border-white/10 bg-white/5 text-white">
+                <Card className="border border-zinc-100 bg-white text-zinc-900">
                     <CardContent className="py-24 text-center">
-                        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-white/5">
-                            <BookOpen className="h-8 w-8 text-white/20" />
+                        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-zinc-50">
+                            <BookOpen className="h-8 w-8 text-zinc-300" />
                         </div>
                         <h3 className="text-xl font-semibold mb-2">Keine Themen gefunden</h3>
-                        <p className="text-white/60 max-w-sm mx-auto">
+                        <p className="text-zinc-500 max-w-sm mx-auto">
                             Aktuell sind keine Themen in dieser Kategorie verfügbar. 
                             Schau später nochmal vorbei oder wähle eine andere Kategorie.
                         </p>
@@ -80,35 +80,35 @@ export default function PublicTopicsIndex({ topics, categories, filters }: Publi
                         <Link
                             key={topic.id}
                             href={`/themen/${topic.id}`}
-                            className="group relative flex flex-col overflow-hidden rounded-3xl border border-white/10 bg-white/5 transition-all duration-300 hover:-translate-y-1 hover:border-white/20 hover:bg-white/10"
+                            className="group relative flex flex-col overflow-hidden rounded-3xl border border-zinc-100 bg-white transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-zinc-200/50"
                         >
                             <div className="flex flex-1 flex-col p-8">
                                 <div className="mb-6 flex items-start justify-between gap-4">
                                     {topic.category ? (
-                                        <Badge variant="outline" className="border-white/10 bg-white/5 text-xs font-medium text-white/80 hover:bg-white/10">
+                                        <Badge variant="outline" className="border-zinc-200 bg-zinc-50 text-xs font-medium text-zinc-600 hover:bg-zinc-100">
                                             {topic.category.name}
                                         </Badge>
                                     ) : <div />}
-                                    <div className="flex items-center gap-1.5 text-xs font-medium text-white/40">
+                                    <div className="flex items-center gap-1.5 text-xs font-medium text-zinc-400">
                                         <Clock className="w-3.5 h-3.5" />
                                         <span>{formatDate(topic.updated_at)}</span>
                                     </div>
                                 </div>
                                 
-                                <h3 className="mb-3 text-xl font-bold leading-tight text-white group-hover:text-[#ff0055] transition-colors">
+                                <h3 className="mb-3 text-xl font-bold leading-tight text-zinc-900 group-hover:text-[#ff0055] transition-colors">
                                     {topic.title}
                                 </h3>
                                 
                                 {topic.excerpt && (
-                                    <p className="mb-6 text-sm leading-relaxed text-white/60 line-clamp-3">
+                                    <p className="mb-6 text-sm leading-relaxed text-zinc-500 line-clamp-3">
                                         {topic.excerpt}
                                     </p>
                                 )}
 
-                                <div className="mt-auto pt-6 border-t border-white/5 flex items-center justify-between text-sm font-medium text-white/80">
+                                <div className="mt-auto pt-6 border-t border-zinc-100 flex items-center justify-between text-sm font-medium text-zinc-600">
                                     <div className="flex items-center gap-2">
                                         {topic.author && (
-                                            <span className="text-xs text-white/40">
+                                            <span className="text-xs text-zinc-400">
                                                 von {topic.author.name}
                                             </span>
                                         )}
