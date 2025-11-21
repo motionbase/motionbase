@@ -15,7 +15,7 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type Category, type Section, type Topic } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
 import type { OutputData } from '@editorjs/editorjs';
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -93,22 +93,11 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
         router.delete(`/sections/${sectionId}`, { preserveScroll: true });
     };
 
-    const tocItems = useMemo(() => {
-        const blocks = sectionForm.data.content?.blocks ?? [];
-        return blocks
-            .filter((block) => block.type === 'header' && block.data?.text)
-            .map((block, index) => ({
-                id: `${block.id ?? index}`,
-                text: block.data.text.replace(/<[^>]+>/g, ''),
-                level: block.data.level ?? 2,
-            }));
-    }, [sectionForm.data.content]);
-
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Bearbeiten: ${topic.title}`} />
 
-            <div className="grid gap-6 px-6 py-10 lg:grid-cols-[320px_minmax(0,1fr)_300px]">
+            <div className="grid gap-6 px-6 py-10 lg:grid-cols-[320px_minmax(0,1fr)]">
                 <Card className="border-zinc-100 bg-white shadow-sm">
                     <CardHeader className="border-b border-zinc-100 pb-4">
                         <CardTitle className="text-xs font-semibold uppercase tracking-[0.35em] text-zinc-400">
@@ -232,7 +221,7 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                     </CardContent>
                 </Card>
 
-                <Card className="border-zinc-100 bg-white shadow-sm">
+                <Card className="lg:col-span-1 border-zinc-100 bg-white">
                     {activeSection ? (
                         <>
                             <div className="flex flex-col gap-4 border-b border-zinc-100 px-6 py-5 lg:flex-row lg:items-center lg:justify-between">
@@ -250,12 +239,12 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                                     {sectionForm.processing ? 'Speichern…' : 'Speichern'}
                                 </Button>
                             </div>
-                            <CardContent className="lg:h-[calc(100vh-260px)] lg:overflow-y-auto">
+                            <CardContent className="lg:h-[calc(100vh-220px)] lg:overflow-y-auto px-0">
                                 <RichTextEditor
                                     key={activeSection.id}
                                     initialValue={(activeSection.content ?? null) as OutputData}
                                     onChange={(value) => sectionForm.setData('content', value as EditorContent)}
-                                    className="min-h-[600px] border border-zinc-200 bg-white"
+                                    className="min-h-[720px] border-0 bg-transparent lg:min-h-[calc(100vh-300px)]"
                                     placeholder="Starte mit deinem Inhalt…"
                                 />
                             </CardContent>
@@ -267,34 +256,6 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                     )}
                 </Card>
 
-                <Card className="hidden border-zinc-100 bg-white shadow-sm lg:flex lg:flex-col">
-                    <CardHeader className="border-b border-zinc-100">
-                        <CardTitle className="text-sm font-semibold uppercase tracking-[0.35em] text-zinc-400">
-                            Inhaltsverzeichnis
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex-1 overflow-y-auto pt-6">
-                        {tocItems.length === 0 && (
-                            <p className="text-sm text-zinc-500">
-                                Füge Überschriften im Editor hinzu, um automatisch ein Inhaltsverzeichnis zu erstellen.
-                            </p>
-                        )}
-                        <ul className="space-y-3 text-sm">
-                            {tocItems.map((item) => (
-                                <li
-                                    key={item.id}
-                                    className={cn(
-                                        'border-l-2 border-transparent pl-3 text-zinc-600',
-                                        item.level === 3 && 'ml-3 text-zinc-500',
-                                        item.level >= 4 && 'ml-6 text-zinc-400',
-                                    )}
-                                >
-                                    {item.text}
-                                </li>
-                            ))}
-                        </ul>
-                    </CardContent>
-                </Card>
             </div>
         </AppLayout>
     );

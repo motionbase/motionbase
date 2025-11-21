@@ -224,7 +224,7 @@
     pre[class*='language-'],
     code[class*='language-'] {
         font-family: 'JetBrains Mono', 'SFMono-Regular', Menlo, Monaco, Consolas, monospace;
-        font-size: 0.95rem;
+        font-size: 0.825rem;
         line-height: 1.7;
     }
 
@@ -233,6 +233,9 @@
         color: #f8fafc;
         border-radius: 1.1rem;
         border: 1px solid rgba(255, 255, 255, 0.08);
+        white-space: pre-wrap;
+        word-break: break-word;
+        overflow-wrap: anywhere;
     }
 
     :not(pre) > code[class*='language-'] {
@@ -306,5 +309,12 @@
 
     .token.italic {
         font-style: italic;
+    }
+}
+
+@media (min-width: 640px) {
+    pre[class*='language-'],
+    code[class*='language-'] {
+        font-size: 0.95rem;
     }
 }

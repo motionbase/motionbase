@@ -257,15 +257,17 @@ function renderBlocks(blocks: OutputBlockData[]) {
                     const languageClass = `language-${language}`;
 
                     return (
-                        <pre
-                            key={key}
-                            className={cn(
-                                'mb-6 overflow-x-auto rounded-2xl bg-zinc-950 p-6 text-sm shadow-inner shadow-black/30',
-                                languageClass,
-                            )}
-                        >
-                            <code className={languageClass}>{block.data.code}</code>
-                        </pre>
+                        <div className="mb-6 overflow-hidden rounded-2xl bg-zinc-950 shadow-inner shadow-black/30">
+                            <pre
+                                key={key}
+                                className={cn(
+                                    'language-pre block w-full overflow-auto px-5 py-4 text-sm lg:px-6 lg:py-5',
+                                    languageClass,
+                                )}
+                            >
+                                <code className={languageClass}>{block.data.code}</code>
+                            </pre>
+                        </div>
                     );
                 }
 
