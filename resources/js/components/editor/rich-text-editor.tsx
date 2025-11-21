@@ -58,12 +58,19 @@ export function RichTextEditor({
                 return;
             }
 
-            const [{ default: EditorJS }, { default: Header }, { default: List }, { default: Paragraph }] =
+            const [
+                { default: EditorJS },
+                { default: Header },
+                { default: List },
+                { default: Paragraph },
+                { default: CodeWithLanguage },
+            ] =
                 await Promise.all([
                     import('@editorjs/editorjs'),
                     import('@editorjs/header'),
                     import('@editorjs/list'),
                     import('@editorjs/paragraph'),
+                    import('@/components/editor/tools/code-with-language'),
                 ]);
 
             if (!isActive || !holderRef.current) {
@@ -90,6 +97,21 @@ export function RichTextEditor({
                     },
                     paragraph: {
                         class: Paragraph as unknown as ToolConstructable,
+                    },
+                    code: {
+                        class: CodeWithLanguage as unknown as ToolConstructable,
+                        config: {
+                            placeholder: 'Füge hier deinen Code ein…',
+                            languages: [
+                                { label: 'JavaScript', value: 'javascript' },
+                                { label: 'TypeScript', value: 'typescript' },
+                                { label: 'PHP', value: 'php' },
+                                { label: 'CSS', value: 'css' },
+                                { label: 'HTML', value: 'markup' },
+                                { label: 'Shell', value: 'bash' },
+                            ],
+                            defaultLanguage: 'javascript',
+                        },
                     },
                 },
                 async onChange(api) {

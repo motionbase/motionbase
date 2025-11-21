@@ -3,9 +3,18 @@ import PublicLayout from '@/layouts/public-layout';
 import { type Section, type Topic } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import type { OutputBlockData } from '@editorjs/editorjs';
-import { createElement, type ReactNode, useMemo, useRef } from 'react';
+import { createElement, type ReactNode, useEffect, useMemo, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { Hash, List } from 'lucide-react';
+import Prism from 'prismjs';
+import 'prismjs/components/prism-javascript';
+import 'prismjs/components/prism-typescript';
+import 'prismjs/components/prism-css';
+import 'prismjs/components/prism-markup';
+import 'prismjs/components/prism-markup-templating';
+import 'prismjs/components/prism-php';
+import 'prismjs/components/prism-bash';
+import 'prismjs/components/prism-json';
 
 interface PublicTopicShowProps {
     topic: Topic & {
@@ -20,6 +29,11 @@ type ListStyle = 'ordered' | 'unordered';
 export default function PublicTopicShow({ topic }: PublicTopicShowProps) {
     const activeSection = topic.activeSection;
     const contentRef = useRef<HTMLElement | null>(null);
+    useEffect(() => {
+        if (contentRef.current) {
+            Prism.highlightAllUnder(contentRef.current);
+        }
+    }, [activeSection?.id]);
     const scrollToHeading = (headingId: string) => {
         const heading = document.getElementById(headingId);
         if (!heading) {
@@ -236,7 +250,25 @@ function renderBlocks(blocks: OutputBlockData[]) {
             }
 
             case 'paragraph':
+            case 'code':
             default:
+                if (block.type === 'code') {
+                    const language = (block.data?.language as string) ?? 'javascript';
+                    const languageClass = `language-${language}`;
+
+                    return (
+                        <pre
+                            key={key}
+                            className={cn(
+                                'mb-6 overflow-x-auto rounded-2xl bg-zinc-950 p-6 text-sm shadow-inner shadow-black/30',
+                                languageClass,
+                            )}
+                        >
+                            <code className={languageClass}>{block.data.code}</code>
+                        </pre>
+                    );
+                }
+
                 return (
                     <p
                         key={key}

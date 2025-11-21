@@ -26,6 +26,7 @@
         "typescript-eslint": "^8.23.0"
     },
     "dependencies": {
+        "@editorjs/code": "^2.9.3",
         "@editorjs/editorjs": "^2.31.0",
         "@editorjs/header": "^2.8.8",
         "@editorjs/list": "^2.0.9",
@@ -56,6 +57,7 @@
         "input-otp": "^1.4.2",
         "laravel-vite-plugin": "^2.0",
         "lucide-react": "^0.475.0",
+        "prismjs": "^1.30.0",
         "react": "^19.2.0",
         "react-dom": "^19.2.0",
         "tailwind-merge": "^3.0.1",
