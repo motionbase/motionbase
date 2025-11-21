@@ -40,16 +40,17 @@ export default function TopicsIndex({
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Themen" />
-            <div className="space-y-8 p-6">
-                {/* Header */}
-                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-                    <div>
-                        <h1 className="text-3xl font-bold tracking-tight text-white">Themen</h1>
-                        <p className="text-muted-foreground">
-                            Verwalte deine Lerninhalte und erstelle neue Kurse.
+
+            <div className="space-y-10 px-6 py-10">
+                <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="space-y-3">
+                        <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#ff0055]">Inhalte</p>
+                        <h1 className="text-4xl font-semibold tracking-tight text-zinc-900">Themen</h1>
+                        <p className="text-base text-zinc-500">
+                            Verwalte deine Lerninhalte, Abschnitte und Kategorien in einem klaren Workspace.
                         </p>
                     </div>
-                    <Button className="bg-[#ff0055] text-white hover:bg-[#ff0055]/90" asChild>
+                    <Button className="bg-[#ff0055] px-6 text-white shadow-[0_10px_25px_-12px_rgba(255,0,85,0.7)] hover:bg-[#ff0055]/90" asChild>
                         <Link href="/topics/create">
                             <Plus className="mr-2 h-4 w-4" />
                             Neues Thema
@@ -57,15 +58,14 @@ export default function TopicsIndex({
                     </Button>
                 </div>
 
-                <div className="grid gap-8 lg:grid-cols-[1fr_300px]">
-                    {/* Topics List */}
+                <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
                     <div className="space-y-4">
                         {topics.length === 0 ? (
-                            <Card className="border-dashed border-white/10 bg-transparent text-center">
+                            <Card className="border-dashed border-zinc-200 bg-white text-center shadow-none">
                                 <CardContent className="py-12">
-                                    <NotebookPen className="mx-auto h-12 w-12 text-white/20" />
-                                    <h3 className="mt-4 text-lg font-semibold text-white">Keine Themen gefunden</h3>
-                                    <p className="mb-6 text-sm text-muted-foreground">
+                                    <NotebookPen className="mx-auto h-12 w-12 text-zinc-300" />
+                                    <h3 className="mt-6 text-xl font-semibold text-zinc-900">Keine Themen gefunden</h3>
+                                    <p className="mb-6 text-sm text-zinc-500">
                                         Lege dein erstes Thema an, um loszulegen.
                                     </p>
                                     <Button className="bg-[#ff0055] text-white hover:bg-[#ff0055]/90" asChild>
@@ -76,40 +76,43 @@ export default function TopicsIndex({
                         ) : (
                             <div className="grid gap-4">
                                 {topics.map((topic) => (
-                                    <Card
-                                        key={topic.id}
-                                        className="border-white/10 bg-white/5 text-white transition-colors hover:border-white/20"
-                                    >
+                                    <Card key={topic.id} className="border-zinc-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
                                         <CardContent className="p-6">
                                             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                                                 <div className="space-y-2">
-                                                    <div className="flex items-center gap-2">
-                                                        <h3 className="font-semibold text-lg">{topic.title}</h3>
+                                                    <div className="flex flex-wrap items-center gap-2">
+                                                        <h3 className="text-lg font-semibold text-zinc-900">{topic.title}</h3>
                                                         {topic.category && (
-                                                            <Badge variant="outline" className="border-white/20 text-white/60">
+                                                            <Badge variant="secondary" className="bg-zinc-100 text-zinc-600">
                                                                 {topic.category.name}
                                                             </Badge>
                                                         )}
                                                     </div>
-                                                    <p className="text-sm text-white/60 line-clamp-2">
+                                                    <p className="text-sm text-zinc-500 line-clamp-2">
                                                         {topic.excerpt ?? 'Keine Vorschau verfügbar.'}
                                                     </p>
-                                                    <div className="flex items-center gap-4 text-xs text-white/40">
+                                                    <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-400">
                                                         <span>
-                                                            {topic.sections_count ?? 0} {topic.sections_count === 1 ? 'Abschnitt' : 'Abschnitte'}
+                                                            {topic.sections_count ?? 0}{' '}
+                                                            {topic.sections_count === 1 ? 'Abschnitt' : 'Abschnitte'}
                                                         </span>
-                                                        <span>•</span>
+                                                        <span className="hidden sm:inline">•</span>
                                                         <span>Aktualisiert {formatDate(topic.updated_at)}</span>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-2 self-end sm:self-start">
-                                                    <Button variant="ghost" size="sm" className="text-white/60 hover:bg-white/10 hover:text-white" asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="text-zinc-700 hover:bg-zinc-50 hover:text-zinc-900"
+                                                        asChild
+                                                    >
                                                         <Link href={`/topics/${topic.id}/edit`}>Bearbeiten</Link>
                                                     </Button>
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
-                                                        className="text-white/40 hover:bg-white/10 hover:text-red-400"
+                                                        className="text-zinc-400 hover:bg-zinc-50 hover:text-red-500"
                                                         onClick={(event: MouseEvent<HTMLButtonElement>) => {
                                                             event.preventDefault();
                                                             handleDelete(topic.id);
@@ -127,54 +130,46 @@ export default function TopicsIndex({
                         )}
                     </div>
 
-                    {/* Sidebar: Categories */}
-                    <div className="space-y-6">
-                        <Card className="border-white/10 bg-white/5 text-white">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-lg">
-                                    <Layers className="h-5 w-5 text-[#ff0055]" />
-                                    Kategorien
-                                </CardTitle>
-                                <CardDescription className="text-white/50">
-                                    Überblick deiner Inhalte.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                {categories.length === 0 ? (
-                                    <div className="text-center text-sm text-white/40">
-                                        <p className="mb-4">Keine Kategorien vorhanden.</p>
-                                        <Button variant="link" className="text-[#ff0055]" asChild>
-                                            <Link href="/categories">Verwalten</Link>
+                    <Card className="h-fit border-zinc-100 bg-white shadow-sm">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-lg font-semibold text-zinc-900">
+                                <Layers className="h-5 w-5 text-[#ff0055]" />
+                                Kategorien
+                            </CardTitle>
+                            <CardDescription>Ein schneller Überblick deiner Bereiche.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {categories.length === 0 ? (
+                                <div className="rounded-lg border border-dashed border-zinc-200 p-6 text-center text-sm text-zinc-500">
+                                    Noch keine Kategorien vorhanden.
+                                </div>
+                            ) : (
+                                <div className="space-y-2">
+                                    {categories.map((category) => (
+                                        <div
+                                            key={category.id}
+                                             className="flex items-center justify-between rounded-xl border border-transparent px-3 py-3 transition hover:border-zinc-200"
+                                        >
+                                            <span className="text-sm font-medium text-zinc-700">{category.name}</span>
+                                            <Badge variant="outline" className="border-zinc-200 text-xs text-zinc-500">
+                                                {topicCountByCategory[category.id] ?? 0}
+                                            </Badge>
+                                        </div>
+                                    ))}
+                                    <div className="pt-3">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="w-full justify-center text-zinc-500 hover:text-zinc-900"
+                                            asChild
+                                        >
+                                            <Link href="/categories">Alle Kategorien verwalten</Link>
                                         </Button>
                                     </div>
-                                ) : (
-                                    <div className="space-y-1">
-                                        {categories.map((category) => (
-                                            <div
-                                                key={category.id}
-                                                className="flex items-center justify-between rounded-md px-2 py-2 text-sm text-white/70 hover:bg-white/5"
-                                            >
-                                                <span>{category.name}</span>
-                                                <Badge variant="secondary" className="bg-white/10 text-white hover:bg-white/20">
-                                                    {topicCountByCategory[category.id] ?? 0}
-                                                </Badge>
-                                            </div>
-                                        ))}
-                                        <div className="pt-4">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="w-full text-white/40 hover:text-white"
-                                                asChild
-                                            >
-                                                <Link href="/categories">Alle verwalten</Link>
-                                            </Button>
-                                        </div>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </div>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
                 </div>
             </div>
         </AppLayout>

@@ -108,31 +108,27 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={`Bearbeiten: ${topic.title}`} />
 
-            <div className="grid gap-4 lg:grid-cols-[280px_1fr_280px]">
-                <Card className="border border-white/10 bg-black text-white">
-                    <CardHeader className="border-b border-white/10">
-                        <CardTitle className="text-sm uppercase tracking-[0.2em] text-white/50">
-                            Kursstruktur
+            <div className="grid gap-6 px-6 py-10 lg:grid-cols-[320px_minmax(0,1fr)_300px]">
+                <Card className="border-zinc-100 bg-white shadow-sm">
+                    <CardHeader className="border-b border-zinc-100 pb-4">
+                        <CardTitle className="text-xs font-semibold uppercase tracking-[0.35em] text-zinc-400">
+                            Kursverwaltung
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-6 p-5">
-                        <div className="space-y-3">
-                            <Label className="text-xs uppercase tracking-[0.3em] text-white/50">
-                                Titel
-                            </Label>
+                    <CardContent className="space-y-6 pt-6">
+                        <div className="space-y-2">
+                            <Label className="text-sm font-medium text-zinc-700">Titel</Label>
                             <Input
                                 value={topicForm.data.title}
                                 onChange={(event) => topicForm.setData('title', event.target.value)}
                                 onBlur={handleTopicSave}
-                                className="border-white/10 bg-transparent text-white focus-visible:ring-[#ff0055]"
+                                aria-invalid={!!topicForm.errors.title}
                             />
                             <InputError message={topicForm.errors.title} />
                         </div>
 
-                        <div className="space-y-3">
-                            <Label className="text-xs uppercase tracking-[0.3em] text-white/50">
-                                Kategorie
-                            </Label>
+                        <div className="space-y-2">
+                            <Label className="text-sm font-medium text-zinc-700">Kategorie</Label>
                             <Select
                                 value={topicForm.data.category_id}
                                 onValueChange={(value) => {
@@ -140,10 +136,10 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                                     topicForm.put(`/topics/${topic.id}`, { preserveScroll: true });
                                 }}
                             >
-                                <SelectTrigger className="border-white/10 bg-transparent text-white focus:ring-[#ff0055]">
+                                <SelectTrigger className="border-zinc-200" aria-label="Kategorie wählen">
                                     <SelectValue placeholder="Kategorie wählen" />
                                 </SelectTrigger>
-                                <SelectContent className="bg-black text-white">
+                                <SelectContent>
                                     {categories.map((category) => (
                                         <SelectItem key={category.id} value={String(category.id)}>
                                             {category.name}
@@ -151,114 +147,135 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                                     ))}
                                 </SelectContent>
                             </Select>
+                            <InputError message={topicForm.errors.category_id} />
                         </div>
 
-                        <div className="flex items-center justify-between text-xs uppercase tracking-[0.3em] text-white/50">
-                            <span>Abschnitte</span>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 border border-white/10 text-white hover:bg-white/10"
-                                onClick={handleCreateSection}
-                            >
-                                <Plus className="h-4 w-4" />
-                            </Button>
-                        </div>
-
-                        <div className="space-y-2">
-                            {topic.sections.map((section, index) => {
-                                const isActive = section.id === activeSection?.id;
-                                return (
-                                    <div
-                                        key={section.id}
-                                        className={cn(
-                                            'flex items-center justify-between rounded-xl border border-white/5 px-3 py-2 text-sm transition',
-                                            isActive
-                                                ? 'bg-[#ff0055]/20 text-white'
-                                                : 'text-white/70 hover:bg-white/5',
-                                        )}
-                                    >
-                                        <button
-                                            type="button"
-                                            className="flex flex-1 items-center gap-2 text-left"
-                                            onClick={() => handleNavigateToSection(section.id)}
+                        <div className="space-y-3">
+                            <div className="flex items-center justify-between">
+                                <p className="text-sm font-semibold text-zinc-900">Abschnitte</p>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="border-zinc-200 text-xs font-semibold uppercase tracking-wider"
+                                    onClick={handleCreateSection}
+                                >
+                                    <Plus className="mr-2 h-3.5 w-3.5" />
+                                    Neu
+                                </Button>
+                            </div>
+                            <div className="space-y-2">
+                                {topic.sections.map((section, index) => {
+                                    const isActive = section.id === activeSection?.id;
+                                    return (
+                                        <div
+                                            key={section.id}
+                                            className={cn(
+                                                'flex items-center gap-2 rounded-2xl border px-3 py-2',
+                                                isActive
+                                                    ? 'border-zinc-900 bg-zinc-900 text-white'
+                                                    : 'border-zinc-100 bg-white text-zinc-600 hover:border-zinc-200',
+                                            )}
                                         >
-                                            <span className="flex h-6 w-6 items-center justify-center rounded-full border border-white/10 text-xs">
-                                                {index + 1}
-                                            </span>
-                                            <span className="truncate">{section.title}</span>
-                                        </button>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-6 w-6 text-white/60 hover:bg-white/10 hover:text-white"
+                                            <button
+                                                type="button"
+                                                className="flex flex-1 items-center gap-3 text-left"
+                                                onClick={() => handleNavigateToSection(section.id)}
+                                            >
+                                                <span
+                                                    className={cn(
+                                                        'flex h-6 w-6 items-center justify-center rounded-full text-xs font-semibold',
+                                                        isActive ? 'bg-white/20 text-white' : 'bg-zinc-100 text-zinc-500',
+                                                    )}
                                                 >
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end" className="bg-black text-white">
-                                                <DropdownMenuItem
-                                                    className="text-red-400 focus:text-red-400"
-                                                    onClick={() => handleDeleteSection(section.id)}
+                                                    {index + 1}
+                                                </span>
+                                                <span className="truncate">{section.title}</span>
+                                            </button>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className={cn(
+                                                            'h-6 w-6',
+                                                            isActive
+                                                                ? 'text-white hover:bg-white/10'
+                                                                : 'text-zinc-400 hover:text-zinc-700',
+                                                        )}
+                                                    >
+                                                        <MoreHorizontal className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent
+                                                    align="end"
+                                                    className="w-40 border border-zinc-100 bg-white shadow-lg"
                                                 >
-                                                    <Trash2 className="mr-2 h-4 w-4" />
-                                                    Löschen
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
+                                                    <DropdownMenuItem
+                                                        className="text-red-600 focus:text-red-600"
+                                                        onClick={() => handleDeleteSection(section.id)}
+                                                    >
+                                                        <Trash2 className="mr-2 h-4 w-4" />
+                                                        Löschen
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
+                                    );
+                                })}
+                                {topic.sections.length === 0 && (
+                                    <div className="rounded-xl border border-dashed border-zinc-200 px-4 py-6 text-sm text-zinc-500">
+                                        Noch keine Abschnitte. Lege deinen ersten Abschnitt an, um loszulegen.
                                     </div>
-                                );
-                            })}
+                                )}
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card className="border border-white/10 bg-black text-white">
+                <Card className="border-zinc-100 bg-white shadow-sm">
                     {activeSection ? (
                         <>
-                            <div className="flex items-center justify-between border-b border-white/10 px-6 py-4">
+                            <div className="flex flex-col gap-4 border-b border-zinc-100 px-6 py-5 lg:flex-row lg:items-center lg:justify-between">
                                 <Input
                                     value={sectionForm.data.title}
                                     onChange={(event) => sectionForm.setData('title', event.target.value)}
                                     placeholder="Abschnittstitel"
-                                    className="border-none bg-transparent text-2xl font-semibold text-white focus-visible:ring-0"
+                                    className="border-none px-0 text-2xl font-semibold text-zinc-900 focus-visible:ring-0"
                                 />
                                 <Button
                                     onClick={handleSectionSave}
                                     disabled={sectionForm.processing}
-                                    className="rounded-full bg-[#ff0055] px-6 text-white hover:bg-[#ff0055]/90"
+                                    className="bg-[#ff0055] px-6 text-white hover:bg-[#ff0055]/90"
                                 >
                                     {sectionForm.processing ? 'Speichern…' : 'Speichern'}
                                 </Button>
                             </div>
-                            <CardContent className="h-[calc(100vh-18rem)] overflow-y-auto p-6">
+                            <CardContent className="lg:h-[calc(100vh-260px)] lg:overflow-y-auto">
                                 <RichTextEditor
                                     key={activeSection.id}
                                     initialValue={(activeSection.content ?? null) as OutputData}
                                     onChange={(value) => sectionForm.setData('content', value as EditorContent)}
-                                    className="min-h-[600px] border border-white/10 bg-neutral-950"
+                                    className="min-h-[600px] border border-zinc-200 bg-white"
                                     placeholder="Starte mit deinem Inhalt…"
                                 />
                             </CardContent>
                         </>
                     ) : (
-                        <div className="flex min-h-[400px] items-center justify-center text-white/50">
+                        <div className="flex min-h-[400px] items-center justify-center text-zinc-400">
                             Kein Abschnitt ausgewählt.
                         </div>
                     )}
                 </Card>
 
-                <Card className="hidden border border-white/10 bg-black text-white lg:flex lg:flex-col">
-                    <CardHeader className="border-b border-white/10">
-                        <CardTitle className="text-sm uppercase tracking-[0.3em] text-white/50">
+                <Card className="hidden border-zinc-100 bg-white shadow-sm lg:flex lg:flex-col">
+                    <CardHeader className="border-b border-zinc-100">
+                        <CardTitle className="text-sm font-semibold uppercase tracking-[0.35em] text-zinc-400">
                             Inhaltsverzeichnis
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="flex-1 overflow-y-auto p-5">
+                    <CardContent className="flex-1 overflow-y-auto pt-6">
                         {tocItems.length === 0 && (
-                            <p className="text-sm text-white/50">
+                            <p className="text-sm text-zinc-500">
                                 Füge Überschriften im Editor hinzu, um automatisch ein Inhaltsverzeichnis zu erstellen.
                             </p>
                         )}
@@ -267,9 +284,9 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                                 <li
                                     key={item.id}
                                     className={cn(
-                                        'border-l-2 border-transparent pl-3 text-white/70',
-                                        item.level === 3 && 'ml-3 text-white/60',
-                                        item.level >= 4 && 'ml-6 text-white/50',
+                                        'border-l-2 border-transparent pl-3 text-zinc-600',
+                                        item.level === 3 && 'ml-3 text-zinc-500',
+                                        item.level >= 4 && 'ml-6 text-zinc-400',
                                     )}
                                 >
                                     {item.text}

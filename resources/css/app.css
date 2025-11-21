@@ -1,5 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 @plugin 'tailwindcss-animate';
 
@@ -7,43 +7,42 @@
 
 @theme {
     --color-sidebar-ring: #ff0055;
-    --color-sidebar-border: hsl(0, 0%, 15%);
-    --color-sidebar-accent-foreground: hsl(0, 0%, 100%);
-    --color-sidebar-accent: hsl(0, 0%, 12%);
-    --color-sidebar-primary-foreground: hsl(0, 0%, 100%);
+    --color-sidebar-border: hsl(0 0% 90%);
+    --color-sidebar-accent-foreground: hsl(0 0% 10%);
+    --color-sidebar-accent: hsl(0 0% 96%);
+    --color-sidebar-primary-foreground: hsl(0 0% 100%);
     --color-sidebar-primary: #ff0055;
-    --color-sidebar-foreground: hsl(0, 0%, 80%);
-    --color-sidebar: hsl(0, 0%, 3%);
-    
+    --color-sidebar-foreground: hsl(0 0% 32%);
+    --color-sidebar: hsl(0 0% 100%);
+
     --color-ring: #ff0055;
-    
-    --color-input: hsl(0, 0%, 15%);
-    --color-border: hsl(0, 0%, 15%);
-    
-    --color-destructive-foreground: hsl(0, 0%, 100%);
-    --color-destructive: hsl(0, 100%, 50%);
-    
-    --color-accent-foreground: hsl(0, 0%, 100%);
-    --color-accent: hsl(0, 0%, 12%);
-    
-    --color-muted-foreground: hsl(0, 0%, 60%);
-    --color-muted: hsl(0, 0%, 12%);
-    
-    --color-secondary-foreground: hsl(0, 0%, 100%);
-    --color-secondary: hsl(0, 0%, 12%);
-    
-    --color-primary-foreground: hsl(0, 0%, 100%);
+    --color-input: hsl(0 0% 88%);
+    --color-border: hsl(0 0% 90%);
+
+    --color-destructive-foreground: hsl(0 0% 100%);
+    --color-destructive: hsl(0 62% 31%);
+
+    --color-accent-foreground: hsl(0 0% 10%);
+    --color-accent: hsl(0 0% 96%);
+
+    --color-muted-foreground: hsl(0 0% 42%);
+    --color-muted: hsl(0 0% 96%);
+
+    --color-secondary-foreground: hsl(0 0% 12%);
+    --color-secondary: hsl(0 0% 96%);
+
+    --color-primary-foreground: hsl(0 0% 100%);
     --color-primary: #ff0055;
-    
-    --color-popover-foreground: hsl(0, 0%, 100%);
-    --color-popover: hsl(0, 0%, 5%);
-    
-    --color-card-foreground: hsl(0, 0%, 100%);
-    --color-card: hsl(0, 0%, 5%);
-    
-    --color-foreground: hsl(0, 0%, 100%);
-    --color-background: hsl(0, 0%, 0%);
-    
+
+    --color-popover-foreground: hsl(0 0% 12%);
+    --color-popover: hsl(0 0% 100%);
+
+    --color-card-foreground: hsl(0 0% 10%);
+    --color-card: hsl(0 0% 100%);
+
+    --color-foreground: hsl(0 0% 12%);
+    --color-background: hsl(0 0% 100%);
+
     --radius-sm: calc(var(--radius) - 4px);
     --radius-md: calc(var(--radius) - 2px);
     --radius-lg: var(--radius);
@@ -51,31 +50,106 @@
 }
 
 :root {
-    --radius: 0.75rem;
+    --radius: 0.5rem;
 }
 
 @layer base {
     * {
         @apply border-border outline-ring/50;
     }
+
     body {
-        font-family: 'Inter', 'Inter var', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-family: 'Inter', 'Inter var', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         @apply bg-background text-foreground antialiased;
-        font-feature-settings: "ss01", "ss02", "cv01", "cv02";
+        font-feature-settings: 'ss01', 'ss02', 'cv01', 'cv02';
     }
+
     ::selection {
         @apply bg-[#ff0055] text-white;
     }
-    
-    /* Custom Scrollbar */
+
     ::-webkit-scrollbar {
         width: 8px;
         height: 8px;
     }
+
     ::-webkit-scrollbar-track {
-        @apply bg-transparent;
+        @apply bg-background;
     }
+
     ::-webkit-scrollbar-thumb {
-        @apply bg-white/10 rounded-full hover:bg-white/20 transition-colors;
+        @apply rounded-full bg-zinc-200 transition-colors hover:bg-zinc-300;
+    }
+}
+
+@layer components {
+    .editorjs {
+        @apply text-zinc-700;
+    }
+
+    .editorjs .codex-editor {
+        background-color: theme('colors.white');
+    }
+
+    .editorjs .codex-editor__redactor {
+        padding-bottom: 4rem;
+    }
+
+    .editorjs .ce-block__content,
+    .editorjs .ce-toolbar__content {
+        max-width: 720px;
+    }
+
+    .editorjs .ce-paragraph {
+        font-size: 1rem;
+        line-height: 1.8;
+        color: #3f3f46;
+    }
+
+    .editorjs .ce-header {
+        font-family: 'Inter', sans-serif;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+        color: #0f172a;
+    }
+
+    .editorjs .ce-header[data-level='2'] {
+        font-size: clamp(1.25rem, 1.05rem + 0.6vw, 1.75rem);
+        line-height: 1.1;
+    }
+
+    .editorjs .ce-header[data-level='3'] {
+        font-size: clamp(1.5rem, 1.3rem + 0.6vw, 2rem);
+        line-height: 1.2;
+    }
+
+    .editorjs .ce-header[data-level='4'] {
+        font-size: clamp(1.25rem, 1.1rem + 0.4vw, 1.5rem);
+        line-height: 1.3;
+    }
+
+    .editorjs .ce-block {
+        padding: 0.35rem 0;
+    }
+
+    .editorjs .ce-toolbar__plus,
+    .editorjs .ce-toolbar__settings-btn {
+        border-radius: 999px;
+        border: 1px solid rgba(15, 23, 42, 0.08);
+        background-color: white;
+        color: #0f172a;
+    }
+
+    .editorjs .ce-list {
+        color: #3f3f46;
+        line-height: 1.7;
+    }
+
+    .editorjs .ce-list li {
+        margin-bottom: 0.35rem;
+    }
+
+    .editorjs .ce-list__item {
+        padding-left: 0.5rem;
     }
 }

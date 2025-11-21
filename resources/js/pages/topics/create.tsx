@@ -72,17 +72,23 @@ export default function TopicsCreate({ categories }: TopicsCreateProps) {
         return (
             <AppLayout breadcrumbs={breadcrumbs}>
                 <Head title="Neues Thema" />
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Kategorien erforderlich</CardTitle>
-                        <CardDescription>Lege zunächst mindestens eine Kategorie an.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Button asChild>
-                            <Link href="/categories">Zu den Kategorien</Link>
-                        </Button>
-                    </CardContent>
-                </Card>
+                <div className="px-6 py-10">
+                    <Card className="border-dashed border-zinc-200 bg-white text-center shadow-none">
+                        <CardHeader>
+                            <CardTitle className="text-xl font-semibold text-zinc-900">
+                                Kategorien erforderlich
+                            </CardTitle>
+                            <CardDescription>
+                                Lege zuerst mindestens eine Kategorie an, um Themen zu erstellen.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Button asChild className="bg-[#ff0055] text-white hover:bg-[#ff0055]/90">
+                                <Link href="/categories">Zu den Kategorien</Link>
+                            </Button>
+                        </CardContent>
+                    </Card>
+                </div>
             </AppLayout>
         );
     }
@@ -90,65 +96,83 @@ export default function TopicsCreate({ categories }: TopicsCreateProps) {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Neues Thema" />
-            <Card>
-                <CardHeader>
-                    <CardTitle>Neues Thema anlegen</CardTitle>
-                    <CardDescription>
-                        Formuliere dein Thema mit Editor.js und verknüpfe es mit einer Kategorie.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <form className="space-y-6" onSubmit={handleSubmit}>
-                        <div className="space-y-2">
-                            <Label htmlFor="title">Titel</Label>
-                            <Input
-                                id="title"
-                                name="title"
-                                value={form.data.title}
-                                onChange={(event) => form.setData('title', event.target.value)}
-                                placeholder="z. B. Kampagnenplanung Q1"
-                            />
-                            <InputError message={form.errors.title} />
-                        </div>
 
-                        <div className="space-y-2">
-                            <Label>Kategorie</Label>
-                            <Select
-                                value={form.data.category_id}
-                                onValueChange={(value) => form.setData('category_id', value)}
-                            >
-                                <SelectTrigger aria-label="Kategorie auswählen" aria-invalid={!!form.errors.category_id}>
-                                    <SelectValue placeholder="Kategorie auswählen" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {categories.map((category) => (
-                                        <SelectItem key={category.id} value={String(category.id)}>
-                                            {category.name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                            <InputError message={form.errors.category_id} />
-                        </div>
+            <div className="space-y-8 px-6 py-10">
+                <div className="space-y-3">
+                    <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#ff0055]">
+                        Neues Thema
+                    </p>
+                    <h1 className="text-4xl font-semibold tracking-tight text-zinc-900">
+                        Thema anlegen
+                    </h1>
+                    <p className="text-base text-zinc-500 max-w-3xl">
+                        Formuliere dein Thema mit Editor.js und strukturiere es per Kategorie für einen klaren Überblick.
+                    </p>
+                </div>
 
-                        <div className="space-y-3">
-                            <Label>Inhalt</Label>
-                            <RichTextEditor
-                                initialValue={form.data.content as OutputData}
-                                onChange={(data) => form.setData('content', data as EditorContent)}
-                            />
-                            <InputError message={form.errors.content} />
-                        </div>
+                <Card className="border-zinc-100 bg-white shadow-sm">
+                    <CardContent className="space-y-8 pt-6">
+                        <form className="space-y-6" onSubmit={handleSubmit}>
+                            <div className="space-y-2">
+                                <Label htmlFor="title" className="text-sm font-medium text-zinc-700">
+                                    Titel
+                                </Label>
+                                <Input
+                                    id="title"
+                                    name="title"
+                                    value={form.data.title}
+                                    onChange={(event) => form.setData('title', event.target.value)}
+                                    placeholder="z. B. Animation Essentials"
+                                    aria-invalid={!!form.errors.title}
+                                />
+                                <InputError message={form.errors.title} />
+                            </div>
 
-                        <div className="flex flex-wrap gap-3">
-                            <Button disabled={form.processing}>Speichern</Button>
-                            <Button type="button" variant="ghost" asChild>
-                                <Link href="/topics">Abbrechen</Link>
-                            </Button>
-                        </div>
-                    </form>
-                </CardContent>
-            </Card>
+                            <div className="space-y-2">
+                                <Label className="text-sm font-medium text-zinc-700">Kategorie</Label>
+                                <Select
+                                    value={form.data.category_id}
+                                    onValueChange={(value) => form.setData('category_id', value)}
+                                >
+                                    <SelectTrigger
+                                        aria-label="Kategorie auswählen"
+                                        aria-invalid={!!form.errors.category_id}
+                                        className="border-zinc-200"
+                                    >
+                                        <SelectValue placeholder="Kategorie auswählen" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {categories.map((category) => (
+                                            <SelectItem key={category.id} value={String(category.id)}>
+                                                {category.name}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                                <InputError message={form.errors.category_id} />
+                            </div>
+
+                            <div className="space-y-3">
+                                <Label className="text-sm font-medium text-zinc-700">Inhalt</Label>
+                                <RichTextEditor
+                                    initialValue={form.data.content as OutputData}
+                                    onChange={(data) => form.setData('content', data as EditorContent)}
+                                />
+                                <InputError message={form.errors.content} />
+                            </div>
+
+                            <div className="flex flex-wrap gap-3">
+                                <Button disabled={form.processing} className="bg-[#ff0055] text-white hover:bg-[#ff0055]/90">
+                                    Speichern
+                                </Button>
+                                <Button type="button" variant="ghost" className="text-zinc-500 hover:text-zinc-900" asChild>
+                                    <Link href="/topics">Abbrechen</Link>
+                                </Button>
+                            </div>
+                        </form>
+                    </CardContent>
+                </Card>
+            </div>
         </AppLayout>
     );
 }

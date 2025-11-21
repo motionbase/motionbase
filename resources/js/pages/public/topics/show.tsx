@@ -3,9 +3,9 @@ import PublicLayout from '@/layouts/public-layout';
 import { type Section, type Topic } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import type { OutputBlockData } from '@editorjs/editorjs';
-import { createElement, useMemo } from 'react';
+import { createElement, type ReactNode, useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import { ArrowLeft, Hash, List } from 'lucide-react';
+import { Hash, List } from 'lucide-react';
 
 interface PublicTopicShowProps {
     topic: Topic & {
@@ -13,6 +13,9 @@ interface PublicTopicShowProps {
         activeSection: Section | null;
     };
 }
+
+type EditorListItem = string | { content?: string; items?: EditorListItem[] | null };
+type ListStyle = 'ordered' | 'unordered';
 
 export default function PublicTopicShow({ topic }: PublicTopicShowProps) {
     const activeSection = topic.activeSection;
@@ -158,25 +161,31 @@ function renderBlocks(blocks: OutputBlockData[]) {
                     3: 'h3',
                     4: 'h4',
                 };
+                const headingClassMap: Record<typeof level, string> = {
+                    2: 'text-xl sm:text-3xl font-semibold tracking-tight text-zinc-900 leading-tight',
+                    3: 'text-lg sm:text-xl font-semibold text-zinc-900 leading-tight',
+                    4: 'text-base sm:text-lg font-semibold text-zinc-900',
+                };
 
                 return createElement(headingTagMap[level] ?? 'h2', {
                     key,
-                    className: 'scroll-mt-20 mt-12 first:mt-0 mb-4',
+                    className: cn(
+                        'scroll-mt-20 mt-12 first:mt-0 mb-4',
+                        headingClassMap[level] ?? '',
+                    ),
                     dangerouslySetInnerHTML: { __html: block.data.text ?? '' },
                 });
             }
 
             case 'list': {
-                const Tag = block.data.style === 'ordered' ? 'ol' : 'ul';
-                return createElement(
-                    Tag,
-                    {
-                        key,
-                        className: 'my-6 space-y-2 pl-6 marker:text-[#ff0055]',
-                    },
-                    block.data.items?.map((item: string, itemIndex: number) => (
-                        <li key={`${key}-${itemIndex}`} dangerouslySetInnerHTML={{ __html: item }} />
-                    )),
+                const style = block.data.style === 'ordered' ? 'ordered' : 'unordered';
+                return (
+                    <ul
+                        key={key}
+                        className="my-6 list-none space-y-2"
+                    >
+                        {renderListItems(block.data.items as EditorListItem[] | undefined, key, style)}
+                    </ul>
                 );
             }
 
@@ -190,6 +199,42 @@ function renderBlocks(blocks: OutputBlockData[]) {
                     />
                 );
         }
+    });
+}
+
+function renderListItems(
+    items: EditorListItem[] = [],
+    keyPrefix = '',
+    style: ListStyle = 'unordered',
+): ReactNode[] {
+    return items.map((item, index) => {
+        const itemKey = `${keyPrefix}-${index}`;
+        const content =
+            typeof item === 'string'
+                ? item
+                : typeof item?.content === 'string'
+                  ? item.content
+                  : '';
+        const childItems =
+            typeof item === 'object' && item !== null && Array.isArray(item.items)
+                ? (item.items as EditorListItem[])
+                : [];
+
+        const bullet = style === 'ordered' ? `${index + 1}.` : '–';
+
+        return (
+            <li key={itemKey} className="list-none space-y-1.5">
+                <div className="flex gap-3 text-zinc-900">
+                    <span className="text-zinc-900 font-normal">{bullet}</span>
+                    <div className="flex-1" dangerouslySetInnerHTML={{ __html: content }} />
+                </div>
+                {childItems.length > 0 && (
+                    <ul className="ml-6 list-none space-y-1.5">
+                        {renderListItems(childItems, `${itemKey}-child`, style)}
+                    </ul>
+                )}
+            </li>
+        );
     });
 }
 

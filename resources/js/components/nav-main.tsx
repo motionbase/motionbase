@@ -28,6 +28,7 @@ export function NavMain({ groups = [] }: { groups: NavGroup[] }) {
                                     asChild
                                     isActive={page.url.startsWith(resolveUrl(item.href))}
                                     tooltip={{ children: item.title }}
+                                    className="text-sm font-medium text-zinc-500 transition-colors hover:bg-zinc-50 hover:text-zinc-900 data-[active=true]:bg-[#ff0055]/10 data-[active=true]:text-zinc-900"
                                 >
                                     <Link href={item.href} prefetch>
                                         {item.icon && <item.icon />}

@@ -115,13 +115,18 @@ export function RichTextEditor({
     }, [placeholder, readOnly]);
 
     return (
-        <div className={cn('relative min-h-[320px] rounded-lg border bg-background', className)}>
+        <div
+            className={cn(
+                'relative min-h-[320px] rounded-2xl border border-zinc-200 bg-white shadow-sm transition focus-within:border-zinc-900 focus-within:shadow-md',
+                className,
+            )}
+        >
             {!isReady && (
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
                     <Spinner className="size-6" />
                 </div>
             )}
-            <div className="editorjs h-full w-full px-4 py-3" ref={holderRef} />
+            <div className="editorjs h-full w-full px-4 py-4 sm:px-6 sm:py-6" ref={holderRef} />
         </div>
     );
 }
