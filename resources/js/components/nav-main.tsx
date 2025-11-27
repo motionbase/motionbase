@@ -20,25 +20,36 @@ export function NavMain({ groups = [] }: { groups: NavGroup[] }) {
         <>
             {groups.map((group) => (
                 <SidebarGroup key={group.label} className="px-2 py-0">
-                    <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
-            <SidebarMenu>
-                        {group.items.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton
-                            asChild
-                                    isActive={page.url.startsWith(resolveUrl(item.href))}
-                            tooltip={{ children: item.title }}
-                                    className="text-sm font-medium text-zinc-500 transition-colors hover:bg-zinc-50 hover:text-zinc-900 data-[active=true]:bg-[#ff0055]/10 data-[active=true]:text-zinc-900"
-                        >
-                            <Link href={item.href} prefetch>
-                                {item.icon && <item.icon />}
-                                <span>{item.title}</span>
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                ))}
-            </SidebarMenu>
-        </SidebarGroup>
+                    <SidebarGroupLabel className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                        {group.label}
+                    </SidebarGroupLabel>
+                    <SidebarMenu>
+                        {group.items.map((item) => {
+                            const isActive = page.url.startsWith(resolveUrl(item.href));
+                            return (
+                                <SidebarMenuItem key={item.title}>
+                                    <SidebarMenuButton
+                                        asChild
+                                        isActive={isActive}
+                                        tooltip={{ children: item.title }}
+                                        className={`
+                                            h-9 rounded-lg text-sm font-medium transition-colors
+                                            ${isActive
+                                                ? 'bg-zinc-900 text-white hover:bg-zinc-800'
+                                                : 'text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900'
+                                            }
+                                        `}
+                                    >
+                                        <Link href={item.href} prefetch>
+                                            {item.icon && <item.icon className="h-4 w-4" />}
+                                            <span>{item.title}</span>
+                                        </Link>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            );
+                        })}
+                    </SidebarMenu>
+                </SidebarGroup>
             ))}
         </>
     );

@@ -1,7 +1,5 @@
 import InputError from '@/components/input-error';
-import { RichTextEditor } from '@/components/editor/rich-text-editor';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -14,8 +12,8 @@ import {
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type Category } from '@/types';
 import { Head, Link, useForm } from '@inertiajs/react';
-import type { OutputData } from '@editorjs/editorjs';
-import { type FormEvent, useMemo } from 'react';
+import { ArrowLeft, BookOpen, Layers, Sparkles } from 'lucide-react';
+import { type FormEvent } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     { title: 'Themen', href: '/topics' },
@@ -26,68 +24,49 @@ interface TopicsCreateProps {
     categories: Pick<Category, 'id' | 'name'>[];
 }
 
-type EditorContent = {
-    time: number;
-    blocks: Array<Record<string, unknown>>;
-    version: string;
-};
-
 type TopicFormData = {
     title: string;
     category_id: string;
-    content: EditorContent;
 };
 
 export default function TopicsCreate({ categories }: TopicsCreateProps) {
-    const defaultContent = useMemo(
-        (): EditorContent => ({
-            time: Date.now(),
-            blocks: [
-                {
-                    type: 'paragraph',
-                    data: {
-                        text: 'Starte mit einer Einordnung oder einer Leitfrage…',
-                    },
-                },
-            ],
-            version: '2.31.0',
-        }),
-        [],
-    );
-
     const form = useForm<TopicFormData>({
         title: '',
         category_id: categories[0]?.id?.toString() ?? '',
-        content: defaultContent,
     });
 
     const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        form.post('/topics', {
-            onSuccess: () => form.reset('title', 'category_id', 'content'),
-        });
+        form.post('/topics');
     };
 
     if (categories.length === 0) {
         return (
             <AppLayout breadcrumbs={breadcrumbs}>
                 <Head title="Neues Thema" />
-                <div className="px-6 py-10">
-                    <Card className="border-dashed border-zinc-200 bg-white text-center shadow-none">
-                        <CardHeader>
-                            <CardTitle className="text-xl font-semibold text-zinc-900">
+                <div className="min-h-[calc(100vh-80px)] bg-zinc-50/50">
+                    <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 py-16">
+                        <div className="mx-auto max-w-md text-center">
+                            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-100">
+                                <Layers className="h-8 w-8 text-amber-600" />
+                            </div>
+                            <h1 className="mt-6 text-2xl font-bold text-zinc-900">
                                 Kategorien erforderlich
-                            </CardTitle>
-                            <CardDescription>
-                                Lege zuerst mindestens eine Kategorie an, um Themen zu erstellen.
-                            </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Button asChild className="bg-[#ff0055] text-white hover:bg-[#ff0055]/90">
-                                <Link href="/categories">Zu den Kategorien</Link>
+                            </h1>
+                            <p className="mt-3 text-zinc-500">
+                                Lege zuerst mindestens eine Kategorie an, um Themen zu erstellen und zu organisieren.
+                            </p>
+                            <Button
+                                className="mt-8 h-11 gap-2 bg-zinc-900 px-6 text-white hover:bg-zinc-800"
+                                asChild
+                            >
+                                <Link href="/categories">
+                                    <Layers className="h-4 w-4" />
+                                    Kategorien verwalten
+                                </Link>
                             </Button>
-                        </CardContent>
-                    </Card>
+                        </div>
+                    </div>
                 </div>
             </AppLayout>
         );
@@ -97,83 +76,138 @@ export default function TopicsCreate({ categories }: TopicsCreateProps) {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Neues Thema" />
 
-            <div className="space-y-8 px-6 py-10">
-                <div className="space-y-3">
-                    <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[#ff0055]">
-                        Neues Thema
-                    </p>
-                    <h1 className="text-4xl font-semibold tracking-tight text-zinc-900">
-                        Thema anlegen
-                    </h1>
-                    <p className="text-base text-zinc-500 max-w-3xl">
-                        Formuliere dein Thema mit Editor.js und strukturiere es per Kategorie für einen klaren Überblick.
-                    </p>
+            <div className="min-h-[calc(100vh-80px)] bg-zinc-50/50">
+                {/* Header */}
+                <div className="border-b border-zinc-100 bg-white px-6 py-8 lg:px-10">
+                    <div className="mx-auto max-w-2xl">
+                        <Link
+                            href="/topics"
+                            className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-900"
+                        >
+                            <ArrowLeft className="h-4 w-4" />
+                            Zurück zu Themen
+                        </Link>
+                        <div className="mt-4 flex items-center gap-4">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-900">
+                                <Sparkles className="h-6 w-6 text-white" />
+                            </div>
+                            <div>
+                                <h1 className="text-2xl font-bold text-zinc-900">
+                                    Neues Thema erstellen
+                                </h1>
+                                <p className="text-zinc-500">
+                                    Starte mit einem Titel und einer Kategorie
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <Card className="border-zinc-100 bg-white shadow-sm">
-                    <CardContent className="space-y-8 pt-6">
-                        <form className="space-y-6" onSubmit={handleSubmit}>
-                            <div className="space-y-2">
-                                <Label htmlFor="title" className="text-sm font-medium text-zinc-700">
-                                    Titel
-                                </Label>
-                                <Input
-                                    id="title"
-                                    name="title"
-                                    value={form.data.title}
-                                    onChange={(event) => form.setData('title', event.target.value)}
-                                    placeholder="z. B. Animation Essentials"
-                                    aria-invalid={!!form.errors.title}
-                                />
-                                <InputError message={form.errors.title} />
-                            </div>
+                {/* Form */}
+                <div className="px-6 py-10 lg:px-10">
+                    <div className="mx-auto max-w-2xl">
+                        <form onSubmit={handleSubmit}>
+                            <div className="rounded-2xl border border-zinc-100 bg-white p-8 shadow-sm">
+                                <div className="space-y-6">
+                                    <div className="space-y-2">
+                                        <Label
+                                            htmlFor="title"
+                                            className="text-sm font-medium text-zinc-700"
+                                        >
+                                            Titel
+                                        </Label>
+                                        <Input
+                                            id="title"
+                                            name="title"
+                                            value={form.data.title}
+                                            onChange={(event) =>
+                                                form.setData('title', event.target.value)
+                                            }
+                                            placeholder="z. B. Einführung in React"
+                                            className="h-11"
+                                            autoFocus
+                                        />
+                                        <InputError message={form.errors.title} />
+                                    </div>
 
-                            <div className="space-y-2">
-                                <Label className="text-sm font-medium text-zinc-700">Kategorie</Label>
-                                <Select
-                                    value={form.data.category_id}
-                                    onValueChange={(value) => form.setData('category_id', value)}
-                                >
-                                    <SelectTrigger
-                                        aria-label="Kategorie auswählen"
-                                        aria-invalid={!!form.errors.category_id}
-                                        className="border-zinc-200"
+                                    <div className="space-y-2">
+                                        <Label className="text-sm font-medium text-zinc-700">
+                                            Kategorie
+                                        </Label>
+                                        <Select
+                                            value={form.data.category_id}
+                                            onValueChange={(value) =>
+                                                form.setData('category_id', value)
+                                            }
+                                        >
+                                            <SelectTrigger className="h-11">
+                                                <SelectValue placeholder="Kategorie auswählen" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {categories.map((category) => (
+                                                    <SelectItem
+                                                        key={category.id}
+                                                        value={String(category.id)}
+                                                    >
+                                                        {category.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <InputError message={form.errors.category_id} />
+                                    </div>
+                                </div>
+
+                                <div className="mt-8 flex items-center justify-between border-t border-zinc-100 pt-6">
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        className="text-zinc-500 hover:text-zinc-900"
+                                        asChild
                                     >
-                                        <SelectValue placeholder="Kategorie auswählen" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {categories.map((category) => (
-                                            <SelectItem key={category.id} value={String(category.id)}>
-                                                {category.name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                <InputError message={form.errors.category_id} />
-                            </div>
-
-                            <div className="space-y-3">
-                                <Label className="text-sm font-medium text-zinc-700">Inhalt</Label>
-                                <RichTextEditor
-                                    initialValue={form.data.content as OutputData}
-                                    onChange={(data) => form.setData('content', data as EditorContent)}
-                                />
-                                <InputError message={form.errors.content} />
-                            </div>
-
-                            <div className="flex flex-wrap gap-3">
-                                <Button disabled={form.processing} className="bg-[#ff0055] text-white hover:bg-[#ff0055]/90">
-                                    Speichern
-                                </Button>
-                                <Button type="button" variant="ghost" className="text-zinc-500 hover:text-zinc-900" asChild>
-                                    <Link href="/topics">Abbrechen</Link>
-                                </Button>
+                                        <Link href="/topics">Abbrechen</Link>
+                                    </Button>
+                                    <Button
+                                        type="submit"
+                                        disabled={form.processing}
+                                        className="h-10 gap-2 bg-zinc-900 px-6 text-white hover:bg-zinc-800"
+                                    >
+                                        <BookOpen className="h-4 w-4" />
+                                        {form.processing ? 'Erstelle...' : 'Thema erstellen'}
+                                    </Button>
+                                </div>
                             </div>
                         </form>
-                    </CardContent>
-                </Card>
+
+                        {/* Info Card */}
+                        <div className="mt-6 rounded-xl border border-zinc-100 bg-white p-6">
+                            <h3 className="text-sm font-semibold text-zinc-900">
+                                Was passiert als Nächstes?
+                            </h3>
+                            <ul className="mt-3 space-y-2 text-sm text-zinc-500">
+                                <li className="flex items-start gap-2">
+                                    <span className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-xs font-medium text-zinc-600">
+                                        1
+                                    </span>
+                                    Nach dem Erstellen wirst du zum Editor weitergeleitet
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <span className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-xs font-medium text-zinc-600">
+                                        2
+                                    </span>
+                                    Ein erstes Kapitel mit einem Abschnitt wird automatisch angelegt
+                                </li>
+                                <li className="flex items-start gap-2">
+                                    <span className="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-xs font-medium text-zinc-600">
+                                        3
+                                    </span>
+                                    Füge weitere Kapitel und Abschnitte nach Bedarf hinzu
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
             </div>
         </AppLayout>
     );
 }
-

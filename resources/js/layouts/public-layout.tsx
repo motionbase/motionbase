@@ -1,8 +1,8 @@
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Link } from '@inertiajs/react';
-import { Github } from 'lucide-react';
-import { type PropsWithChildren, type ReactNode } from 'react';
+import { Github, Menu, X } from 'lucide-react';
+import { type PropsWithChildren, type ReactNode, useState } from 'react';
 
 interface PublicLayoutProps {
     children: ReactNode;
@@ -10,6 +10,7 @@ interface PublicLayoutProps {
     description?: string;
     className?: string;
     stickyFooter?: boolean;
+    fullWidth?: boolean;
 }
 
 export default function PublicLayout({
@@ -18,58 +19,128 @@ export default function PublicLayout({
     description,
     className,
     stickyFooter = false,
+    fullWidth = false,
 }: PropsWithChildren<PublicLayoutProps>) {
-    return (
-        <div className="min-h-screen bg-white text-zinc-950 font-sans antialiased selection:bg-[#ff0055] selection:text-white">
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-            <header className="sticky top-0 z-50 w-full border-b border-zinc-100 bg-white/85 backdrop-blur-md">
-                <div className="mx-auto flex h-20 w-full max-w-[1600px] items-center justify-between px-6">
-                    <Link 
-                        href="/" 
-                        className="flex items-center gap-2 text-lg font-bold tracking-tight text-zinc-900 hover:opacity-80 transition-opacity"
+    return (
+        <div className="min-h-screen bg-white text-zinc-950 font-sans antialiased selection:bg-zinc-900 selection:text-white">
+            {/* Header */}
+            <header className="sticky top-0 z-50 w-full border-b border-zinc-100 bg-white/95 backdrop-blur-sm">
+                <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+                    <Link
+                        href="/"
+                        className="flex items-center gap-2.5 text-xl font-bold tracking-tight text-zinc-900 hover:opacity-80 transition-opacity"
                     >
-                        MotionBase
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-900">
+                            <span className="text-sm font-bold text-white">M</span>
+                        </div>
+                        <span className="hidden sm:inline">MotionBase</span>
                     </Link>
-                    
-                    <div className="flex items-center gap-4">
-                        <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-zinc-600">
-                            <Link href="/themen" className="hover:text-zinc-900 transition-colors">Themen</Link>
-                            <a href="#" className="hover:text-zinc-900 transition-colors">Features</a>
-                            <a href="#" className="hover:text-zinc-900 transition-colors">Community</a>
-                        </nav>
-                        <div className="h-4 w-px bg-zinc-200 hidden md:block" />
-                        <div className="flex gap-3">
-                            <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100" 
+
+                    {/* Desktop Navigation */}
+                    <nav className="hidden md:flex items-center gap-1">
+                        <Link
+                            href="/themen"
+                            className="rounded-lg px-4 py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
+                        >
+                            Themen
+                        </Link>
+                        <a
+                            href="https://github.com/motionbase/motionbase"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="rounded-lg px-4 py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
+                        >
+                            GitHub
+                        </a>
+                    </nav>
+
+                    <div className="flex items-center gap-3">
+                        <div className="hidden md:flex items-center gap-2">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-9 px-4 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100"
                                 asChild
                             >
-                                <Link href="/login">Login</Link>
+                                <Link href="/login">Anmelden</Link>
                             </Button>
-                            <Button 
-                                size="sm" 
-                                className="bg-[#ff0055] text-white hover:bg-[#ff0055]/90 shadow-[0_4px_14px_-4px_#ff0055]" 
+                            <Button
+                                size="sm"
+                                className="h-9 px-4 bg-zinc-900 text-white hover:bg-zinc-800"
                                 asChild
                             >
-                                <Link href="/register">Get Started</Link>
+                                <Link href="/register">Registrieren</Link>
                             </Button>
                         </div>
+
+                        {/* Mobile Menu Button */}
+                        <button
+                            type="button"
+                            className="md:hidden flex h-9 w-9 items-center justify-center rounded-lg text-zinc-600 hover:bg-zinc-100"
+                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                        >
+                            {mobileMenuOpen ? (
+                                <X className="h-5 w-5" />
+                            ) : (
+                                <Menu className="h-5 w-5" />
+                            )}
+                        </button>
                     </div>
                 </div>
+
+                {/* Mobile Menu */}
+                {mobileMenuOpen && (
+                    <div className="md:hidden border-t border-zinc-100 bg-white px-4 py-4">
+                        <nav className="flex flex-col gap-1">
+                            <Link
+                                href="/themen"
+                                className="rounded-lg px-4 py-3 text-sm font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
+                                onClick={() => setMobileMenuOpen(false)}
+                            >
+                                Themen
+                            </Link>
+                            <a
+                                href="https://github.com/motionbase/motionbase"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="rounded-lg px-4 py-3 text-sm font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
+                            >
+                                GitHub
+                            </a>
+                            <div className="mt-3 flex flex-col gap-2 border-t border-zinc-100 pt-4">
+                                <Button
+                                    variant="outline"
+                                    className="w-full justify-center"
+                                    asChild
+                                >
+                                    <Link href="/login">Anmelden</Link>
+                                </Button>
+                                <Button
+                                    className="w-full justify-center bg-zinc-900 text-white hover:bg-zinc-800"
+                                    asChild
+                                >
+                                    <Link href="/register">Registrieren</Link>
+                                </Button>
+                            </div>
+                        </nav>
+                    </div>
+                )}
             </header>
 
+            {/* Hero Section */}
             {(headline || description) && (
-                <div className="relative border-b border-zinc-100 bg-zinc-50/50">
-                    <div className="mx-auto max-w-7xl px-6 py-20 lg:py-28">
+                <div className="border-b border-zinc-100 bg-zinc-50">
+                    <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
                         <div className="max-w-3xl">
                             {headline && (
-                                <h1 className="text-4xl font-bold tracking-tight text-zinc-900 sm:text-6xl mb-6">
+                                <h1 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl lg:text-5xl">
                                     {headline}
                                 </h1>
                             )}
                             {description && (
-                                <p className="text-lg text-zinc-600 leading-relaxed max-w-2xl">
+                                <p className="mt-4 text-base text-zinc-600 sm:text-lg lg:mt-6">
                                     {description}
                                 </p>
                             )}
@@ -78,35 +149,38 @@ export default function PublicLayout({
                 </div>
             )}
 
+            {/* Main Content */}
             <main
                 className={cn(
-                    'relative mx-auto w-full max-w-[1600px] px-6 lg:px-12',
-                    stickyFooter ? 'pt-0 pb-0' : 'pt-12 pb-16',
+                    'relative mx-auto w-full',
+                    fullWidth ? 'max-w-none' : 'max-w-7xl px-4 sm:px-6 lg:px-8',
+                    stickyFooter ? '' : 'py-10 sm:py-12 lg:py-16',
                     className,
                 )}
             >
                 {children}
             </main>
 
+            {/* Footer */}
             <footer
                 className={cn(
-                    'h-[60px] w-full border-t border-zinc-100 bg-white',
-                    stickyFooter && 'sticky bottom-0 z-50 bg-white/90 backdrop-blur-md',
+                    'border-t border-zinc-100 bg-white',
+                    stickyFooter ? 'sticky bottom-0 z-40' : 'mt-auto',
                 )}
             >
-                <div className="mx-auto flex h-full w-full max-w-[1600px] items-center justify-between px-6 text-sm text-zinc-500">
-                    <span>© {new Date().getFullYear()} MotionBase</span>
-                            <div className="flex items-center gap-4">
-                                <a
-                                    href="https://github.com/motionbase/motionbase"
-                                    className="flex items-center gap-2 hover:text-zinc-900 transition-colors"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                >
-                                    <Github className="h-4 w-4" />
-                                    Github
-                                </a>
-                            </div>
+                <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+                    <span className="text-sm text-zinc-500">
+                        © {new Date().getFullYear()} MotionBase
+                    </span>
+                    <a
+                        href="https://github.com/motionbase/motionbase"
+                        className="flex items-center gap-2 text-sm text-zinc-500 transition-colors hover:text-zinc-900"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                    >
+                        <Github className="h-4 w-4" />
+                        <span className="hidden sm:inline">GitHub</span>
+                    </a>
                 </div>
             </footer>
         </div>

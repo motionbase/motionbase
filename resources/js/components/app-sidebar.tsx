@@ -13,7 +13,7 @@ import {
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, Folder, LayoutGrid, NotebookPen, Tag } from 'lucide-react';
+import { BookOpen, Github, HelpCircle, LayoutGrid, Layers, NotebookPen } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -33,24 +33,24 @@ const contentNavItems: NavItem[] = [
     {
         title: 'Kategorien',
         href: '/categories',
-        icon: Tag,
+        icon: Layers,
     },
 ];
 
 const navGroups: NavGroup[] = [
-    { label: 'Arbeitsbereich', items: mainNavItems },
+    { label: 'Übersicht', items: mainNavItems },
     { label: 'Inhalte', items: contentNavItems },
 ];
 
 const footerNavItems: NavItem[] = [
     {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: Folder,
+        title: 'GitHub',
+        href: 'https://github.com/motionbase/motionbase',
+        icon: Github,
     },
     {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
+        title: 'Dokumentation',
+        href: 'https://github.com/motionbase/motionbase#readme',
         icon: BookOpen,
     },
 ];
@@ -60,12 +60,16 @@ export function AppSidebar() {
         <Sidebar
             collapsible="icon"
             variant="inset"
-            className="border-r border-zinc-100 bg-white/95 text-zinc-900 shadow-sm supports-[backdrop-filter]:bg-white/85"
+            className="border-r border-zinc-100 bg-white"
         >
             <SidebarHeader className="border-b border-zinc-100 px-4 py-4">
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton size="lg" asChild className="text-lg font-semibold tracking-tight text-zinc-900">
+                        <SidebarMenuButton
+                            size="lg"
+                            asChild
+                            className="text-lg font-semibold tracking-tight text-zinc-900 hover:bg-transparent"
+                        >
                             <Link href={dashboard()} prefetch>
                                 <AppLogo />
                             </Link>
@@ -74,11 +78,11 @@ export function AppSidebar() {
                 </SidebarMenu>
             </SidebarHeader>
 
-            <SidebarContent className="px-2 py-6">
+            <SidebarContent className="px-2 py-4">
                 <NavMain groups={navGroups} />
             </SidebarContent>
 
-            <SidebarFooter className="gap-6 border-t border-zinc-100 px-4 py-5">
+            <SidebarFooter className="gap-4 border-t border-zinc-100 px-4 py-4">
                 <NavFooter items={footerNavItems} className="mt-auto" />
                 <NavUser />
             </SidebarFooter>

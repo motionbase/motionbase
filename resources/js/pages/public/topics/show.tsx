@@ -119,17 +119,17 @@ export default function PublicTopicShow({ topic }: PublicTopicShowProps) {
     );
 
     return (
-        <PublicLayout stickyFooter>
+        <PublicLayout stickyFooter fullWidth>
             <Head title={`${topic.title} – ${activeSection?.title ?? 'Thema'}`} />
 
-            <div className="relative -mx-6 lg:-mx-12 border-x border-zinc-100 bg-white lg:min-h-[calc(100vh-140px)] lg:overflow-hidden">
+            <div className="relative bg-white lg:min-h-[calc(100vh-128px)] lg:overflow-hidden">
                 <div
                     className={cn(
                         'grid',
                         'lg:grid-cols-[320px_minmax(0,1fr)_320px]'
                     )}
                 >
-                    <aside className="border-b border-zinc-100 px-4 py-6 lg:border-b-0 lg:border-r lg:px-6 lg:py-10 flex flex-col gap-6 lg:sticky lg:top-20 lg:max-h-[calc(100vh-140px)] lg:overflow-y-auto lg:scrollbar-thin lg:scrollbar-thumb-zinc-200 lg:bg-white">
+                    <aside className="border-b border-zinc-100 px-4 py-6 lg:border-b-0 lg:border-r lg:px-6 lg:py-8 flex flex-col gap-6 lg:sticky lg:top-16 lg:max-h-[calc(100vh-128px)] lg:overflow-y-auto lg:bg-white">
                         <div className="space-y-1.5 border-b border-zinc-100 pb-6 -mx-4 lg:-mx-6 px-4 lg:px-6">
                             <p className="text-base font-semibold text-zinc-900 leading-snug mb-0">
                                 {topic.title}
@@ -218,7 +218,7 @@ export default function PublicTopicShow({ topic }: PublicTopicShowProps) {
 
                     <section
                         ref={contentRef}
-                        className="px-4 py-8 sm:px-8 lg:px-12 lg:py-12 lg:max-h-[calc(100vh-140px)] lg:overflow-y-auto lg:scrollbar-thin lg:scrollbar-thumb-zinc-200"
+                        className="px-4 py-8 sm:px-8 lg:px-12 lg:py-10 lg:max-h-[calc(100vh-128px)] lg:overflow-y-auto"
                     >
                         <header className="pb-6 space-y-3">
                             <div className="flex items-center gap-2 text-xs font-medium text-[#ff0055] uppercase tracking-wider">
@@ -235,7 +235,7 @@ export default function PublicTopicShow({ topic }: PublicTopicShowProps) {
                         </div>
                     </section>
 
-                    <aside className="hidden lg:flex border-t border-zinc-100 px-6 py-10 flex-col gap-4 lg:border-t-0 lg:border-l lg:sticky lg:top-20 lg:max-h-[calc(100vh-140px)] lg:overflow-y-auto lg:scrollbar-thin lg:scrollbar-thumb-zinc-200 lg:bg-white">
+                    <aside className="hidden lg:flex border-t border-zinc-100 px-6 py-8 flex-col gap-4 lg:border-t-0 lg:border-l lg:sticky lg:top-16 lg:max-h-[calc(100vh-128px)] lg:overflow-y-auto lg:bg-white">
                         <div className="flex items-center justify-between">
                             <h4 className="text-xs font-bold uppercase tracking-widest text-zinc-400 flex items-center gap-2">
                                 <Hash className="w-3 h-3" /> Auf dieser Seite
