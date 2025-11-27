@@ -28,21 +28,21 @@ export default function Welcome({
                             MotionBase
                         </div>
                         <nav className="flex items-center gap-4">
-                            {auth.user ? (
+                        {auth.user ? (
                                 <Button asChild variant="secondary" className="bg-zinc-100 text-zinc-900 hover:bg-zinc-200">
                                     <Link href="/dashboard">Dashboard öffnen</Link>
                                 </Button>
-                            ) : (
-                                <>
+                        ) : (
+                            <>
                                     <Link href="/login" className="text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors">
                                         Login
                                     </Link>
                                     <Button asChild className="bg-[#ff0055] text-white hover:bg-[#ff0055]/90 shadow-[0_4px_14px_-4px_#ff0055]">
                                         <Link href="/register">Starten</Link>
                                     </Button>
-                                </>
-                            )}
-                        </nav>
+                            </>
+                        )}
+                    </nav>
                     </div>
                 </header>
 
@@ -62,7 +62,7 @@ export default function Welcome({
                             <span className="text-transparent bg-clip-text bg-gradient-to-r from-zinc-900 to-zinc-500">
                                 Einfach und Schnell.
                             </span>
-                        </h1>
+                            </h1>
                         
                         <p className="mx-auto max-w-2xl text-lg text-zinc-600 mb-12 leading-relaxed">
                             Erstelle interaktive Kurse, verwalte deine Lernenden und behalte den Fortschritt im Auge. 
@@ -119,8 +119,8 @@ export default function Welcome({
                                 </p>
                             </div>
                         </div>
-                    </div>
-                </main>
+                        </div>
+                    </main>
 
                 <footer className="border-t border-zinc-100 bg-white py-12 text-center">
                     <p className="text-sm text-zinc-500">

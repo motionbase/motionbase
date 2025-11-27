@@ -23,18 +23,20 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
     ArrowLeft,
+    Check,
     ChevronDown,
     ChevronRight,
     FileText,
     FolderOpen,
-    GripVertical,
     MoreHorizontal,
     PanelLeftClose,
     PanelLeftOpen,
+    Pencil,
     Plus,
     Save,
     Settings,
     Trash2,
+    X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
@@ -148,6 +150,28 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
     const totalSections = topic.chapters.reduce((acc, ch) => acc + ch.sections.length, 0);
     const hasUnsavedChanges = sectionForm.isDirty;
 
+    // Chapter editing state
+    const [editingChapterId, setEditingChapterId] = useState<number | null>(null);
+    const [editingChapterTitle, setEditingChapterTitle] = useState('');
+
+    const handleStartEditChapter = (chapter: Chapter) => {
+        setEditingChapterId(chapter.id);
+        setEditingChapterTitle(chapter.title);
+    };
+
+    const handleSaveChapterTitle = (chapterId: number) => {
+        if (editingChapterTitle.trim()) {
+            router.patch(`/chapters/${chapterId}`, { title: editingChapterTitle }, { preserveScroll: true });
+        }
+        setEditingChapterId(null);
+        setEditingChapterTitle('');
+    };
+
+    const handleCancelEditChapter = () => {
+        setEditingChapterId(null);
+        setEditingChapterTitle('');
+    };
+
     return (
         <>
             <Head title={`Bearbeiten: ${topic.title}`} />
@@ -251,6 +275,7 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                             <div className="space-y-2">
                                 {topic.chapters.map((chapter, chapterIndex) => {
                                     const isExpanded = expandedChapters.has(chapter.id);
+                                    const isEditing = editingChapterId === chapter.id;
                                     return (
                                         <div key={chapter.id} className="rounded-lg bg-white shadow-sm">
                                             <div className="flex items-center gap-1 p-2">
@@ -265,33 +290,76 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                                                         <ChevronRight className="h-4 w-4" />
                                                     )}
                                                 </button>
-                                                <FolderOpen className="h-4 w-4 text-amber-500" />
-                                                <span className="flex-1 truncate text-sm font-medium text-zinc-700">
-                                                    {chapter.title}
-                                                </span>
-                                                <span className="rounded-full bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500">
-                                                    {chapter.sections.length}
-                                                </span>
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger asChild>
-                                                        <button className="flex h-6 w-6 items-center justify-center rounded text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600">
-                                                            <MoreHorizontal className="h-4 w-4" />
-                                                        </button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end" className="w-44">
-                                                        <DropdownMenuItem onClick={() => handleCreateSection(chapter.id)}>
-                                                            <Plus className="mr-2 h-4 w-4" />
-                                                            Abschnitt
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem
-                                                            className="text-red-600 focus:text-red-600"
-                                                            onClick={() => handleDeleteChapter(chapter.id)}
+                                                <FolderOpen className="h-4 w-4 shrink-0 text-amber-500" />
+                                                
+                                                {isEditing ? (
+                                                    <div className="flex flex-1 items-center gap-1">
+                                                        <input
+                                                            type="text"
+                                                            value={editingChapterTitle}
+                                                            onChange={(e) => setEditingChapterTitle(e.target.value)}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter') {
+                                                                    handleSaveChapterTitle(chapter.id);
+                                                                } else if (e.key === 'Escape') {
+                                                                    handleCancelEditChapter();
+                                                                }
+                                                            }}
+                                                            className="h-6 flex-1 rounded border border-zinc-300 bg-white px-2 text-sm font-medium text-zinc-700 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
+                                                            autoFocus
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleSaveChapterTitle(chapter.id)}
+                                                            className="flex h-6 w-6 items-center justify-center rounded text-green-600 hover:bg-green-50"
                                                         >
-                                                            <Trash2 className="mr-2 h-4 w-4" />
-                                                            Löschen
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
+                                                            <Check className="h-4 w-4" />
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={handleCancelEditChapter}
+                                                            className="flex h-6 w-6 items-center justify-center rounded text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
+                                                        >
+                                                            <X className="h-4 w-4" />
+                                                        </button>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <span
+                                                            className="flex-1 cursor-pointer truncate text-sm font-medium text-zinc-700 hover:text-zinc-900"
+                                                            onDoubleClick={() => handleStartEditChapter(chapter)}
+                                                        >
+                                                            {chapter.title}
+                                                        </span>
+                                                        <span className="rounded-full bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500">
+                                                            {chapter.sections.length}
+                                                        </span>
+                                                        <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <button className="flex h-6 w-6 items-center justify-center rounded text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600">
+                                                                    <MoreHorizontal className="h-4 w-4" />
+                                                                </button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end" className="w-44">
+                                                                <DropdownMenuItem onClick={() => handleStartEditChapter(chapter)}>
+                                                                    <Pencil className="mr-2 h-4 w-4" />
+                                                                    Umbenennen
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem onClick={() => handleCreateSection(chapter.id)}>
+                                                                    <Plus className="mr-2 h-4 w-4" />
+                                                                    Abschnitt
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem
+                                                                    className="text-red-600 focus:text-red-600"
+                                                                    onClick={() => handleDeleteChapter(chapter.id)}
+                                                                >
+                                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                                    Löschen
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </>
+                                                )}
                                             </div>
 
                                             {isExpanded && (
