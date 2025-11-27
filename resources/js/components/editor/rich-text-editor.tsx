@@ -145,19 +145,28 @@ export function RichTextEditor({
         };
     }, [placeholder, readOnly]);
 
+    const isGutenbergStyle = className?.includes('gutenberg-editor');
+
     return (
         <div
             className={cn(
-                'relative min-h-[320px] rounded-2xl border border-zinc-200 bg-white shadow-sm transition focus-within:border-zinc-900 focus-within:shadow-md',
+                'relative min-h-[320px] transition',
+                !isGutenbergStyle && 'rounded-2xl border border-zinc-200 bg-white shadow-sm focus-within:border-zinc-900 focus-within:shadow-md',
                 className,
             )}
         >
             {!isReady && (
                 <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                    <Spinner className="size-6" />
+                    <Spinner className="size-6 text-zinc-400" />
                 </div>
             )}
-            <div className="editorjs h-full w-full px-4 py-4 sm:px-6 sm:py-6" ref={holderRef} />
+            <div
+                className={cn(
+                    'editorjs h-full w-full',
+                    isGutenbergStyle ? 'py-2' : 'px-4 py-4 sm:px-6 sm:py-6',
+                )}
+                ref={holderRef}
+            />
         </div>
     );
 }

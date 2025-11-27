@@ -1,11 +1,11 @@
 import { Button } from '@/components/ui/button';
 import PublicLayout from '@/layouts/public-layout';
-import { type Section, type Topic } from '@/types';
+import { type Chapter, type Section, type Topic } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import type { OutputBlockData } from '@editorjs/editorjs';
-import { createElement, type ReactNode, useEffect, useMemo, useRef } from 'react';
+import { createElement, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
-import { Hash, List } from 'lucide-react';
+import { ChevronDown, ChevronRight, Hash, List } from 'lucide-react';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-javascript';
 import 'prismjs/components/prism-typescript';
@@ -18,7 +18,7 @@ import 'prismjs/components/prism-json';
 
 interface PublicTopicShowProps {
     topic: Topic & {
-        sections: Array<Pick<Section, 'id' | 'title' | 'sort_order'>>;
+        chapters: Array<Chapter>;
         activeSection: Section | null;
     };
 }
@@ -29,6 +29,25 @@ type ListStyle = 'ordered' | 'unordered';
 export default function PublicTopicShow({ topic }: PublicTopicShowProps) {
     const activeSection = topic.activeSection;
     const contentRef = useRef<HTMLElement | null>(null);
+
+    // Track expanded chapters
+    const [expandedChapters, setExpandedChapters] = useState<Set<number>>(() => {
+        // Initially expand all chapters, or at least the one containing the active section
+        return new Set(topic.chapters.map((ch) => ch.id));
+    });
+
+    const toggleChapter = (chapterId: number) => {
+        setExpandedChapters((prev) => {
+            const next = new Set(prev);
+            if (next.has(chapterId)) {
+                next.delete(chapterId);
+            } else {
+                next.add(chapterId);
+            }
+            return next;
+        });
+    };
+
     useEffect(() => {
         if (contentRef.current) {
             Prism.highlightAllUnder(contentRef.current);
@@ -48,6 +67,7 @@ export default function PublicTopicShow({ topic }: PublicTopicShowProps) {
             window.scrollTo({ top: top < 0 ? 0 : top, behavior: 'smooth' });
         }
     }, [activeSection?.id]);
+
     const scrollToHeading = (headingId: string) => {
         const heading = document.getElementById(headingId);
         if (!heading) {
@@ -72,7 +92,6 @@ export default function PublicTopicShow({ topic }: PublicTopicShowProps) {
         });
     };
 
-
     const tocItems = useMemo(() => {
         const blocks = activeSection?.content?.blocks ?? [];
         return blocks
@@ -93,6 +112,11 @@ export default function PublicTopicShow({ topic }: PublicTopicShowProps) {
             preserveState: true,
         });
     };
+
+    // Find the current chapter for the active section
+    const currentChapter = topic.chapters.find((ch) =>
+        ch.sections.some((s) => s.id === activeSection?.id)
+    );
 
     return (
         <PublicLayout stickyFooter>
@@ -119,33 +143,74 @@ export default function PublicTopicShow({ topic }: PublicTopicShowProps) {
                                 <List className="w-3 h-3" /> Kursinhalt
                             </h3>
                         </div>
-                        <div className="space-y-1">
-                            {topic.sections.map((section, index) => {
-                                const isActive = section.id === activeSection?.id;
+
+                        {/* Chapters and Sections */}
+                        <div className="space-y-3">
+                            {topic.chapters.map((chapter, chapterIndex) => {
+                                const isExpanded = expandedChapters.has(chapter.id);
+                                const hasActiveSectionInChapter = chapter.sections.some(
+                                    (s) => s.id === activeSection?.id
+                                );
+
                                 return (
-                                    <button
-                                        key={section.id}
-                                        type="button"
-                                        onClick={() => navigateToSection(section.id)}
-                                        className={cn(
-                                            'group flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-all',
-                                            isActive
-                                                ? 'bg-zinc-900 text-white'
-                                                : 'text-zinc-500 hover:bg-white hover:text-zinc-900'
-                                        )}
-                                    >
-                                        <span
+                                    <div key={chapter.id} className="space-y-1">
+                                        {/* Chapter Header */}
+                                        <button
+                                            type="button"
+                                            onClick={() => toggleChapter(chapter.id)}
                                             className={cn(
-                                                'flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold transition-colors',
-                                                isActive
-                                                    ? 'bg-white/20 text-white'
-                                                    : 'bg-white text-zinc-400 group-hover:text-zinc-700'
+                                                'flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors',
+                                                hasActiveSectionInChapter
+                                                    ? 'bg-zinc-100 text-zinc-900'
+                                                    : 'text-zinc-600 hover:bg-zinc-50'
                                             )}
                                         >
-                                            {index + 1}
-                                        </span>
-                                        <span className="truncate text-left">{section.title}</span>
-                                    </button>
+                                            {isExpanded ? (
+                                                <ChevronDown className="h-4 w-4 shrink-0 text-zinc-400" />
+                                            ) : (
+                                                <ChevronRight className="h-4 w-4 shrink-0 text-zinc-400" />
+                                            )}
+                                            <span className="text-sm font-semibold truncate">
+                                                {chapterIndex + 1}. {chapter.title}
+                                            </span>
+                                        </button>
+
+                                        {/* Sections */}
+                                        {isExpanded && (
+                                            <div className="ml-3 space-y-1 border-l border-zinc-100 pl-3">
+                                                {chapter.sections.map((section, sectionIndex) => {
+                                                    const isActive = section.id === activeSection?.id;
+                                                    return (
+                                                        <button
+                                                            key={section.id}
+                                                            type="button"
+                                                            onClick={() => navigateToSection(section.id)}
+                                                            className={cn(
+                                                                'group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all',
+                                                                isActive
+                                                                    ? 'bg-zinc-900 text-white'
+                                                                    : 'text-zinc-500 hover:bg-white hover:text-zinc-900'
+                                                            )}
+                                                        >
+                                                            <span
+                                                                className={cn(
+                                                                    'flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold transition-colors',
+                                                                    isActive
+                                                                        ? 'bg-white/20 text-white'
+                                                                        : 'bg-white text-zinc-400 group-hover:text-zinc-700'
+                                                                )}
+                                                            >
+                                                                {sectionIndex + 1}
+                                                            </span>
+                                                            <span className="truncate text-left">
+                                                                {section.title}
+                                                            </span>
+                                                        </button>
+                                                    );
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
                                 );
                             })}
                         </div>
@@ -158,7 +223,7 @@ export default function PublicTopicShow({ topic }: PublicTopicShowProps) {
                         <header className="pb-6 space-y-3">
                             <div className="flex items-center gap-2 text-xs font-medium text-[#ff0055] uppercase tracking-wider">
                                 <span className="h-px w-8 bg-[#ff0055]/50"></span>
-                                {topic.title}
+                                {currentChapter ? `${currentChapter.title}` : topic.title}
                             </div>
                             <h1 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-5xl leading-tight">
                                 {activeSection?.title ?? topic.title}
@@ -168,7 +233,6 @@ export default function PublicTopicShow({ topic }: PublicTopicShowProps) {
                         <div className="prose max-w-none prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-zinc-900 prose-p:text-zinc-600 prose-p:leading-relaxed prose-li:text-zinc-600 prose-strong:text-zinc-900">
                             {renderBlocks(activeSection?.content?.blocks ?? [])}
                         </div>
-
                     </section>
 
                     <aside className="hidden lg:flex border-t border-zinc-100 px-6 py-10 flex-col gap-4 lg:border-t-0 lg:border-l lg:sticky lg:top-20 lg:max-h-[calc(100vh-140px)] lg:overflow-y-auto lg:scrollbar-thin lg:scrollbar-thumb-zinc-200 lg:bg-white">
@@ -177,18 +241,18 @@ export default function PublicTopicShow({ topic }: PublicTopicShowProps) {
                                 <Hash className="w-3 h-3" /> Auf dieser Seite
                             </h4>
                         </div>
-                                <ul className="space-y-2.5 text-sm">
+                        <ul className="space-y-2.5 text-sm">
                             {tocItems.length > 0 ? (
-                                        tocItems.map(({ block, id }) => {
-                                            const level = block.data?.level ?? 2;
+                                tocItems.map(({ block, id }) => {
+                                    const level = block.data?.level ?? 2;
                                     return (
-                                                <li key={id}>
+                                        <li key={id}>
                                             <a
-                                                        href={`#${id}`}
-                                                        onClick={(e) => {
-                                                            e.preventDefault();
-                                                            scrollToHeading(id);
-                                                        }}
+                                                href={`#${id}`}
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    scrollToHeading(id);
+                                                }}
                                                 className={cn(
                                                     'block transition-colors hover:text-[#ff0055]',
                                                     level === 2
@@ -435,4 +499,3 @@ function getHeadingId(block: OutputBlockData, fallbackIndex: number): string {
 
     return `heading-${fallbackIndex}`;
 }
-

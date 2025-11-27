@@ -54,7 +54,7 @@ export interface Category {
 
 export interface Section {
     id: number;
-    topic_id: number;
+    chapter_id: number;
     title: string;
     content: OutputData;
     sort_order: number;
@@ -62,16 +62,27 @@ export interface Section {
     updated_at: string;
 }
 
+export interface Chapter {
+    id: number;
+    topic_id: number;
+    title: string;
+    sort_order: number;
+    sections: Pick<Section, 'id' | 'title' | 'sort_order'>[];
+    created_at?: string;
+    updated_at?: string;
+}
+
 export interface Topic {
     id: number;
     title: string;
     category_id?: number;
     category?: Pick<Category, 'id' | 'name'> | null;
-    sections?: Section[];
+    chapters?: Chapter[];
     activeSection?: Section | null;
     excerpt?: string | null;
     author?: Pick<User, 'id' | 'name'> | null;
     created_at?: string;
     updated_at?: string;
+    chapters_count?: number;
     sections_count?: number;
 }

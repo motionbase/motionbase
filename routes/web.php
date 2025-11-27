@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\ChapterController;
 use App\Http\Controllers\PublicTopicController;
 use App\Http\Controllers\SectionController;
 use App\Http\Controllers\TopicController;
@@ -25,9 +26,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::resource('topics', TopicController::class)->except(['show']);
 
-    // Sections routes
-    Route::post('topics/{topic}/sections', [SectionController::class, 'store'])->name('topics.sections.store');
-    Route::post('topics/{topic}/sections/reorder', [SectionController::class, 'reorder'])->name('topics.sections.reorder');
+    // Chapters routes
+    Route::post('topics/{topic}/chapters', [ChapterController::class, 'store'])->name('topics.chapters.store');
+    Route::post('topics/{topic}/chapters/reorder', [ChapterController::class, 'reorder'])->name('topics.chapters.reorder');
+    Route::patch('chapters/{chapter}', [ChapterController::class, 'update'])->name('chapters.update');
+    Route::delete('chapters/{chapter}', [ChapterController::class, 'destroy'])->name('chapters.destroy');
+
+    // Sections routes (now under chapters)
+    Route::post('chapters/{chapter}/sections', [SectionController::class, 'store'])->name('chapters.sections.store');
+    Route::post('chapters/{chapter}/sections/reorder', [SectionController::class, 'reorder'])->name('chapters.sections.reorder');
     Route::patch('sections/{section}', [SectionController::class, 'update'])->name('sections.update');
     Route::delete('sections/{section}', [SectionController::class, 'destroy'])->name('sections.destroy');
 });

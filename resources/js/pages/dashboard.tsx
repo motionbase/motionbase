@@ -38,10 +38,10 @@ export default function Dashboard() {
                             <Link href="/topics">Alle Themen</Link>
                         </Button>
                         <Button className="bg-[#ff0055] px-6 text-white shadow-[0_10px_25px_-12px_rgba(255,0,85,0.7)] hover:bg-[#ff0055]/90" asChild>
-                            <Link href="/topics/create">
-                                <Plus className="mr-2 h-4 w-4" /> Neues Thema
-                            </Link>
-                        </Button>
+                        <Link href="/topics/create">
+                            <Plus className="mr-2 h-4 w-4" /> Neues Thema
+                        </Link>
+                    </Button>
                     </div>
                 </div>
 
@@ -101,21 +101,21 @@ export default function Dashboard() {
                         </CardHeader>
                         <CardContent className="space-y-3">
                             {recentTopics.map((item) => (
-                                <div
+                                    <div
                                     key={item.id}
                                     className="flex flex-col gap-3 rounded-2xl border border-zinc-100 px-4 py-4 transition hover:border-zinc-200 hover:bg-zinc-50/50 sm:flex-row sm:items-center sm:justify-between"
                                 >
                                     <div>
                                         <p className="text-base font-medium text-zinc-900">{item.title}</p>
                                         <p className="text-sm text-zinc-500">{item.time}</p>
-                                    </div>
+                                        </div>
                                     <Button variant="ghost" size="sm" className="justify-start text-zinc-700 hover:text-[#ff0055]" asChild>
                                         <Link href={`/topics/${item.id}/edit`}>
                                             Weiter <ArrowRight className="ml-2 h-4 w-4" />
-                                        </Link>
-                                    </Button>
-                                </div>
-                            ))}
+                                            </Link>
+                                        </Button>
+                                    </div>
+                                ))}
                         </CardContent>
                     </Card>
 

@@ -83,74 +83,158 @@
 }
 
 @layer components {
+    /* Base Editor Styles */
     .editorjs {
         @apply text-zinc-700;
     }
 
     .editorjs .codex-editor {
-        background-color: theme('colors.white');
+        background-color: transparent;
     }
 
     .editorjs .codex-editor__redactor {
-        padding-bottom: 4rem;
+        padding-bottom: 6rem;
     }
 
     .editorjs .ce-block__content,
     .editorjs .ce-toolbar__content {
-        max-width: 720px;
+        max-width: 100%;
     }
 
+    /* Gutenberg-style Editor */
+    .gutenberg-editor .codex-editor__redactor {
+        padding-bottom: 12rem;
+    }
+
+    .gutenberg-editor .ce-block {
+        padding: 0.5rem 0;
+        border-radius: 0.5rem;
+        transition: background-color 0.15s ease;
+    }
+
+    .gutenberg-editor .ce-block:hover {
+        background-color: rgba(0, 0, 0, 0.02);
+    }
+
+    .gutenberg-editor .ce-block--focused {
+        background-color: rgba(0, 0, 0, 0.03);
+    }
+
+    .gutenberg-editor .ce-block__content {
+        padding: 0.25rem 0.75rem;
+    }
+
+    /* Paragraph */
     .editorjs .ce-paragraph {
-        font-size: 1rem;
+        font-size: 1.0625rem;
         line-height: 1.8;
         color: #3f3f46;
     }
 
+    .gutenberg-editor .ce-paragraph {
+        font-size: 1.125rem;
+        line-height: 1.85;
+    }
+
+    /* Headers */
     .editorjs .ce-header {
         font-family: 'Inter', sans-serif;
         font-weight: 700;
-        letter-spacing: -0.01em;
+        letter-spacing: -0.02em;
         color: #0f172a;
     }
 
     .editorjs .ce-header[data-level='2'] {
-        font-size: clamp(1.25rem, 1.05rem + 0.6vw, 1.75rem);
-        line-height: 1.1;
+        font-size: clamp(1.375rem, 1.15rem + 0.7vw, 1.875rem);
+        line-height: 1.2;
+        margin-top: 0.5rem;
     }
 
     .editorjs .ce-header[data-level='3'] {
-        font-size: clamp(1.5rem, 1.3rem + 0.6vw, 2rem);
-        line-height: 1.2;
+        font-size: clamp(1.125rem, 1rem + 0.4vw, 1.375rem);
+        line-height: 1.3;
+        margin-top: 0.25rem;
     }
 
     .editorjs .ce-header[data-level='4'] {
-        font-size: clamp(1.25rem, 1.1rem + 0.4vw, 1.5rem);
-        line-height: 1.3;
+        font-size: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+        line-height: 1.4;
     }
 
+    /* Blocks */
     .editorjs .ce-block {
         padding: 0.35rem 0;
     }
 
+    /* Toolbar */
     .editorjs .ce-toolbar__plus,
     .editorjs .ce-toolbar__settings-btn {
-        border-radius: 999px;
-        border: 1px solid rgba(15, 23, 42, 0.08);
+        border-radius: 0.5rem;
+        border: 1px solid rgba(15, 23, 42, 0.1);
         background-color: white;
         color: #0f172a;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        transition: all 0.15s ease;
     }
 
+    .editorjs .ce-toolbar__plus:hover,
+    .editorjs .ce-toolbar__settings-btn:hover {
+        background-color: #f4f4f5;
+        border-color: rgba(15, 23, 42, 0.15);
+    }
+
+    .gutenberg-editor .ce-toolbar__plus,
+    .gutenberg-editor .ce-toolbar__settings-btn {
+        width: 32px;
+        height: 32px;
+    }
+
+    /* Inline Toolbar */
+    .editorjs .ce-inline-toolbar {
+        border-radius: 0.5rem;
+        border: 1px solid rgba(15, 23, 42, 0.1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .editorjs .ce-inline-tool {
+        border-radius: 0.25rem;
+    }
+
+    .editorjs .ce-inline-tool:hover {
+        background-color: #f4f4f5;
+    }
+
+    /* Conversion Toolbar */
+    .editorjs .ce-conversion-toolbar {
+        border-radius: 0.5rem;
+        border: 1px solid rgba(15, 23, 42, 0.1);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+    }
+
+    .editorjs .ce-conversion-tool {
+        border-radius: 0.375rem;
+    }
+
+    .editorjs .ce-conversion-tool:hover {
+        background-color: #f4f4f5;
+    }
+
+    /* Lists */
     .editorjs .ce-list {
         color: #3f3f46;
-        line-height: 1.7;
+        line-height: 1.75;
     }
 
     .editorjs .ce-list li {
-        margin-bottom: 0.35rem;
+        margin-bottom: 0.5rem;
     }
 
     .editorjs .ce-list__item {
         padding-left: 0.5rem;
+    }
+
+    .gutenberg-editor .ce-list {
+        font-size: 1.0625rem;
     }
 
     .editorjs .cdx-code {

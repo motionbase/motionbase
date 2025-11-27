@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Topic extends Model
 {
@@ -39,10 +40,20 @@ class Topic extends Model
     }
 
     /**
-     * @return HasMany<Section, $this>
+     * @return HasMany<Chapter, $this>
      */
-    public function sections(): HasMany
+    public function chapters(): HasMany
     {
-        return $this->hasMany(Section::class)->orderBy('sort_order');
+        return $this->hasMany(Chapter::class)->orderBy('sort_order');
+    }
+
+    /**
+     * Get all sections through chapters.
+     *
+     * @return HasManyThrough<Section, Chapter, $this>
+     */
+    public function sections(): HasManyThrough
+    {
+        return $this->hasManyThrough(Section::class, Chapter::class);
     }
 }

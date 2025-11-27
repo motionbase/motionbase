@@ -10,18 +10,22 @@ export default defineConfig({
             input: ['resources/css/app.css', 'resources/js/app.tsx'],
             ssr: 'resources/js/ssr.tsx',
             refresh: true,
+            detectTls: 'motionbase.ddev.site',
         }),
         react({
             babel: {
                 plugins: ['babel-plugin-react-compiler'],
             },
         }),
-        tailwindcss(),
-        wayfinder({
-            formVariants: true,
-        }),
+        tailwindcss()
     ],
     esbuild: {
         jsx: 'automatic',
+    },
+    server: {
+        host: '0.0.0.0',
+        port: 5173,
+        strictPort: true,
+        origin: 'https://motionbase.ddev.site:5173',
     },
 });

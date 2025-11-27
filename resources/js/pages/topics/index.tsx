@@ -93,6 +93,11 @@ export default function TopicsIndex({
                                                     </p>
                                                     <div className="flex flex-wrap items-center gap-3 text-xs text-zinc-400">
                                                         <span>
+                                                            {topic.chapters_count ?? 0}{' '}
+                                                            {topic.chapters_count === 1 ? 'Kapitel' : 'Kapitel'}
+                                                        </span>
+                                                        <span className="hidden sm:inline">•</span>
+                                                        <span>
                                                             {topic.sections_count ?? 0}{' '}
                                                             {topic.sections_count === 1 ? 'Abschnitt' : 'Abschnitte'}
                                                         </span>

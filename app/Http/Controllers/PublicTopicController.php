@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Models\Chapter;
 use App\Models\Section;
 use App\Models\Topic;
 use Illuminate\Http\Request;
@@ -18,10 +19,9 @@ class PublicTopicController extends Controller
             ->with([
                 'category:id,name',
                 'user:id,name',
-                'sections' => fn ($query) => $query
-                    ->select('id', 'topic_id', 'title', 'content', 'sort_order')
+                'chapters' => fn ($query) => $query
                     ->orderBy('sort_order')
-                    ->limit(1),
+                    ->with(['sections' => fn ($q) => $q->orderBy('sort_order')->limit(1)]),
             ])
             ->when(
                 $request->string('category')->isNotEmpty(),
@@ -32,7 +32,7 @@ class PublicTopicController extends Controller
             ->map(fn (Topic $topic) => [
                 'id' => $topic->id,
                 'title' => $topic->title,
-                'excerpt' => $this->excerptFromSections($topic),
+                'excerpt' => $this->excerptFromTopic($topic),
                 'category' => $topic->category?->only(['id', 'name']),
                 'author' => $topic->user?->only(['id', 'name']),
                 'updated_at' => $topic->updated_at?->toIso8601String(),
@@ -55,14 +55,25 @@ class PublicTopicController extends Controller
         $topic->loadMissing([
             'category:id,name',
             'user:id,name',
-            'sections' => fn ($query) => $query->orderBy('sort_order'),
+            'chapters' => fn ($query) => $query->orderBy('sort_order')->with([
+                'sections' => fn ($q) => $q->orderBy('sort_order'),
+            ]),
         ]);
 
-        if ($section && $section->topic_id !== $topic->id) {
-            abort(404);
+        // Validate section belongs to topic
+        if ($section) {
+            $chapter = $section->chapter;
+            if (! $chapter || $chapter->topic_id !== $topic->id) {
+                abort(404);
+            }
         }
 
-        $activeSection = $section ?: $topic->sections->first();
+        // Default to first section of first chapter
+        $activeSection = $section;
+        if (! $activeSection) {
+            $firstChapter = $topic->chapters->first();
+            $activeSection = $firstChapter?->sections->first();
+        }
 
         return Inertia::render('public/topics/show', [
             'topic' => [
@@ -71,10 +82,15 @@ class PublicTopicController extends Controller
                 'category' => $topic->category?->only(['id', 'name']),
                 'author' => $topic->user?->only(['id', 'name']),
                 'updated_at' => $topic->updated_at?->toIso8601String(),
-                'sections' => $topic->sections->map(fn (Section $section) => [
-                    'id' => $section->id,
-                    'title' => $section->title,
-                    'sort_order' => $section->sort_order,
+                'chapters' => $topic->chapters->map(fn (Chapter $chapter) => [
+                    'id' => $chapter->id,
+                    'title' => $chapter->title,
+                    'sort_order' => $chapter->sort_order,
+                    'sections' => $chapter->sections->map(fn (Section $section) => [
+                        'id' => $section->id,
+                        'title' => $section->title,
+                        'sort_order' => $section->sort_order,
+                    ]),
                 ]),
                 'activeSection' => $activeSection ? [
                     'id' => $activeSection->id,
@@ -85,10 +101,14 @@ class PublicTopicController extends Controller
         ]);
     }
 
-    private function excerptFromSections(Topic $topic): ?string
+    private function excerptFromTopic(Topic $topic): ?string
     {
-        $section = $topic->sections->first();
+        $firstChapter = $topic->chapters->first();
+        if (! $firstChapter) {
+            return null;
+        }
 
+        $section = $firstChapter->sections->first();
         if (! $section) {
             return null;
         }
@@ -111,4 +131,3 @@ class PublicTopicController extends Controller
         return $plainText !== '' ? Str::limit($plainText, 180) : null;
     }
 }
-

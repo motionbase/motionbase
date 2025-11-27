@@ -2,24 +2,24 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Chapter;
 use App\Models\Section;
-use App\Models\Topic;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 class SectionController extends Controller
 {
-    public function store(Request $request, Topic $topic): RedirectResponse
+    public function store(Request $request, Chapter $chapter): RedirectResponse
     {
-        $this->authorize('update', $topic);
+        $this->authorize('update', $chapter->topic);
 
         $validated = $request->validate([
             'title' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $maxSortOrder = $topic->sections()->max('sort_order') ?? -1;
+        $maxSortOrder = $chapter->sections()->max('sort_order') ?? -1;
 
-        $section = $topic->sections()->create([
+        $section = $chapter->sections()->create([
             'title' => $validated['title'] ?? 'Neuer Abschnitt',
             'content' => [
                 'time' => now()->getTimestampMs(),
@@ -35,13 +35,13 @@ class SectionController extends Controller
         ]);
 
         return redirect()
-            ->route('topics.edit', ['topic' => $topic->id, 'section' => $section->id])
+            ->route('topics.edit', ['topic' => $chapter->topic_id, 'section' => $section->id])
             ->with('flash', ['status' => 'success', 'message' => 'Abschnitt erstellt.']);
     }
 
     public function update(Request $request, Section $section): RedirectResponse
     {
-        $this->authorize('update', $section->topic);
+        $this->authorize('update', $section->chapter->topic);
 
         $validated = $request->validate([
             'title' => ['sometimes', 'string', 'max:255'],
@@ -51,31 +51,43 @@ class SectionController extends Controller
         $section->update($validated);
 
         return redirect()
-            ->route('topics.edit', ['topic' => $section->topic_id, 'section' => $section->id])
+            ->route('topics.edit', ['topic' => $section->chapter->topic_id, 'section' => $section->id])
             ->with('flash', ['status' => 'success', 'message' => 'Abschnitt gespeichert.']);
     }
 
     public function destroy(Section $section): RedirectResponse
     {
-        $this->authorize('update', $section->topic);
+        $this->authorize('update', $section->chapter->topic);
 
-        // Prevent deleting the last section if needed, or handle empty state in UI
-        if ($section->topic->sections()->count() <= 1) {
-            return redirect()->back()->with('flash', ['status' => 'error', 'message' => 'Ein Thema muss mindestens einen Abschnitt haben.']);
+        $chapter = $section->chapter;
+        $topic = $chapter->topic;
+
+        // Prevent deleting the last section of the last chapter
+        $totalSections = $topic->sections()->count();
+        if ($totalSections <= 1) {
+            return redirect()
+                ->back()
+                ->with('flash', ['status' => 'error', 'message' => 'Ein Thema muss mindestens einen Abschnitt haben.']);
         }
 
         $section->delete();
 
-        $nextSection = $section->topic->sections()->orderBy('sort_order')->first();
+        // Find next section to redirect to
+        $nextSection = $chapter->sections()->orderBy('sort_order')->first();
+
+        if (! $nextSection) {
+            // Chapter is empty, get first section from any other chapter
+            $nextSection = $topic->sections()->orderBy('sort_order')->first();
+        }
 
         return redirect()
-            ->route('topics.edit', ['topic' => $section->topic_id, 'section' => optional($nextSection)->id])
+            ->route('topics.edit', ['topic' => $topic->id, 'section' => $nextSection?->id])
             ->with('flash', ['status' => 'success', 'message' => 'Abschnitt gelöscht.']);
     }
 
-    public function reorder(Request $request, Topic $topic): RedirectResponse
+    public function reorder(Request $request, Chapter $chapter): RedirectResponse
     {
-        $this->authorize('update', $topic);
+        $this->authorize('update', $chapter->topic);
 
         $validated = $request->validate([
             'order' => ['required', 'array'],
@@ -83,13 +95,13 @@ class SectionController extends Controller
         ]);
 
         foreach ($validated['order'] as $index => $sectionId) {
-            $topic->sections()
+            $chapter->sections()
                 ->whereKey($sectionId)
                 ->update(['sort_order' => $index]);
         }
 
         return redirect()
-            ->route('topics.edit', ['topic' => $topic->id])
+            ->back()
             ->with('flash', ['status' => 'success', 'message' => 'Reihenfolge gespeichert.']);
     }
 }
