@@ -1,9 +1,16 @@
+import { MediaLibraryModal } from '@/components/editor/media-library-modal';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 import type { OutputData, ToolConstructable } from '@editorjs/editorjs';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 type EditorInstance = import('@editorjs/editorjs').default;
+
+interface MediaItem {
+    id: number;
+    url: string;
+    alt: string | null;
+}
 
 const defaultValue: OutputData = {
     time: Date.now(),
@@ -39,10 +46,39 @@ export function RichTextEditor({
     const hasHydratedRef = useRef(false);
     const onChangeRef = useRef(onChange);
     const [isReady, setIsReady] = useState(false);
+    
+    // Media library state
+    const [mediaLibraryOpen, setMediaLibraryOpen] = useState(false);
+    const [mediaLibraryType, setMediaLibraryType] = useState<'image' | 'lottie' | 'all'>('image');
+    const mediaSelectCallbackRef = useRef<((media: MediaItem) => void) | null>(null);
 
     useEffect(() => {
         onChangeRef.current = onChange;
     }, [onChange]);
+
+    // Handle media library events from blocks
+    useEffect(() => {
+        const handleOpenMediaLibrary = (event: CustomEvent<{
+            type: 'image' | 'lottie' | 'all';
+            onSelect: (media: MediaItem) => void;
+        }>) => {
+            setMediaLibraryType(event.detail.type);
+            mediaSelectCallbackRef.current = event.detail.onSelect;
+            setMediaLibraryOpen(true);
+        };
+
+        window.addEventListener('open-media-library', handleOpenMediaLibrary as EventListener);
+        return () => {
+            window.removeEventListener('open-media-library', handleOpenMediaLibrary as EventListener);
+        };
+    }, []);
+
+    const handleMediaSelect = useCallback((media: MediaItem) => {
+        if (mediaSelectCallbackRef.current) {
+            mediaSelectCallbackRef.current(media);
+            mediaSelectCallbackRef.current = null;
+        }
+    }, []);
 
     useEffect(() => {
         if (!hasHydratedRef.current) {
@@ -63,22 +99,24 @@ export function RichTextEditor({
                 { default: Header },
                 { default: List },
                 { default: Paragraph },
-                { default: ImageTool },
+                { default: ImageBlock },
                 { default: CodeWithLanguage },
                 { default: AlertBlock },
                 { default: QuizBlock },
                 { default: YouTubeBlock },
+                { default: LottieBlock },
             ] =
                 await Promise.all([
                     import('@editorjs/editorjs'),
                     import('@editorjs/header'),
                     import('@editorjs/list'),
                     import('@editorjs/paragraph'),
-                    import('@editorjs/image'),
+                    import('@/components/editor/tools/image-block'),
                     import('@/components/editor/tools/code-with-language'),
                     import('@/components/editor/tools/alert-block'),
                     import('@/components/editor/tools/quiz-block'),
                     import('@/components/editor/tools/youtube-block'),
+                    import('@/components/editor/tools/lottie-block'),
                 ]);
 
             if (!isActive || !holderRef.current) {
@@ -110,44 +148,9 @@ export function RichTextEditor({
                         class: Paragraph as unknown as ToolConstructable,
                     },
                     image: {
-                        class: ImageTool as unknown as ToolConstructable,
+                        class: ImageBlock as unknown as ToolConstructable,
                         config: {
                             captionPlaceholder: 'Bildunterschrift eingeben…',
-                            buttonContent: 'Bild auswählen',
-                            uploader: {
-                                async uploadByFile(file: File) {
-                                    const formData = new FormData();
-                                    formData.append('image', file);
-
-                                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-
-                                    const response = await fetch('/upload/image', {
-                                        method: 'POST',
-                                        headers: {
-                                            'X-CSRF-TOKEN': csrfToken ?? '',
-                                            'Accept': 'application/json',
-                                        },
-                                        body: formData,
-                                    });
-
-                                    return response.json();
-                                },
-                                async uploadByUrl(url: string) {
-                                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-
-                                    const response = await fetch('/upload/image-by-url', {
-                                        method: 'POST',
-                                        headers: {
-                                            'X-CSRF-TOKEN': csrfToken ?? '',
-                                            'Content-Type': 'application/json',
-                                            'Accept': 'application/json',
-                                        },
-                                        body: JSON.stringify({ url }),
-                                    });
-
-                                    return response.json();
-                                },
-                            },
                         },
                     },
                     code: {
@@ -181,6 +184,12 @@ export function RichTextEditor({
                             placeholder: 'YouTube-URL einfügen…',
                         },
                     },
+                    lottie: {
+                        class: LottieBlock as unknown as ToolConstructable,
+                        config: {
+                            placeholder: 'Lottie JSON-URL einfügen…',
+                        },
+                    },
                 },
                 async onChange(api) {
                     const data = await api.saver.save();
@@ -207,26 +216,36 @@ export function RichTextEditor({
     const isGutenbergStyle = className?.includes('gutenberg-editor');
 
     return (
-        <div
-            className={cn(
-                'relative min-h-[320px] transition',
-                !isGutenbergStyle && 'rounded-2xl border border-zinc-200 bg-white shadow-sm focus-within:border-zinc-900 focus-within:shadow-md',
-                className,
-            )}
-        >
-            {!isReady && (
-                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                    <Spinner className="size-6 text-zinc-400" />
-                </div>
-            )}
+        <>
             <div
                 className={cn(
-                    'editorjs h-full w-full',
-                    isGutenbergStyle ? 'py-2' : 'px-4 py-4 sm:px-6 sm:py-6',
+                    'relative min-h-[320px] transition',
+                    !isGutenbergStyle && 'rounded-2xl border border-zinc-200 bg-white shadow-sm focus-within:border-zinc-900 focus-within:shadow-md',
+                    className,
                 )}
-                ref={holderRef}
+            >
+                {!isReady && (
+                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+                        <Spinner className="size-6 text-zinc-400" />
+                    </div>
+                )}
+                <div
+                    className={cn(
+                        'editorjs h-full w-full',
+                        isGutenbergStyle ? 'py-2' : 'px-4 py-4 sm:px-6 sm:py-6',
+                    )}
+                    ref={holderRef}
+                />
+            </div>
+            
+            {/* Media Library Modal */}
+            <MediaLibraryModal
+                open={mediaLibraryOpen}
+                onOpenChange={setMediaLibraryOpen}
+                onSelect={handleMediaSelect}
+                type={mediaLibraryType}
             />
-        </div>
+        </>
     );
 }
 

@@ -368,7 +368,8 @@ function renderBlocks(blocks: OutputBlockData[], theme?: RenderTheme) {
             }
 
             case 'image': {
-                const imageUrl = block.data?.file?.url ?? '';
+                // Support both old format (file.url) and new format (url)
+                const imageUrl = block.data?.url ?? block.data?.file?.url ?? '';
                 const caption = block.data?.caption ?? '';
                 const withBorder = block.data?.withBorder ?? false;
                 const stretched = block.data?.stretched ?? false;
@@ -432,6 +433,27 @@ function renderBlocks(blocks: OutputBlockData[], theme?: RenderTheme) {
                             </figcaption>
                         )}
                     </figure>
+                );
+            }
+
+            case 'lottie': {
+                const lottieUrl = block.data?.url as string | undefined;
+                const lottieCaption = (block.data?.caption as string | undefined)?.trim();
+                const loop = block.data?.loop !== false;
+                const autoplay = block.data?.autoplay !== false;
+
+                if (!lottieUrl) {
+                    return null;
+                }
+
+                return (
+                    <LottieRenderer
+                        key={key}
+                        url={lottieUrl}
+                        caption={lottieCaption}
+                        loop={loop}
+                        autoplay={autoplay}
+                    />
                 );
             }
 
@@ -661,14 +683,14 @@ function QuizRenderer({ data }: { data: QuizData }) {
         const isGood = percentage >= 70;
 
         return (
-            <div className="my-8 rounded-2xl border border-zinc-200 bg-white p-6 sm:p-8">
+            <div className="my-8 rounded-2xl border border-zinc-200 bg-zinc-50 p-6 sm:p-8">
                 <div className="text-center space-y-5">
                     <div className={cn(
                         'inline-flex items-center justify-center w-20 h-20 rounded-full',
-                        isPerfect ? 'bg-[#ff0055]/10' : isGood ? 'bg-emerald-100' : 'bg-amber-100'
+                        isPerfect ? 'bg-zinc-900' : isGood ? 'bg-emerald-100' : 'bg-amber-100'
                     )}>
                         {isPerfect ? (
-                            <CheckCircle2 className="w-10 h-10 text-[#ff0055]" />
+                            <CheckCircle2 className="w-10 h-10 text-white" />
                         ) : (
                             <span className={cn(
                                 'text-3xl font-bold',
@@ -689,7 +711,7 @@ function QuizRenderer({ data }: { data: QuizData }) {
                     <button
                         type="button"
                         onClick={handleRestart}
-                        className="inline-flex items-center gap-2 rounded-xl bg-[#ff0055] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[#ff0055]/90"
+                        className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-zinc-800"
                     >
                         Quiz wiederholen
                     </button>
@@ -699,34 +721,26 @@ function QuizRenderer({ data }: { data: QuizData }) {
     }
 
     return (
-        <div className="my-8 rounded-2xl border border-zinc-200 bg-white overflow-hidden">
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-zinc-100 bg-gradient-to-r from-[#ff0055]/5 to-transparent px-5 py-3 sm:px-6">
-                <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#ff0055] text-xs font-bold text-white">
-                        Q
-                    </div>
-                    <span className="text-sm font-semibold text-zinc-900">Quiz</span>
+        <div className="my-8 rounded-2xl border border-zinc-200 bg-zinc-50 overflow-hidden">
+            {/* Progress Header */}
+            <div className="flex items-center justify-between px-5 py-4 sm:px-6 bg-white border-b border-zinc-100">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-zinc-900 text-sm font-bold text-white">
+                    {currentQuestionIndex + 1}
                 </div>
-                <div className="flex items-center gap-3">
-                    <span className="text-xs font-medium text-zinc-500">
-                        Frage {currentQuestionIndex + 1} von {totalQuestions}
-                    </span>
-                    <div className="flex gap-1">
-                        {questions.map((_, idx) => (
-                            <div
-                                key={idx}
-                                className={cn(
-                                    'h-1.5 w-4 rounded-full transition-colors',
-                                    idx < currentQuestionIndex
-                                        ? 'bg-[#ff0055]'
-                                        : idx === currentQuestionIndex
-                                            ? 'bg-zinc-900'
-                                            : 'bg-zinc-200'
-                                )}
-                            />
-                        ))}
-                    </div>
+                <div className="flex gap-1.5">
+                    {questions.map((_, idx) => (
+                        <div
+                            key={idx}
+                            className={cn(
+                                'h-2 w-6 rounded-full transition-colors',
+                                idx < currentQuestionIndex
+                                    ? 'bg-zinc-900'
+                                    : idx === currentQuestionIndex
+                                        ? 'bg-zinc-400'
+                                        : 'bg-zinc-200'
+                            )}
+                        />
+                    ))}
                 </div>
             </div>
 
@@ -763,10 +777,10 @@ function QuizRenderer({ data }: { data: QuizData }) {
                                 disabled={hasAnswered}
                                 className={cn(
                                     'group flex w-full items-center gap-4 rounded-xl border-2 px-4 py-3.5 text-left transition-all',
-                                    !hasAnswered && 'hover:border-[#ff0055]/30 hover:bg-[#ff0055]/5 cursor-pointer',
+                                    !hasAnswered && 'hover:border-zinc-400 hover:bg-white cursor-pointer',
                                     hasAnswered && 'cursor-default',
                                     !hasAnswered && !isSelected && 'border-zinc-200 bg-white',
-                                    !hasAnswered && isSelected && 'border-[#ff0055] bg-[#ff0055]/5',
+                                    !hasAnswered && isSelected && 'border-zinc-900 bg-white',
                                     showCorrect && 'border-emerald-500 bg-emerald-50',
                                     showIncorrect && 'border-rose-500 bg-rose-50',
                                     hasAnswered && !showCorrect && !showIncorrect && 'border-zinc-100 bg-zinc-50/50 opacity-60'
@@ -775,7 +789,7 @@ function QuizRenderer({ data }: { data: QuizData }) {
                                 <span
                                     className={cn(
                                         'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold transition-colors',
-                                        !hasAnswered && 'bg-zinc-100 text-zinc-600 group-hover:bg-[#ff0055]/10 group-hover:text-[#ff0055]',
+                                        !hasAnswered && 'bg-zinc-100 text-zinc-600 group-hover:bg-zinc-200 group-hover:text-zinc-900',
                                         showCorrect && 'bg-emerald-500 text-white',
                                         showIncorrect && 'bg-rose-500 text-white',
                                         hasAnswered && !showCorrect && !showIncorrect && 'bg-zinc-100 text-zinc-400'
@@ -822,7 +836,7 @@ function QuizRenderer({ data }: { data: QuizData }) {
                         <button
                             type="button"
                             onClick={handleNextQuestion}
-                            className="inline-flex items-center gap-2 rounded-xl bg-[#ff0055] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#ff0055]/90"
+                            className="inline-flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-zinc-800"
                         >
                             {currentQuestionIndex < totalQuestions - 1 ? (
                                 <>
@@ -837,5 +851,288 @@ function QuizRenderer({ data }: { data: QuizData }) {
                 )}
             </div>
         </div>
+    );
+}
+
+// Lottie Renderer Component - Supports State Machines in .lottie files
+function LottieRenderer({
+    url,
+    caption,
+    loop,
+    autoplay,
+}: {
+    url: string;
+    caption?: string;
+    loop: boolean;
+    autoplay: boolean;
+}) {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const canvasContainerRef = useRef<HTMLDivElement>(null);
+    const [isPlaying, setIsPlaying] = useState(autoplay);
+    const [hasStateMachine, setHasStateMachine] = useState(false);
+    const [isLoaded, setIsLoaded] = useState(false);
+    const animationRef = useRef<ReturnType<typeof import('lottie-web').default.loadAnimation> | null>(null);
+    const dotLottieRef = useRef<InstanceType<typeof import('@lottiefiles/dotlottie-web').DotLottie> | null>(null);
+
+    const isDotLottie = url.endsWith('.lottie');
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const loadAnimation = async () => {
+            try {
+                if (isDotLottie) {
+                    // Use dotLottie-web for .lottie files (supports State Machines)
+                    if (!canvasContainerRef.current) return;
+
+                    const { DotLottie } = await import('@lottiefiles/dotlottie-web');
+
+                    if (!isMounted) return;
+
+                    // Destroy previous instance
+                    if (dotLottieRef.current) {
+                        dotLottieRef.current.destroy();
+                    }
+
+                    // Clear container and create fresh canvas
+                    canvasContainerRef.current.innerHTML = '';
+                    const canvas = document.createElement('canvas');
+                    canvas.style.display = 'block';
+                    canvas.style.width = '100%';
+                    canvasContainerRef.current.appendChild(canvas);
+
+                    // Create the dotLottie instance
+                    const instance = new DotLottie({
+                        canvas,
+                        src: url,
+                        autoplay: false,
+                        loop: false,
+                    });
+
+                    instance.addEventListener('load', () => {
+                        if (!isMounted) {
+                            instance.destroy();
+                            return;
+                        }
+
+                        const manifest = instance.manifest;
+                        const stateMachines = (manifest as { stateMachines?: { id: string }[] })?.stateMachines;
+                        const hasStates = stateMachines && stateMachines.length > 0;
+
+                        // Check if we need state machine
+                        if (hasStates) {
+                            setHasStateMachine(true);
+                            // Destroy current instance and recreate with state machine
+                            instance.destroy();
+                            
+                            if (!canvasContainerRef.current) return;
+                            canvasContainerRef.current.innerHTML = '';
+                            
+                            const newCanvas = document.createElement('canvas');
+                            newCanvas.style.display = 'block';
+                            newCanvas.style.width = '100%';
+                            canvasContainerRef.current.appendChild(newCanvas);
+                            
+                            const firstStateMachineId = stateMachines[0]?.id;
+                            
+                            dotLottieRef.current = new DotLottie({
+                                canvas: newCanvas,
+                                src: url,
+                                loop,
+                                autoplay: true,
+                                stateMachineId: firstStateMachineId,
+                            });
+
+                            dotLottieRef.current.addEventListener('load', () => {
+                                setIsLoaded(true);
+                            });
+                        } else {
+                            setHasStateMachine(false);
+                            // Keep using the same instance
+                            dotLottieRef.current = instance;
+                            
+                            if (loop !== false) {
+                                instance.setLoop(true);
+                            }
+                            if (autoplay) {
+                                instance.play();
+                            }
+                            
+                            setIsLoaded(true);
+                        }
+
+                        dotLottieRef.current?.addEventListener('play', () => {
+                            setIsPlaying(true);
+                        });
+
+                        dotLottieRef.current?.addEventListener('pause', () => {
+                            setIsPlaying(false);
+                        });
+
+                        dotLottieRef.current?.addEventListener('stop', () => {
+                            setIsPlaying(false);
+                        });
+
+                        // Listen for state machine events
+                        dotLottieRef.current?.addEventListener('stateMachineStart', () => {
+                            console.log('State machine started');
+                        });
+
+                        dotLottieRef.current?.addEventListener('stateMachineTransition', (event) => {
+                            console.log('State machine transition:', event);
+                        });
+
+                        // Handle window resize
+                        const handleResize = () => {
+                            if (!dotLottieRef.current) return;
+                            dotLottieRef.current.resize();
+                        };
+
+                        window.addEventListener('resize', handleResize);
+                        (dotLottieRef.current as unknown as { _resizeHandler?: () => void })._resizeHandler = handleResize;
+                    });
+
+                    instance.addEventListener('loadError', (error) => {
+                        console.error('Failed to load dotLottie:', error);
+                    });
+
+                } else {
+                    // Use lottie-web for .json files
+                    if (!containerRef.current) return;
+
+                    const lottie = await import('lottie-web');
+
+                    if (!isMounted || !containerRef.current) return;
+
+                    // Clear previous animation
+                    if (animationRef.current) {
+                        animationRef.current.destroy();
+                    }
+
+                    animationRef.current = lottie.default.loadAnimation({
+                        container: containerRef.current,
+                        renderer: 'svg',
+                        loop,
+                        autoplay,
+                        path: url,
+                    });
+
+                    if (autoplay) {
+                        setIsPlaying(true);
+                    }
+
+                    animationRef.current.addEventListener('DOMLoaded', () => {
+                        setIsLoaded(true);
+                    });
+
+                    animationRef.current.addEventListener('complete', () => {
+                        if (!loop) {
+                            setIsPlaying(false);
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to load Lottie animation:', error);
+            }
+        };
+
+        void loadAnimation();
+
+        return () => {
+            isMounted = false;
+            if (animationRef.current) {
+                animationRef.current.destroy();
+                animationRef.current = null;
+            }
+            if (dotLottieRef.current) {
+                // Remove resize handler
+                const handler = (dotLottieRef.current as unknown as { _resizeHandler?: () => void })._resizeHandler;
+                if (handler) {
+                    window.removeEventListener('resize', handler);
+                }
+                dotLottieRef.current.destroy();
+                dotLottieRef.current = null;
+            }
+        };
+    }, [url, loop, autoplay, isDotLottie]);
+
+    const togglePlayPause = useCallback(() => {
+        // Don't interfere with state machine controlled animations
+        if (hasStateMachine) return;
+
+        if (isDotLottie && dotLottieRef.current) {
+            if (isPlaying) {
+                dotLottieRef.current.pause();
+            } else {
+                dotLottieRef.current.play();
+            }
+        } else if (animationRef.current) {
+            if (isPlaying) {
+                animationRef.current.pause();
+            } else {
+                animationRef.current.play();
+            }
+        }
+    }, [isDotLottie, isPlaying, hasStateMachine]);
+
+    return (
+        <figure className="my-8">
+            <div
+                className={cn(
+                    'relative rounded-xl overflow-hidden group',
+                    !hasStateMachine && 'cursor-pointer'
+                )}
+                onClick={togglePlayPause}
+            >
+                {isDotLottie ? (
+                    <div
+                        ref={canvasContainerRef}
+                        className="w-full"
+                    />
+                ) : (
+                    <div
+                        ref={containerRef}
+                        className="w-full [&_svg]:w-full [&_svg]:h-auto"
+                    />
+                )}
+                {/* Loading indicator */}
+                {!isLoaded && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-zinc-50">
+                        <div className="h-8 w-8 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-600" />
+                    </div>
+                )}
+                {/* Play/Pause overlay - only for non-state-machine animations */}
+                {isLoaded && !hasStateMachine && (
+                    <div className={cn(
+                        'absolute inset-0 flex items-center justify-center bg-black/5 opacity-0 transition-opacity',
+                        'group-hover:opacity-100'
+                    )}>
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/90 shadow-lg">
+                            {isPlaying ? (
+                                <svg viewBox="0 0 24 24" className="w-5 h-5 text-zinc-700" fill="currentColor">
+                                    <rect x="6" y="4" width="4" height="16" rx="1" />
+                                    <rect x="14" y="4" width="4" height="16" rx="1" />
+                                </svg>
+                            ) : (
+                                <svg viewBox="0 0 24 24" className="w-5 h-5 text-zinc-700 ml-0.5" fill="currentColor">
+                                    <path d="M8 5v14l11-7z" />
+                                </svg>
+                            )}
+                        </div>
+                    </div>
+                )}
+                {/* State machine indicator */}
+                {isLoaded && hasStateMachine && (
+                    <div className="absolute bottom-2 right-2 rounded-full bg-white/80 px-2 py-1 text-xs font-medium text-zinc-600 shadow-sm">
+                        Interaktiv
+                    </div>
+                )}
+            </div>
+            {caption && caption.length > 0 && (
+                <figcaption className="mt-3 text-center text-sm text-zinc-500">
+                    {caption}
+                </figcaption>
+            )}
+        </figure>
     );
 }

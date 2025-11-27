@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Media;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -29,6 +30,7 @@ class ImageUploadController extends Controller
             
             $extension = $file->getClientOriginalExtension() ?: 'jpg';
             $filename = Str::uuid() . '.' . $extension;
+            $originalFilename = $file->getClientOriginalName();
             
             $path = $file->storeAs('editor-images', $filename, 'public');
             
@@ -38,11 +40,43 @@ class ImageUploadController extends Controller
                     'message' => 'Failed to store file',
                 ], 500);
             }
+
+            $url = Storage::url($path);
+
+            // Get image dimensions
+            $width = null;
+            $height = null;
+            try {
+                $imagePath = Storage::disk('public')->path($path);
+                if (file_exists($imagePath)) {
+                    $imageInfo = getimagesize($imagePath);
+                    if ($imageInfo) {
+                        $width = $imageInfo[0];
+                        $height = $imageInfo[1];
+                    }
+                }
+            } catch (\Exception $e) {
+                // Ignore dimension errors
+            }
+
+            // Save to media library
+            $media = Media::create([
+                'filename' => $filename,
+                'original_filename' => $originalFilename,
+                'path' => $path,
+                'url' => $url,
+                'mime_type' => $file->getMimeType(),
+                'type' => 'image',
+                'size' => $file->getSize(),
+                'width' => $width,
+                'height' => $height,
+            ]);
             
             return response()->json([
                 'success' => 1,
                 'file' => [
-                    'url' => Storage::url($path),
+                    'url' => $url,
+                    'id' => $media->id,
                 ],
             ]);
         } catch (ValidationException $e) {
@@ -71,13 +105,47 @@ class ImageUploadController extends Controller
             $contents = file_get_contents($url);
             $extension = pathinfo(parse_url($url, PHP_URL_PATH), PATHINFO_EXTENSION) ?: 'jpg';
             $filename = Str::uuid() . '.' . $extension;
+            $originalFilename = basename(parse_url($url, PHP_URL_PATH)) ?: 'image.' . $extension;
             
-            Storage::disk('public')->put('editor-images/' . $filename, $contents);
+            $path = 'editor-images/' . $filename;
+            Storage::disk('public')->put($path, $contents);
+            
+            $storedUrl = Storage::url($path);
+
+            // Get image dimensions
+            $width = null;
+            $height = null;
+            try {
+                $imagePath = Storage::disk('public')->path($path);
+                if (file_exists($imagePath)) {
+                    $imageInfo = getimagesize($imagePath);
+                    if ($imageInfo) {
+                        $width = $imageInfo[0];
+                        $height = $imageInfo[1];
+                    }
+                }
+            } catch (\Exception $e) {
+                // Ignore dimension errors
+            }
+
+            // Save to media library
+            $media = Media::create([
+                'filename' => $filename,
+                'original_filename' => $originalFilename,
+                'path' => $path,
+                'url' => $storedUrl,
+                'mime_type' => 'image/' . $extension,
+                'type' => 'image',
+                'size' => strlen($contents),
+                'width' => $width,
+                'height' => $height,
+            ]);
             
             return response()->json([
                 'success' => 1,
                 'file' => [
-                    'url' => Storage::url('editor-images/' . $filename),
+                    'url' => $storedUrl,
+                    'id' => $media->id,
                 ],
             ]);
         } catch (\Exception $e) {
@@ -88,4 +156,3 @@ class ImageUploadController extends Controller
         }
     }
 }
-

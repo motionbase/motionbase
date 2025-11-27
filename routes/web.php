@@ -3,6 +3,8 @@
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ChapterController;
 use App\Http\Controllers\ImageUploadController;
+use App\Http\Controllers\LottieUploadController;
+use App\Http\Controllers\MediaController;
 use App\Http\Controllers\PublicTopicController;
 use App\Http\Controllers\SectionController;
 use App\Http\Controllers\TopicController;
@@ -42,6 +44,22 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Image upload for Editor.js
     Route::post('upload/image', [ImageUploadController::class, 'upload'])->name('upload.image');
     Route::post('upload/image-by-url', [ImageUploadController::class, 'uploadByUrl'])->name('upload.image.url');
+
+    // Lottie upload for Editor.js
+    Route::post('upload/lottie', [LottieUploadController::class, 'upload'])->name('upload.lottie');
+
+    // Media Library
+    Route::get('media', function (\Illuminate\Http\Request $request) {
+        // If it's an AJAX request, return JSON
+        if ($request->wantsJson() || $request->ajax()) {
+            return app(MediaController::class)->index($request);
+        }
+        // Otherwise render the Inertia page
+        return \Inertia\Inertia::render('media/index');
+    })->name('media.index');
+    Route::get('media/{media}', [MediaController::class, 'show'])->name('media.show');
+    Route::patch('media/{media}', [MediaController::class, 'update'])->name('media.update');
+    Route::delete('media/{media}', [MediaController::class, 'destroy'])->name('media.destroy');
 });
 
 require __DIR__.'/settings.php';
