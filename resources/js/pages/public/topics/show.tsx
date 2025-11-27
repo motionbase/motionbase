@@ -3,9 +3,9 @@ import PublicLayout from '@/layouts/public-layout';
 import { type Chapter, type Section, type Topic } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
 import type { OutputBlockData } from '@editorjs/editorjs';
-import { createElement, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { createElement, type ReactNode, useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-import { ChevronDown, ChevronRight, Hash, List } from 'lucide-react';
+import { ChevronDown, ChevronRight, Hash, List, CheckCircle2, XCircle, ArrowRight } from 'lucide-react';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-javascript';
 import 'prismjs/components/prism-typescript';
@@ -367,6 +367,74 @@ function renderBlocks(blocks: OutputBlockData[], theme?: RenderTheme) {
                 );
             }
 
+            case 'image': {
+                const imageUrl = block.data?.file?.url ?? '';
+                const caption = block.data?.caption ?? '';
+                const withBorder = block.data?.withBorder ?? false;
+                const stretched = block.data?.stretched ?? false;
+                const withBackground = block.data?.withBackground ?? false;
+
+                return (
+                    <figure
+                        key={key}
+                        className={cn(
+                            'mb-6',
+                            stretched && '-mx-4 lg:-mx-8',
+                            withBackground && 'rounded-2xl bg-zinc-100 p-4',
+                        )}
+                    >
+                        <img
+                            src={imageUrl}
+                            alt={caption || 'Bild'}
+                            className={cn(
+                                'h-auto w-full',
+                                !stretched && 'rounded-xl',
+                                withBorder && 'border border-zinc-200',
+                            )}
+                            loading="lazy"
+                        />
+                        {caption && (
+                            <figcaption
+                                className="mt-3 text-center text-sm text-zinc-500"
+                                dangerouslySetInnerHTML={{ __html: caption }}
+                            />
+                        )}
+                    </figure>
+                );
+            }
+
+            case 'quiz':
+                return <QuizRenderer key={key} data={block.data} />;
+
+            case 'youtube': {
+                const videoId = block.data?.videoId as string | undefined;
+                const caption = (block.data?.caption as string | undefined)?.trim();
+
+                if (!videoId) {
+                    return null;
+                }
+
+                return (
+                    <figure key={key} className="my-8">
+                        <div className="relative w-full overflow-hidden rounded-xl bg-zinc-900" style={{ paddingBottom: '56.25%' }}>
+                            <iframe
+                                src={`https://www.youtube-nocookie.com/embed/${videoId}`}
+                                className="absolute inset-0 h-full w-full border-0"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                                loading="lazy"
+                                title={caption || 'YouTube Video'}
+                            />
+                        </div>
+                        {caption && caption.length > 0 && (
+                            <figcaption className="mt-3 text-center text-sm text-zinc-500">
+                                {caption}
+                            </figcaption>
+                        )}
+                    </figure>
+                );
+            }
+
             case 'paragraph':
             case 'code':
             default:
@@ -498,4 +566,276 @@ function getHeadingId(block: OutputBlockData, fallbackIndex: number): string {
     }
 
     return `heading-${fallbackIndex}`;
+}
+
+// Quiz Types
+interface QuizQuestion {
+    id: string;
+    question: string;
+    imageUrl?: string;
+    answers: {
+        id: string;
+        text: string;
+        isCorrect: boolean;
+    }[];
+}
+
+interface QuizData {
+    questions: QuizQuestion[];
+}
+
+// Shuffle array helper (Fisher-Yates)
+function shuffleArray<T>(array: T[]): T[] {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+}
+
+// Quiz Renderer Component
+function QuizRenderer({ data }: { data: QuizData }) {
+    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+    const [selectedAnswerId, setSelectedAnswerId] = useState<string | null>(null);
+    const [hasAnswered, setHasAnswered] = useState(false);
+    const [correctCount, setCorrectCount] = useState(0);
+    const [isCompleted, setIsCompleted] = useState(false);
+
+    const questions = data?.questions ?? [];
+    const totalQuestions = questions.length;
+
+    // Randomize answers for each question (memoized per quiz session)
+    const [shuffledAnswersMap] = useState<Map<string, typeof questions[0]['answers']>>(() => {
+        const map = new Map();
+        questions.forEach((q) => {
+            map.set(q.id, shuffleArray(q.answers));
+        });
+        return map;
+    });
+
+    const currentQuestion = questions[currentQuestionIndex];
+    const currentAnswers = currentQuestion ? (shuffledAnswersMap.get(currentQuestion.id) ?? currentQuestion.answers) : [];
+
+    const handleAnswerSelect = useCallback((answerId: string) => {
+        if (hasAnswered) return;
+
+        setSelectedAnswerId(answerId);
+        setHasAnswered(true);
+
+        const isCorrect = currentAnswers.find((a) => a.id === answerId)?.isCorrect ?? false;
+        if (isCorrect) {
+            setCorrectCount((prev) => prev + 1);
+        }
+    }, [hasAnswered, currentAnswers]);
+
+    const handleNextQuestion = useCallback(() => {
+        if (currentQuestionIndex < totalQuestions - 1) {
+            setCurrentQuestionIndex((prev) => prev + 1);
+            setSelectedAnswerId(null);
+            setHasAnswered(false);
+        } else {
+            setIsCompleted(true);
+        }
+    }, [currentQuestionIndex, totalQuestions]);
+
+    const handleRestart = useCallback(() => {
+        // Re-shuffle answers on restart
+        questions.forEach((q) => {
+            shuffledAnswersMap.set(q.id, shuffleArray(q.answers));
+        });
+        setCurrentQuestionIndex(0);
+        setSelectedAnswerId(null);
+        setHasAnswered(false);
+        setCorrectCount(0);
+        setIsCompleted(false);
+    }, [questions, shuffledAnswersMap]);
+
+    if (!questions.length) {
+        return null;
+    }
+
+    if (isCompleted) {
+        const percentage = Math.round((correctCount / totalQuestions) * 100);
+        const isPerfect = correctCount === totalQuestions;
+        const isGood = percentage >= 70;
+
+        return (
+            <div className="my-8 rounded-2xl border border-zinc-200 bg-white p-6 sm:p-8">
+                <div className="text-center space-y-5">
+                    <div className={cn(
+                        'inline-flex items-center justify-center w-20 h-20 rounded-full',
+                        isPerfect ? 'bg-[#ff0055]/10' : isGood ? 'bg-emerald-100' : 'bg-amber-100'
+                    )}>
+                        {isPerfect ? (
+                            <CheckCircle2 className="w-10 h-10 text-[#ff0055]" />
+                        ) : (
+                            <span className={cn(
+                                'text-3xl font-bold',
+                                isGood ? 'text-emerald-600' : 'text-amber-600'
+                            )}>
+                                {percentage}%
+                            </span>
+                        )}
+                    </div>
+                    <div>
+                        <h3 className="text-xl font-bold text-zinc-900">
+                            {isPerfect ? 'Perfekt!' : isGood ? 'Gut gemacht!' : 'Weiter üben!'}
+                        </h3>
+                        <p className="text-zinc-500 mt-1">
+                            Du hast {correctCount} von {totalQuestions} Fragen richtig beantwortet.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={handleRestart}
+                        className="inline-flex items-center gap-2 rounded-xl bg-[#ff0055] px-5 py-2.5 text-sm font-medium text-white transition hover:bg-[#ff0055]/90"
+                    >
+                        Quiz wiederholen
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="my-8 rounded-2xl border border-zinc-200 bg-white overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-zinc-100 bg-gradient-to-r from-[#ff0055]/5 to-transparent px-5 py-3 sm:px-6">
+                <div className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#ff0055] text-xs font-bold text-white">
+                        Q
+                    </div>
+                    <span className="text-sm font-semibold text-zinc-900">Quiz</span>
+                </div>
+                <div className="flex items-center gap-3">
+                    <span className="text-xs font-medium text-zinc-500">
+                        Frage {currentQuestionIndex + 1} von {totalQuestions}
+                    </span>
+                    <div className="flex gap-1">
+                        {questions.map((_, idx) => (
+                            <div
+                                key={idx}
+                                className={cn(
+                                    'h-1.5 w-4 rounded-full transition-colors',
+                                    idx < currentQuestionIndex
+                                        ? 'bg-[#ff0055]'
+                                        : idx === currentQuestionIndex
+                                            ? 'bg-zinc-900'
+                                            : 'bg-zinc-200'
+                                )}
+                            />
+                        ))}
+                    </div>
+                </div>
+            </div>
+
+            {/* Question Content */}
+            <div className="p-5 sm:p-6 space-y-5">
+                {/* Question Image */}
+                {currentQuestion?.imageUrl && (
+                    <div className="rounded-xl overflow-hidden border border-zinc-100">
+                        <img
+                            src={currentQuestion.imageUrl}
+                            alt="Frage-Bild"
+                            className="w-full h-auto object-contain"
+                        />
+                    </div>
+                )}
+
+                {/* Question Text */}
+                <h4 className="text-lg font-semibold text-zinc-900 leading-snug">
+                    {currentQuestion?.question}
+                </h4>
+
+                {/* Answers */}
+                <div className="space-y-3">
+                    {currentAnswers.map((answer, idx) => {
+                        const isSelected = selectedAnswerId === answer.id;
+                        const showCorrect = hasAnswered && answer.isCorrect;
+                        const showIncorrect = hasAnswered && isSelected && !answer.isCorrect;
+
+                        return (
+                            <button
+                                key={answer.id}
+                                type="button"
+                                onClick={() => handleAnswerSelect(answer.id)}
+                                disabled={hasAnswered}
+                                className={cn(
+                                    'group flex w-full items-center gap-4 rounded-xl border-2 px-4 py-3.5 text-left transition-all',
+                                    !hasAnswered && 'hover:border-[#ff0055]/30 hover:bg-[#ff0055]/5 cursor-pointer',
+                                    hasAnswered && 'cursor-default',
+                                    !hasAnswered && !isSelected && 'border-zinc-200 bg-white',
+                                    !hasAnswered && isSelected && 'border-[#ff0055] bg-[#ff0055]/5',
+                                    showCorrect && 'border-emerald-500 bg-emerald-50',
+                                    showIncorrect && 'border-rose-500 bg-rose-50',
+                                    hasAnswered && !showCorrect && !showIncorrect && 'border-zinc-100 bg-zinc-50/50 opacity-60'
+                                )}
+                            >
+                                <span
+                                    className={cn(
+                                        'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-sm font-bold transition-colors',
+                                        !hasAnswered && 'bg-zinc-100 text-zinc-600 group-hover:bg-[#ff0055]/10 group-hover:text-[#ff0055]',
+                                        showCorrect && 'bg-emerald-500 text-white',
+                                        showIncorrect && 'bg-rose-500 text-white',
+                                        hasAnswered && !showCorrect && !showIncorrect && 'bg-zinc-100 text-zinc-400'
+                                    )}
+                                >
+                                    {showCorrect ? (
+                                        <CheckCircle2 className="w-4 h-4" />
+                                    ) : showIncorrect ? (
+                                        <XCircle className="w-4 h-4" />
+                                    ) : (
+                                        String.fromCharCode(65 + idx)
+                                    )}
+                                </span>
+                                <span
+                                    className={cn(
+                                        'flex-1 text-sm font-medium',
+                                        showCorrect && 'text-emerald-900',
+                                        showIncorrect && 'text-rose-900',
+                                        !showCorrect && !showIncorrect && 'text-zinc-700'
+                                    )}
+                                >
+                                    {answer.text}
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/* Feedback & Next Button */}
+                {hasAnswered && (
+                    <div className="flex items-center justify-between pt-2">
+                        <div
+                            className={cn(
+                                'text-sm font-medium',
+                                currentAnswers.find((a) => a.id === selectedAnswerId)?.isCorrect
+                                    ? 'text-emerald-600'
+                                    : 'text-rose-600'
+                            )}
+                        >
+                            {currentAnswers.find((a) => a.id === selectedAnswerId)?.isCorrect
+                                ? '✓ Richtig!'
+                                : '✗ Leider falsch'}
+                        </div>
+                        <button
+                            type="button"
+                            onClick={handleNextQuestion}
+                            className="inline-flex items-center gap-2 rounded-xl bg-[#ff0055] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#ff0055]/90"
+                        >
+                            {currentQuestionIndex < totalQuestions - 1 ? (
+                                <>
+                                    Nächste Frage
+                                    <ArrowRight className="w-4 h-4" />
+                                </>
+                            ) : (
+                                'Ergebnis anzeigen'
+                            )}
+                        </button>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
 }

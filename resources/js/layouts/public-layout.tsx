@@ -1,7 +1,6 @@
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Link } from '@inertiajs/react';
-import { Github, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { type PropsWithChildren, type ReactNode, useState } from 'react';
 
 interface PublicLayoutProps {
@@ -46,48 +45,20 @@ export default function PublicLayout({
                         >
                             Themen
                         </Link>
-                        <a
-                            href="https://github.com/motionbase/motionbase"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="rounded-lg px-4 py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
-                        >
-                            GitHub
-                        </a>
                     </nav>
 
-                    <div className="flex items-center gap-3">
-                        <div className="hidden md:flex items-center gap-2">
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-9 px-4 text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100"
-                                asChild
-                            >
-                                <Link href="/login">Anmelden</Link>
-                            </Button>
-                            <Button
-                                size="sm"
-                                className="h-9 px-4 bg-zinc-900 text-white hover:bg-zinc-800"
-                                asChild
-                            >
-                                <Link href="/register">Registrieren</Link>
-                            </Button>
-                        </div>
-
-                        {/* Mobile Menu Button */}
-                        <button
-                            type="button"
-                            className="md:hidden flex h-9 w-9 items-center justify-center rounded-lg text-zinc-600 hover:bg-zinc-100"
-                            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                        >
-                            {mobileMenuOpen ? (
-                                <X className="h-5 w-5" />
-                            ) : (
-                                <Menu className="h-5 w-5" />
-                            )}
-                        </button>
-                    </div>
+                    {/* Mobile Menu Button */}
+                    <button
+                        type="button"
+                        className="md:hidden flex h-9 w-9 items-center justify-center rounded-lg text-zinc-600 hover:bg-zinc-100"
+                        onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                    >
+                        {mobileMenuOpen ? (
+                            <X className="h-5 w-5" />
+                        ) : (
+                            <Menu className="h-5 w-5" />
+                        )}
+                    </button>
                 </div>
 
                 {/* Mobile Menu */}
@@ -101,29 +72,6 @@ export default function PublicLayout({
                             >
                                 Themen
                             </Link>
-                            <a
-                                href="https://github.com/motionbase/motionbase"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="rounded-lg px-4 py-3 text-sm font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900"
-                            >
-                                GitHub
-                            </a>
-                            <div className="mt-3 flex flex-col gap-2 border-t border-zinc-100 pt-4">
-                                <Button
-                                    variant="outline"
-                                    className="w-full justify-center"
-                                    asChild
-                                >
-                                    <Link href="/login">Anmelden</Link>
-                                </Button>
-                                <Button
-                                    className="w-full justify-center bg-zinc-900 text-white hover:bg-zinc-800"
-                                    asChild
-                                >
-                                    <Link href="/register">Registrieren</Link>
-                                </Button>
-                            </div>
                         </nav>
                     </div>
                 )}
@@ -168,19 +116,10 @@ export default function PublicLayout({
                     stickyFooter ? 'sticky bottom-0 z-40' : 'mt-auto',
                 )}
             >
-                <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+                <div className="mx-auto flex h-14 w-full max-w-7xl items-center justify-center px-4 sm:px-6 lg:px-8">
                     <span className="text-sm text-zinc-500">
                         © {new Date().getFullYear()} MotionBase
                     </span>
-                    <a
-                        href="https://github.com/motionbase/motionbase"
-                        className="flex items-center gap-2 text-sm text-zinc-500 transition-colors hover:text-zinc-900"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                    >
-                        <Github className="h-4 w-4" />
-                        <span className="hidden sm:inline">GitHub</span>
-                    </a>
                 </div>
             </footer>
         </div>

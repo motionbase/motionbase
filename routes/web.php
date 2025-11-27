@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ChapterController;
+use App\Http\Controllers\ImageUploadController;
 use App\Http\Controllers\PublicTopicController;
 use App\Http\Controllers\SectionController;
 use App\Http\Controllers\TopicController;
@@ -37,6 +38,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('chapters/{chapter}/sections/reorder', [SectionController::class, 'reorder'])->name('chapters.sections.reorder');
     Route::patch('sections/{section}', [SectionController::class, 'update'])->name('sections.update');
     Route::delete('sections/{section}', [SectionController::class, 'destroy'])->name('sections.destroy');
+
+    // Image upload for Editor.js
+    Route::post('upload/image', [ImageUploadController::class, 'upload'])->name('upload.image');
+    Route::post('upload/image-by-url', [ImageUploadController::class, 'uploadByUrl'])->name('upload.image.url');
 });
 
 require __DIR__.'/settings.php';

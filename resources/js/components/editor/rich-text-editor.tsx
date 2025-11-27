@@ -63,16 +63,22 @@ export function RichTextEditor({
                 { default: Header },
                 { default: List },
                 { default: Paragraph },
+                { default: ImageTool },
                 { default: CodeWithLanguage },
                 { default: AlertBlock },
+                { default: QuizBlock },
+                { default: YouTubeBlock },
             ] =
                 await Promise.all([
                     import('@editorjs/editorjs'),
                     import('@editorjs/header'),
                     import('@editorjs/list'),
                     import('@editorjs/paragraph'),
+                    import('@editorjs/image'),
                     import('@/components/editor/tools/code-with-language'),
                     import('@/components/editor/tools/alert-block'),
+                    import('@/components/editor/tools/quiz-block'),
+                    import('@/components/editor/tools/youtube-block'),
                 ]);
 
             if (!isActive || !holderRef.current) {
@@ -96,9 +102,53 @@ export function RichTextEditor({
                     list: {
                         class: List as unknown as ToolConstructable,
                         inlineToolbar: true,
+                        config: {
+                            defaultStyle: 'unordered',
+                        },
                     },
                     paragraph: {
                         class: Paragraph as unknown as ToolConstructable,
+                    },
+                    image: {
+                        class: ImageTool as unknown as ToolConstructable,
+                        config: {
+                            captionPlaceholder: 'Bildunterschrift eingeben…',
+                            buttonContent: 'Bild auswählen',
+                            uploader: {
+                                async uploadByFile(file: File) {
+                                    const formData = new FormData();
+                                    formData.append('image', file);
+
+                                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+                                    const response = await fetch('/upload/image', {
+                                        method: 'POST',
+                                        headers: {
+                                            'X-CSRF-TOKEN': csrfToken ?? '',
+                                            'Accept': 'application/json',
+                                        },
+                                        body: formData,
+                                    });
+
+                                    return response.json();
+                                },
+                                async uploadByUrl(url: string) {
+                                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+                                    const response = await fetch('/upload/image-by-url', {
+                                        method: 'POST',
+                                        headers: {
+                                            'X-CSRF-TOKEN': csrfToken ?? '',
+                                            'Content-Type': 'application/json',
+                                            'Accept': 'application/json',
+                                        },
+                                        body: JSON.stringify({ url }),
+                                    });
+
+                                    return response.json();
+                                },
+                            },
+                        },
                     },
                     code: {
                         class: CodeWithLanguage as unknown as ToolConstructable,
@@ -120,6 +170,15 @@ export function RichTextEditor({
                         config: {
                             defaultType: 'info',
                             placeholder: 'Beschreibe deinen Hinweis…',
+                        },
+                    },
+                    quiz: {
+                        class: QuizBlock as unknown as ToolConstructable,
+                    },
+                    youtube: {
+                        class: YouTubeBlock as unknown as ToolConstructable,
+                        config: {
+                            placeholder: 'YouTube-URL einfügen…',
                         },
                     },
                 },

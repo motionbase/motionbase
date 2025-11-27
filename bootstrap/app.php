@@ -21,6 +21,11 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);
+
+        $middleware->validateCsrfTokens(except: [
+            'upload/image',
+            'upload/image-by-url',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
