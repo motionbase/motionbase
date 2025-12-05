@@ -33,6 +33,11 @@ class CategoryController extends Controller
         ]);
     }
 
+    public function create(): Response
+    {
+        return Inertia::render('categories/create');
+    }
+
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
@@ -43,7 +48,7 @@ class CategoryController extends Controller
         Category::create($validated);
 
         return redirect()
-            ->back()
+            ->route('categories.index')
             ->with('flash', ['status' => 'success', 'message' => 'Kategorie erstellt.']);
     }
 

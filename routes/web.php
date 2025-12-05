@@ -22,6 +22,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::resource('categories', CategoryController::class)->only([
         'index',
+        'create',
         'store',
         'update',
         'destroy',
@@ -50,11 +51,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Media Library
     Route::get('media', function (\Illuminate\Http\Request $request) {
-        // If it's an AJAX request, return JSON
+        // If it's an Inertia request, render the Inertia page
+        if ($request->header('X-Inertia')) {
+            return \Inertia\Inertia::render('media/index');
+        }
+        // Otherwise return JSON for AJAX/fetch requests
         if ($request->wantsJson() || $request->ajax()) {
             return app(MediaController::class)->index($request);
         }
-        // Otherwise render the Inertia page
+        // Fallback: render Inertia page
         return \Inertia\Inertia::render('media/index');
     })->name('media.index');
     Route::get('media/{media}', [MediaController::class, 'show'])->name('media.show');

@@ -1,8 +1,6 @@
-import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
     DropdownMenu,
@@ -12,9 +10,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type Category } from '@/types';
-import { Head, router, useForm } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { Check, Layers, MoreHorizontal, Pencil, Plus, Trash2, X } from 'lucide-react';
-import { type FormEvent, useState } from 'react';
+import { useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -27,19 +25,6 @@ export default function Categories({ categories }: { categories: Category[] }) {
     const [editingId, setEditingId] = useState<number | null>(null);
     const [editingName, setEditingName] = useState('');
     const [editingDescription, setEditingDescription] = useState('');
-
-    const form = useForm({
-        name: '',
-        description: '',
-    });
-
-    const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        form.post('/categories', {
-            preserveScroll: true,
-            onSuccess: () => form.reset(),
-        });
-    };
 
     const handleStartEdit = (category: Category) => {
         setEditingId(category.id);
@@ -76,125 +61,60 @@ export default function Categories({ categories }: { categories: Category[] }) {
             <div className="min-h-[calc(100vh-80px)] bg-zinc-50/50">
                 {/* Header */}
                 <div className="border-b border-zinc-100 bg-white px-6 py-8 lg:px-10">
-                    <div className="mx-auto max-w-5xl">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-900">
-                                <Layers className="h-6 w-6 text-white" />
-                            </div>
+                    <div className="mx-auto max-w-6xl">
+                        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                             <div>
-                                <h1 className="text-2xl font-bold text-zinc-900">
+                                <h1 className="text-3xl font-bold tracking-tight text-zinc-900">
                                     Kategorien
                                 </h1>
-                                <p className="text-zinc-500">
+                                <p className="mt-1 text-zinc-500">
                                     Organisiere deine Themen in übersichtliche Bereiche
                                 </p>
                             </div>
+                            <Button
+                                className="h-10 gap-2 bg-zinc-900 px-5 text-white hover:bg-zinc-800"
+                                asChild
+                            >
+                                <Link href="/categories/create">
+                                    <Plus className="h-4 w-4" />
+                                    Neue Kategorie
+                                </Link>
+                            </Button>
                         </div>
                     </div>
                 </div>
 
                 {/* Content */}
-                <div className="px-6 py-10 lg:px-10">
-                    <div className="mx-auto max-w-5xl">
-                        <div className="grid gap-8 lg:grid-cols-[380px_1fr]">
-                            {/* Create Form */}
-                            <div className="rounded-2xl border border-zinc-100 bg-white p-6 shadow-sm h-fit">
-                                <div className="flex items-center gap-3">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-100">
-                                        <Plus className="h-5 w-5 text-zinc-600" />
-                                    </div>
-                                    <div>
-                                        <h2 className="font-semibold text-zinc-900">
-                                            Neue Kategorie
-                                        </h2>
-                                        <p className="text-sm text-zinc-500">
-                                            Erstelle einen neuen Bereich
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <form className="mt-6 space-y-4" onSubmit={handleSubmit}>
-                                    <div className="space-y-2">
-                                        <Label
-                                            htmlFor="name"
-                                            className="text-sm font-medium text-zinc-700"
-                                        >
-                                            Name
-                                        </Label>
-                                        <Input
-                                            id="name"
-                                            name="name"
-                                            value={form.data.name}
-                                            onChange={(event) =>
-                                                form.setData('name', event.target.value)
-                                            }
-                                            placeholder="z. B. Frontend"
-                                            className="h-10"
-                                        />
-                                        <InputError message={form.errors.name} />
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <Label
-                                            htmlFor="description"
-                                            className="text-sm font-medium text-zinc-700"
-                                        >
-                                            Beschreibung
-                                            <span className="ml-1 text-zinc-400">(optional)</span>
-                                        </Label>
-                                        <Textarea
-                                            id="description"
-                                            name="description"
-                                            value={form.data.description}
-                                            onChange={(event) =>
-                                                form.setData('description', event.target.value)
-                                            }
-                                            placeholder="Kurze Beschreibung..."
-                                            rows={3}
-                                        />
-                                        <InputError message={form.errors.description} />
-                                    </div>
-
-                                    <Button
-                                        type="submit"
-                                        disabled={form.processing}
-                                        className="w-full h-10 bg-zinc-900 text-white hover:bg-zinc-800"
-                                    >
-                                        {form.processing ? 'Speichere...' : 'Kategorie erstellen'}
-                                    </Button>
-                                </form>
-                            </div>
-
-                            {/* Categories List */}
-                            <div className="rounded-2xl border border-zinc-100 bg-white shadow-sm">
-                                <div className="border-b border-zinc-100 px-6 py-4">
-                                    <h2 className="font-semibold text-zinc-900">
-                                        Deine Kategorien
-                                    </h2>
-                                    <p className="text-sm text-zinc-500">
-                                        {categories.length} {categories.length === 1 ? 'Kategorie' : 'Kategorien'} vorhanden
-                                    </p>
-                                </div>
-
-                                {categories.length === 0 ? (
-                                    <div className="flex flex-col items-center justify-center py-16 text-center">
-                                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100">
+                <div className="px-6 py-8 lg:px-10">
+                    <div className="mx-auto max-w-6xl">
+                        {categories.length === 0 ? (
+                                    <div className="rounded-2xl border-2 border-dashed border-zinc-200 bg-white py-16 text-center">
+                                        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100">
                                             <Layers className="h-8 w-8 text-zinc-400" />
                                         </div>
-                                        <h3 className="mt-4 font-medium text-zinc-900">
+                                        <h3 className="mt-6 text-lg font-semibold text-zinc-900">
                                             Noch keine Kategorien
                                         </h3>
-                                        <p className="mt-1 text-sm text-zinc-500">
+                                        <p className="mt-2 text-sm text-zinc-500">
                                             Erstelle deine erste Kategorie, um loszulegen.
                                         </p>
+                                        <Button
+                                            className="mt-6 bg-zinc-900 text-white hover:bg-zinc-800"
+                                            asChild
+                                        >
+                                            <Link href="/categories/create">
+                                                <Plus className="mr-2 h-4 w-4" />
+                                                Kategorie erstellen
+                                            </Link>
+                                        </Button>
                                     </div>
-                                ) : (
-                                    <div className="divide-y divide-zinc-50">
-                                        {categories.map((category) => (
-                                            <div
-                                                key={category.id}
-                                                className="px-6 py-4 transition-colors hover:bg-zinc-50/50"
-                                            >
+                        ) : (
+                            <div className="grid gap-4">
+                                {categories.map((category) => (
+                                    <div
+                                        key={category.id}
+                                        className="rounded-2xl border border-zinc-100 bg-white p-6 shadow-sm transition-all hover:border-zinc-200 hover:shadow-md"
+                                    >
                                                 {editingId === category.id ? (
                                                     <div className="space-y-3">
                                                         <Input
@@ -295,12 +215,10 @@ export default function Categories({ categories }: { categories: Category[] }) {
                                                         </div>
                                                     </div>
                                                 )}
-                                            </div>
-                                        ))}
                                     </div>
-                                )}
+                                ))}
                             </div>
-                        </div>
+                        )}
                     </div>
                 </div>
             </div>

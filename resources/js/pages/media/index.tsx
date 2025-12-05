@@ -88,26 +88,42 @@ export default function MediaIndex() {
         if (!confirm('Möchtest du diese Datei wirklich löschen?')) return;
 
         try {
+            const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content;
+            if (!csrfToken) {
+                throw new Error('CSRF token not found');
+            }
+
             const response = await fetch(`/media/${id}`, {
                 method: 'DELETE',
                 headers: {
                     'Accept': 'application/json',
+                    'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content || '',
+                    'X-CSRF-TOKEN': csrfToken,
                 },
             });
 
-            if (!response.ok) throw new Error('Failed to delete');
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: 'Failed to delete' }));
+                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+            }
 
-            setMedia(prev => prev.filter(m => m.id !== id));
-            if (selectedMedia?.id === id) {
-                setDetailsOpen(false);
-                setSelectedMedia(null);
+            const result = await response.json();
+            if (result.success) {
+                setMedia(prev => prev.filter(m => m.id !== id));
+                if (meta) {
+                    setMeta(prev => prev ? { ...prev, total: prev.total - 1 } : null);
+                }
+                if (selectedMedia?.id === id) {
+                    setDetailsOpen(false);
+                    setSelectedMedia(null);
+                }
             }
         } catch (error) {
             console.error('Failed to delete media:', error);
+            alert('Fehler beim Löschen: ' + (error instanceof Error ? error.message : 'Unbekannter Fehler'));
         }
-    }, [selectedMedia]);
+    }, [selectedMedia, meta]);
 
     const formatFileSize = (bytes: number) => {
         if (bytes < 1024) return bytes + ' B';
@@ -140,64 +156,69 @@ export default function MediaIndex() {
         <AppLayout breadcrumbs={[{ title: 'Medien', href: '/media' }]}>
             <Head title="Medien" />
 
-            <div className="px-4 py-6 sm:px-6 lg:px-8">
+            <div className="min-h-[calc(100vh-80px)] bg-zinc-50/50">
                 {/* Header */}
-                <div className="mb-8">
-                    <h1 className="text-2xl font-bold text-zinc-900">Mediathek</h1>
-                    <p className="mt-1 text-sm text-zinc-500">
-                        Alle hochgeladenen Bilder und Dateien
-                    </p>
+                <div className="border-b border-zinc-100 bg-white px-6 py-8 lg:px-10">
+                    <div className="mx-auto max-w-6xl">
+                        <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                            <div>
+                                <h1 className="text-3xl font-bold tracking-tight text-zinc-900">
+                                    Medien
+                                </h1>
+                                <p className="mt-1 text-zinc-500">
+                                    Alle hochgeladenen Bilder und Dateien
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Search & Filter Bar */}
+                        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+                            <div className="relative flex-1">
+                                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
+                                <Input
+                                    type="text"
+                                    placeholder="Medien durchsuchen..."
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    className="h-10 border-zinc-200 bg-zinc-50 pl-10 focus:bg-white"
+                                />
+                            </div>
+                            <div className="flex gap-2">
+                                <Button
+                                    variant={activeType === 'all' ? 'default' : 'outline'}
+                                    size="sm"
+                                    onClick={() => setActiveType('all')}
+                                    className="h-10 border-zinc-200"
+                                >
+                                    Alle
+                                </Button>
+                                <Button
+                                    variant={activeType === 'image' ? 'default' : 'outline'}
+                                    size="sm"
+                                    onClick={() => setActiveType('image')}
+                                    className="h-10 gap-1.5 border-zinc-200"
+                                >
+                                    <Image className="h-4 w-4" />
+                                    Bilder
+                                </Button>
+                                <Button
+                                    variant={activeType === 'lottie' ? 'default' : 'outline'}
+                                    size="sm"
+                                    onClick={() => setActiveType('lottie')}
+                                    className="h-10 gap-1.5 border-zinc-200"
+                                >
+                                    <Film className="h-4 w-4" />
+                                    Lottie
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                {/* Filters */}
-                <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="relative max-w-xs flex-1">
-                        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
-                        <Input
-                            placeholder="Suchen..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="pl-9"
-                        />
-                    </div>
-                    
-                    <div className="flex gap-1">
-                        <Button
-                            variant={activeType === 'all' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setActiveType('all')}
-                        >
-                            Alle
-                        </Button>
-                        <Button
-                            variant={activeType === 'image' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setActiveType('image')}
-                            className="gap-1.5"
-                        >
-                            <Image className="h-4 w-4" />
-                            Bilder
-                        </Button>
-                        <Button
-                            variant={activeType === 'lottie' ? 'default' : 'outline'}
-                            size="sm"
-                            onClick={() => setActiveType('lottie')}
-                            className="gap-1.5"
-                        >
-                            <Film className="h-4 w-4" />
-                            Lottie
-                        </Button>
-                    </div>
-                </div>
-
-                {/* Stats */}
-                {meta && (
-                    <div className="mb-6 text-sm text-zinc-500">
-                        {meta.total} {meta.total === 1 ? 'Datei' : 'Dateien'} gefunden
-                    </div>
-                )}
-
-                {/* Media Grid */}
+                {/* Content */}
+                <div className="px-6 py-8 lg:px-10">
+                    <div className="mx-auto max-w-6xl">
+                        {/* Media Grid */}
                 {loading ? (
                     <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8">
                         {Array.from({ length: 16 }).map((_, i) => (
@@ -205,13 +226,17 @@ export default function MediaIndex() {
                         ))}
                     </div>
                 ) : media.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 py-16">
-                        <div className="mb-4 rounded-full bg-zinc-100 p-4">
+                    <div className="rounded-2xl border-2 border-dashed border-zinc-200 bg-white py-16 text-center">
+                        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-zinc-100">
                             <Image className="h-8 w-8 text-zinc-400" />
                         </div>
-                        <h3 className="text-lg font-medium text-zinc-900">Keine Medien gefunden</h3>
-                        <p className="mt-1 text-sm text-zinc-500">
-                            Lade Dateien über den Editor hoch, um sie hier zu sehen.
+                        <h3 className="mt-6 text-lg font-semibold text-zinc-900">
+                            {search || activeType !== 'all' ? 'Keine Medien gefunden' : 'Noch keine Medien'}
+                        </h3>
+                        <p className="mt-2 text-sm text-zinc-500">
+                            {search || activeType !== 'all'
+                                ? 'Versuche andere Suchbegriffe oder Filter.'
+                                : 'Lade Dateien über den Editor hoch, um sie hier zu sehen.'}
                         </p>
                     </div>
                 ) : (
@@ -262,30 +287,32 @@ export default function MediaIndex() {
                     </div>
                 )}
 
-                {/* Pagination */}
-                {meta && meta.last_page > 1 && (
-                    <div className="mt-8 flex items-center justify-center gap-2">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={meta.current_page === 1}
-                            onClick={() => fetchMedia(meta.current_page - 1, search, activeType)}
-                        >
-                            Zurück
-                        </Button>
-                        <span className="px-4 text-sm text-zinc-500">
-                            Seite {meta.current_page} von {meta.last_page}
-                        </span>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={meta.current_page === meta.last_page}
-                            onClick={() => fetchMedia(meta.current_page + 1, search, activeType)}
-                        >
-                            Weiter
-                        </Button>
+                        {/* Pagination */}
+                        {meta && meta.last_page > 1 && (
+                            <div className="mt-8 flex items-center justify-center gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={meta.current_page === 1}
+                                    onClick={() => fetchMedia(meta.current_page - 1, search, activeType)}
+                                >
+                                    Zurück
+                                </Button>
+                                <span className="px-4 text-sm text-zinc-500">
+                                    Seite {meta.current_page} von {meta.last_page}
+                                </span>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={meta.current_page === meta.last_page}
+                                    onClick={() => fetchMedia(meta.current_page + 1, search, activeType)}
+                                >
+                                    Weiter
+                                </Button>
+                            </div>
+                        )}
                     </div>
-                )}
+                </div>
             </div>
 
             {/* Details Dialog */}
