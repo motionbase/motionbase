@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button';
+import { CodeBlock } from '@/components/ui/code-block';
 import PublicLayout from '@/layouts/public-layout';
 import { type Chapter, type Section, type Topic } from '@/types';
 import { Head, Link, router } from '@inertiajs/react';
@@ -457,28 +458,21 @@ function renderBlocks(blocks: OutputBlockData[], theme?: RenderTheme) {
                 );
             }
 
+            case 'code': {
+                const language = (block.data?.language as string) ?? 'javascript';
+                const codeContent = (block.data?.code as string) ?? '';
+
+                return (
+                    <CodeBlock
+                        key={key}
+                        code={codeContent}
+                        language={language}
+                    />
+                );
+            }
+
             case 'paragraph':
-            case 'code':
             default:
-                if (block.type === 'code') {
-                    const language = (block.data?.language as string) ?? 'javascript';
-                    const languageClass = `language-${language}`;
-
-                    return (
-                        <div className="mb-6 overflow-hidden rounded-2xl bg-zinc-950 shadow-inner shadow-black/30">
-                            <pre
-                                key={key}
-                                className={cn(
-                                    'language-pre block w-full overflow-auto px-5 py-4 text-sm lg:px-6 lg:py-5',
-                                    languageClass,
-                                )}
-                            >
-                                <code className={languageClass}>{block.data.code}</code>
-                            </pre>
-                        </div>
-                    );
-                }
-
                 return (
                     <p
                         key={key}

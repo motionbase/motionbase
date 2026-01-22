@@ -108,6 +108,24 @@ export default class CodeWithLanguage implements BlockTool {
             this.data.code = target.value;
         });
 
+        // Prevent Enter from creating a new block - allow new lines in code
+        this.textarea.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.stopPropagation();
+            }
+            // Allow Tab for indentation (prevent scrolling/focus change)
+            if (event.key === 'Tab') {
+                event.preventDefault();
+                event.stopPropagation();
+                const target = event.target as HTMLTextAreaElement;
+                const start = target.selectionStart;
+                const end = target.selectionEnd;
+                target.value = target.value.substring(0, start) + '  ' + target.value.substring(end);
+                target.selectionStart = target.selectionEnd = start + 2;
+                this.data.code = target.value;
+            }
+        });
+
         this.wrapper.appendChild(controlRow);
         this.wrapper.appendChild(this.textarea);
 

@@ -452,7 +452,7 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                         {activeSection ? (
                             <>
                                 {/* Section Title */}
-                                <div className="shrink-0 border-b border-zinc-100 px-8 py-6 lg:px-16">
+                                <div className="shrink-0 border-b border-zinc-100 py-6 pl-16 pr-8 lg:pl-20 lg:pr-12">
                                     <input
                                         type="text"
                                         value={sectionForm.data.title}
@@ -463,16 +463,14 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                                 </div>
 
                                 {/* Editor */}
-                                <div className="flex-1 overflow-y-auto">
-                                    <div className="mx-auto max-w-3xl px-8 py-8 lg:px-16">
-                                        <RichTextEditor
-                                            key={activeSection.id}
-                                            initialValue={(activeSection.content ?? null) as OutputData}
-                                            onChange={(value) => sectionForm.setData('content', value as EditorContent)}
-                                            className="gutenberg-editor min-h-[60vh] border-0 bg-transparent shadow-none"
-                                            placeholder="Beginne zu schreiben oder drücke / für Blöcke…"
-                                        />
-                                    </div>
+                                <div className="flex-1 overflow-y-auto py-6 pl-16 pr-8 lg:pl-20 lg:pr-12">
+                                    <RichTextEditor
+                                        key={activeSection.id}
+                                        initialValue={(activeSection.content ?? null) as OutputData}
+                                        onChange={(value) => sectionForm.setData('content', value as EditorContent)}
+                                        className="gutenberg-editor min-h-[60vh] border-0 bg-transparent shadow-none"
+                                        placeholder="Beginne zu schreiben oder drücke / für Blöcke…"
+                                    />
                                 </div>
                             </>
                         ) : (
