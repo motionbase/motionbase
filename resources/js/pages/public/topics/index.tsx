@@ -91,7 +91,7 @@ export default function PublicTopicsIndex({ topics, categories, filters }: Publi
 function TopicCard({ topic }: { topic: Topic }) {
     return (
         <Link
-            href={`/themen/${topic.id}`}
+            href={`/themen/${topic.slug}`}
             className="group flex flex-col rounded-2xl border border-zinc-200 bg-white p-6 transition-all hover:border-zinc-300 hover:shadow-lg"
         >
             {/* Header */}

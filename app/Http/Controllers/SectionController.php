@@ -14,13 +14,26 @@ class SectionController extends Controller
         $this->authorize('update', $chapter->topic);
 
         $validated = $request->validate([
-            'title' => ['nullable', 'string', 'max:255'],
+            'title' => ['required', 'string', 'max:255'],
+            'slug' => ['nullable', 'string', 'max:255'],
         ]);
 
         $maxSortOrder = $chapter->sections()->max('sort_order') ?? -1;
 
+        // Generate slug from title if not provided
+        $slug = $validated['slug'] ?? \Illuminate\Support\Str::slug($validated['title']);
+
+        // Ensure slug is unique within the chapter
+        $originalSlug = $slug;
+        $counter = 1;
+        while ($chapter->sections()->where('slug', $slug)->exists()) {
+            $slug = $originalSlug . '-' . $counter;
+            $counter++;
+        }
+
         $section = $chapter->sections()->create([
-            'title' => $validated['title'] ?? 'Neuer Abschnitt',
+            'title' => $validated['title'],
+            'slug' => $slug,
             'content' => [
                 'time' => now()->getTimestampMs(),
                 'blocks' => [
@@ -35,7 +48,7 @@ class SectionController extends Controller
         ]);
 
         return redirect()
-            ->route('topics.edit', ['topic' => $chapter->topic_id, 'section' => $section->id])
+            ->route('topics.edit', ['topic' => $chapter->topic, 'section' => $section->id])
             ->with('flash', ['status' => 'success', 'message' => 'Abschnitt erstellt.']);
     }
 
@@ -45,13 +58,27 @@ class SectionController extends Controller
 
         $validated = $request->validate([
             'title' => ['sometimes', 'string', 'max:255'],
+            'slug' => ['sometimes', 'string', 'max:255'],
             'content' => ['sometimes', 'array'],
+            'is_published' => ['sometimes', 'boolean'],
         ]);
+
+        // If slug is provided, ensure uniqueness within the chapter
+        if (isset($validated['slug'])) {
+            $slug = $validated['slug'];
+            $originalSlug = $slug;
+            $counter = 1;
+            while ($section->chapter->sections()->where('slug', $slug)->where('id', '!=', $section->id)->exists()) {
+                $slug = $originalSlug . '-' . $counter;
+                $counter++;
+            }
+            $validated['slug'] = $slug;
+        }
 
         $section->update($validated);
 
         return redirect()
-            ->route('topics.edit', ['topic' => $section->chapter->topic_id, 'section' => $section->id])
+            ->route('topics.edit', ['topic' => $section->chapter->topic, 'section' => $section->id])
             ->with('flash', ['status' => 'success', 'message' => 'Abschnitt gespeichert.']);
     }
 
@@ -81,7 +108,7 @@ class SectionController extends Controller
         }
 
         return redirect()
-            ->route('topics.edit', ['topic' => $topic->id, 'section' => $nextSection?->id])
+            ->route('topics.edit', ['topic' => $topic, 'section' => $nextSection?->id])
             ->with('flash', ['status' => 'success', 'message' => 'Abschnitt gelöscht.']);
     }
 

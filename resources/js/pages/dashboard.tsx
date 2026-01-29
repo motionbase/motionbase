@@ -62,7 +62,7 @@ export default function Dashboard({ stats, recentTopics = [] }: DashboardProps) 
                                     className="h-11 gap-2 border-zinc-200 px-5 text-zinc-700 hover:bg-zinc-50"
                                     asChild
                                 >
-                                    <Link href="/topics">
+                                    <Link href="/admin/topics">
                                         <BookOpen className="h-4 w-4" />
                                         Alle Themen
                                     </Link>
@@ -71,7 +71,7 @@ export default function Dashboard({ stats, recentTopics = [] }: DashboardProps) 
                                     className="h-11 gap-2 bg-zinc-900 px-5 text-white hover:bg-zinc-800"
                                     asChild
                                 >
-                                    <Link href="/topics/create">
+                                    <Link href="/admin/topics/create">
                                         <Plus className="h-4 w-4" />
                                         Neues Thema
                                     </Link>
@@ -90,7 +90,7 @@ export default function Dashboard({ stats, recentTopics = [] }: DashboardProps) 
                                 value={displayStats.topics}
                                 icon={BookOpen}
                                 trend="+2 diese Woche"
-                                href="/topics"
+                                href="/admin/topics"
                             />
                             <StatCard
                                 label="Kapitel"
@@ -108,7 +108,7 @@ export default function Dashboard({ stats, recentTopics = [] }: DashboardProps) 
                                 label="Kategorien"
                                 value={displayStats.categories}
                                 icon={TrendingUp}
-                                href="/categories"
+                                href="/admin/categories"
                             />
                         </div>
 
@@ -132,7 +132,7 @@ export default function Dashboard({ stats, recentTopics = [] }: DashboardProps) 
                                             className="gap-1 text-zinc-500 hover:text-zinc-900"
                                             asChild
                                         >
-                                            <Link href="/topics">
+                                            <Link href="/admin/topics">
                                                 Alle anzeigen
                                                 <ArrowRight className="h-4 w-4" />
                                             </Link>
@@ -154,7 +154,7 @@ export default function Dashboard({ stats, recentTopics = [] }: DashboardProps) 
                                                     className="mt-6 bg-zinc-900 text-white hover:bg-zinc-800"
                                                     asChild
                                                 >
-                                                    <Link href="/topics/create">
+                                                    <Link href="/admin/topics/create">
                                                         <Plus className="mr-2 h-4 w-4" />
                                                         Thema erstellen
                                                     </Link>
@@ -164,7 +164,7 @@ export default function Dashboard({ stats, recentTopics = [] }: DashboardProps) 
                                             recentTopics.slice(0, 5).map((topic) => (
                                                 <Link
                                                     key={topic.id}
-                                                    href={`/topics/${topic.id}/edit`}
+                                                    href={`/admin/topics/${topic.id}/edit`}
                                                     className="flex items-center justify-between px-6 py-4 transition-colors hover:bg-zinc-50"
                                                 >
                                                     <div className="flex items-center gap-4">
@@ -201,17 +201,17 @@ export default function Dashboard({ stats, recentTopics = [] }: DashboardProps) 
                                         <QuickAction
                                             icon={Plus}
                                             label="Neues Thema erstellen"
-                                            href="/topics/create"
+                                            href="/admin/topics/create"
                                         />
                                         <QuickAction
                                             icon={BookOpen}
                                             label="Themen verwalten"
-                                            href="/topics"
+                                            href="/admin/topics"
                                         />
                                         <QuickAction
                                             icon={Layers}
                                             label="Kategorien bearbeiten"
-                                            href="/categories"
+                                            href="/admin/categories"
                                         />
                                     </div>
                                 </div>

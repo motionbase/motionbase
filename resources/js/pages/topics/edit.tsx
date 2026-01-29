@@ -1,6 +1,7 @@
 import InputError from '@/components/input-error';
 import { RichTextEditor } from '@/components/editor/rich-text-editor';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -14,7 +15,7 @@ import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem, type Category, type Chapter, type Section, type Topic } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
 import type { OutputData } from '@editorjs/editorjs';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -40,6 +41,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
+import { TopicHistory } from '@/components/revisions/topic-history';
+import { CreateItemDialog } from '@/components/create-item-dialog';
 
 type EditorContent = {
     time: number;
@@ -58,13 +61,22 @@ interface TopicsEditProps {
 
 export default function TopicsEdit({ topic, activeSection, categories }: TopicsEditProps) {
     const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Themen', href: '/topics' },
-        { title: topic.title, href: `/topics/${topic.id}/edit` },
+        { title: 'Themen', href: '/admin/topics' },
+        { title: topic.title, href: `/admin/topics/${topic.id}/edit` },
     ];
 
     // Sidebar visibility
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [settingsOpen, setSettingsOpen] = useState(false);
+
+    // Dialog for creating chapters/sections
+    const [dialogOpen, setDialogOpen] = useState(false);
+    const [dialogType, setDialogType] = useState<'chapter' | 'section'>('chapter');
+    const [dialogChapterId, setDialogChapterId] = useState<number | undefined>(undefined);
+
+    // Settings panel tabs
+    const [settingsTab, setSettingsTab] = useState<'topic' | 'chapter' | 'section'>('topic');
+    const [selectedChapterId, setSelectedChapterId] = useState<number | null>(null);
 
     // Track expanded chapters
     const [expandedChapters, setExpandedChapters] = useState<Set<number>>(() => {
@@ -88,7 +100,8 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
 
     const topicForm = useForm({
         title: topic.title,
-        category_id: topic.category_id ? String(topic.category_id) : '',
+        slug: topic.slug,
+        category_id: topic.category_id,
     });
 
     const sectionForm = useForm<{
@@ -99,52 +112,140 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
         content: (activeSection?.content ?? null) as EditorContent | null,
     });
 
+    // Ref to track the current section ID to prevent stale updates
+    const activeSectionIdRef = useRef(activeSection?.id);
+    const [isSwitchingSection, setIsSwitchingSection] = useState(false);
+
     useEffect(() => {
-        sectionForm.setData({
+        // Mark that we're switching sections
+        setIsSwitchingSection(true);
+
+        activeSectionIdRef.current = activeSection?.id;
+
+        sectionForm.reset({
             title: activeSection?.title ?? '',
             content: (activeSection?.content ?? null) as EditorContent | null,
         });
         sectionForm.clearErrors();
+
+        // Auto-select chapter when section changes
+        if (activeSection) {
+            const chapter = topic.chapters.find((ch) =>
+                ch.sections.some((s) => s.id === activeSection.id)
+            );
+            if (chapter) {
+                setSelectedChapterId(chapter.id);
+            }
+        }
+
+        // Allow saving after a short delay to ensure form is properly reset
+        const timer = setTimeout(() => {
+            setIsSwitchingSection(false);
+        }, 100);
+
+        return () => clearTimeout(timer);
     }, [activeSection?.id]);
 
+    // Warn user about unsaved changes before leaving
+    useEffect(() => {
+        const hasUnsavedChanges = sectionForm.isDirty || topicForm.isDirty;
+
+        // Browser navigation (close tab, reload, etc.)
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (hasUnsavedChanges) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        };
+
+        // Inertia navigation (internal links)
+        const handleInertiaNavigate = (event: { detail: { visit: { url: { href: string } } } }) => {
+            if (hasUnsavedChanges) {
+                const currentUrl = window.location.href;
+                const targetUrl = event.detail.visit.url.href;
+
+                // Don't warn if staying on the same page (section changes)
+                if (targetUrl.includes(`/admin/topics/${topic.id}/edit`)) {
+                    return;
+                }
+
+                if (!confirm('Du hast ungespeicherte Änderungen. Möchtest du die Seite wirklich verlassen?')) {
+                    event.preventDefault();
+                }
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        const removeInertiaListener = router.on('before', handleInertiaNavigate as any);
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+            removeInertiaListener();
+        };
+    }, [sectionForm.isDirty, topicForm.isDirty, topic.id]);
+
+    // Memoized onChange handler that checks section ID
+    const handleEditorChange = useCallback((value: EditorContent) => {
+        // Only update if we're still on the same section
+        if (activeSectionIdRef.current === activeSection?.id) {
+            sectionForm.setData('content', value);
+        }
+    }, [activeSection?.id, sectionForm]);
+
     const handleTopicSave = () => {
-        topicForm.put(`/topics/${topic.id}`, { preserveScroll: true });
+        topicForm.put(`/admin/topics/${topic.id}`, { preserveScroll: true });
     };
 
     const handleSectionSave = () => {
         if (!activeSection) return;
-        sectionForm.patch(`/sections/${activeSection.id}`, {
+
+        // Double-check we're not trying to save stale data
+        if (isSwitchingSection) {
+            console.warn('Cannot save while switching sections');
+            return;
+        }
+
+        // Verify we're saving to the correct section
+        if (activeSectionIdRef.current !== activeSection.id) {
+            console.error('Section ID mismatch - preventing save');
+            return;
+        }
+
+        sectionForm.patch(`/admin/sections/${activeSection.id}`, {
             preserveScroll: true,
         });
     };
 
     const handleNavigateToSection = (sectionId: number) => {
-        router.visit(`/topics/${topic.id}/edit?section=${sectionId}`, {
+        router.visit(`/admin/topics/${topic.id}/edit/${sectionId}`, {
             preserveScroll: true,
-            preserveState: true,
         });
     };
 
     const handleCreateChapter = () => {
-        router.post(`/topics/${topic.id}/chapters`, {}, { preserveScroll: true });
+        setDialogType('chapter');
+        setDialogChapterId(undefined);
+        setDialogOpen(true);
     };
 
     const handleDeleteChapter = (chapterId: number) => {
         if (!confirm('Dieses Kapitel und alle Abschnitte wirklich löschen?')) {
             return;
         }
-        router.delete(`/chapters/${chapterId}`, { preserveScroll: true });
+        router.delete(`/admin/chapters/${chapterId}`, { preserveScroll: true });
     };
 
     const handleCreateSection = (chapterId: number) => {
-        router.post(`/chapters/${chapterId}/sections`, {}, { preserveScroll: true });
+        setDialogType('section');
+        setDialogChapterId(chapterId);
+        setDialogOpen(true);
     };
 
     const handleDeleteSection = (sectionId: number) => {
         if (!confirm('Diesen Abschnitt wirklich löschen?')) {
             return;
         }
-        router.delete(`/sections/${sectionId}`, { preserveScroll: true });
+        router.delete(`/admin/sections/${sectionId}`, { preserveScroll: true });
     };
 
     const totalSections = topic.chapters.reduce((acc, ch) => acc + ch.sections.length, 0);
@@ -161,7 +262,7 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
 
     const handleSaveChapterTitle = (chapterId: number) => {
         if (editingChapterTitle.trim()) {
-            router.patch(`/chapters/${chapterId}`, { title: editingChapterTitle }, { preserveScroll: true });
+            router.patch(`/admin/chapters/${chapterId}`, { title: editingChapterTitle }, { preserveScroll: true });
         }
         setEditingChapterId(null);
         setEditingChapterTitle('');
@@ -185,7 +286,7 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                             variant="ghost"
                             size="icon"
                             className="h-9 w-9 text-zinc-500 hover:text-zinc-900"
-                            onClick={() => router.visit('/topics')}
+                            onClick={() => router.visit('/admin/topics')}
                         >
                             <ArrowLeft className="h-5 w-5" />
                         </Button>
@@ -227,6 +328,8 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                             </span>
                         )}
 
+                        <TopicHistory topicId={topic.id} />
+
                         <Button
                             variant="ghost"
                             size="icon"
@@ -238,7 +341,7 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
 
                         <Button
                             onClick={handleSectionSave}
-                            disabled={sectionForm.processing || !activeSection}
+                            disabled={sectionForm.processing || !activeSection || isSwitchingSection}
                             className="h-9 bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-800"
                         >
                             <Save className="mr-2 h-4 w-4" />
@@ -325,39 +428,28 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                                                     </div>
                                                 ) : (
                                                     <>
-                                                        <span
-                                                            className="flex-1 cursor-pointer truncate text-sm font-medium text-zinc-700 hover:text-zinc-900"
-                                                            onDoubleClick={() => handleStartEditChapter(chapter)}
+                                                        <button
+                                                            type="button"
+                                                            className="flex-1 cursor-pointer truncate text-left text-sm font-medium text-zinc-700 hover:text-zinc-900"
+                                                            onClick={() => {
+                                                                setSelectedChapterId(chapter.id);
+                                                                setSettingsTab('chapter');
+                                                                setSettingsOpen(true);
+                                                            }}
                                                         >
                                                             {chapter.title}
-                                                        </span>
+                                                        </button>
                                                         <span className="rounded-full bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500">
                                                             {chapter.sections.length}
                                                         </span>
-                                                        <DropdownMenu>
-                                                            <DropdownMenuTrigger asChild>
-                                                                <button className="flex h-6 w-6 items-center justify-center rounded text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600">
-                                                                    <MoreHorizontal className="h-4 w-4" />
-                                                                </button>
-                                                            </DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end" className="w-44">
-                                                                <DropdownMenuItem onClick={() => handleStartEditChapter(chapter)}>
-                                                                    <Pencil className="mr-2 h-4 w-4" />
-                                                                    Umbenennen
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuItem onClick={() => handleCreateSection(chapter.id)}>
-                                                                    <Plus className="mr-2 h-4 w-4" />
-                                                                    Abschnitt
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuItem
-                                                                    className="text-red-600 focus:text-red-600"
-                                                                    onClick={() => handleDeleteChapter(chapter.id)}
-                                                                >
-                                                                    <Trash2 className="mr-2 h-4 w-4" />
-                                                                    Löschen
-                                                                </DropdownMenuItem>
-                                                            </DropdownMenuContent>
-                                                        </DropdownMenu>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => handleCreateSection(chapter.id)}
+                                                            className="flex h-6 w-6 items-center justify-center rounded text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
+                                                            title="Seite hinzufügen"
+                                                        >
+                                                            <Plus className="h-4 w-4" />
+                                                        </button>
                                                     </>
                                                 )}
                                             </div>
@@ -391,29 +483,6 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                                                                         {section.title}
                                                                     </span>
                                                                 </button>
-                                                                <DropdownMenu>
-                                                                    <DropdownMenuTrigger asChild>
-                                                                        <button
-                                                                            className={cn(
-                                                                                'flex h-5 w-5 items-center justify-center rounded opacity-0 transition-opacity group-hover:opacity-100',
-                                                                                isActive
-                                                                                    ? 'text-white/70 hover:bg-white/10 hover:text-white'
-                                                                                    : 'text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600',
-                                                                            )}
-                                                                        >
-                                                                            <MoreHorizontal className="h-3.5 w-3.5" />
-                                                                        </button>
-                                                                    </DropdownMenuTrigger>
-                                                                    <DropdownMenuContent align="end" className="w-36">
-                                                                        <DropdownMenuItem
-                                                                            className="text-red-600 focus:text-red-600"
-                                                                            onClick={() => handleDeleteSection(section.id)}
-                                                                        >
-                                                                            <Trash2 className="mr-2 h-4 w-4" />
-                                                                            Löschen
-                                                                        </DropdownMenuItem>
-                                                                    </DropdownMenuContent>
-                                                                </DropdownMenu>
                                                             </div>
                                                         );
                                                     })}
@@ -467,7 +536,7 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                                     <RichTextEditor
                                         key={activeSection.id}
                                         initialValue={(activeSection.content ?? null) as OutputData}
-                                        onChange={(value) => sectionForm.setData('content', value as EditorContent)}
+                                        onChange={(value) => handleEditorChange(value as EditorContent)}
                                         className="gutenberg-editor min-h-[60vh] border-0 bg-transparent shadow-none"
                                         placeholder="Beginne zu schreiben oder drücke / für Blöcke…"
                                     />
@@ -489,7 +558,7 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                     {/* Right Sidebar - Settings */}
                     <aside
                         className={cn(
-                            'flex h-full w-72 shrink-0 flex-col border-l border-zinc-100 bg-white transition-all duration-200',
+                            'flex h-full w-80 shrink-0 flex-col border-l border-zinc-100 bg-white transition-all duration-200',
                             settingsOpen ? 'translate-x-0' : 'translate-x-full absolute right-0 lg:relative lg:mr-0 lg:hidden',
                         )}
                     >
@@ -506,61 +575,289 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                             </button>
                         </div>
 
+                        {/* Tabs */}
+                        <div className="flex border-b border-zinc-200">
+                            <button
+                                type="button"
+                                onClick={() => setSettingsTab('topic')}
+                                className={cn(
+                                    'flex-1 px-4 py-2 text-xs font-medium transition-colors',
+                                    settingsTab === 'topic'
+                                        ? 'border-b-2 border-zinc-900 text-zinc-900'
+                                        : 'text-zinc-500 hover:text-zinc-700'
+                                )}
+                            >
+                                Thema
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setSettingsTab('chapter')}
+                                className={cn(
+                                    'flex-1 px-4 py-2 text-xs font-medium transition-colors',
+                                    settingsTab === 'chapter'
+                                        ? 'border-b-2 border-zinc-900 text-zinc-900'
+                                        : 'text-zinc-500 hover:text-zinc-700'
+                                )}
+                            >
+                                Kapitel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setSettingsTab('section')}
+                                className={cn(
+                                    'flex-1 px-4 py-2 text-xs font-medium transition-colors',
+                                    settingsTab === 'section'
+                                        ? 'border-b-2 border-zinc-900 text-zinc-900'
+                                        : 'text-zinc-500 hover:text-zinc-700'
+                                )}
+                            >
+                                Seite
+                            </button>
+                        </div>
+
                         <div className="flex-1 overflow-y-auto p-4">
-                            <div className="space-y-6">
-                                <div className="space-y-2">
-                                    <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                                        Kurstitel
-                                    </Label>
-                                    <Input
-                                        value={topicForm.data.title}
-                                        onChange={(event) => topicForm.setData('title', event.target.value)}
-                                        onBlur={handleTopicSave}
-                                        className="h-9 text-sm"
-                                    />
-                                    <InputError message={topicForm.errors.title} />
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label className="text-xs font-semibold uppercase tracking-wider text-zinc-400">
-                                        Kategorie
-                                    </Label>
-                                    <Select
-                                        value={topicForm.data.category_id}
-                                        onValueChange={(value) => {
-                                            topicForm.setData('category_id', value);
-                                            topicForm.put(`/topics/${topic.id}`, { preserveScroll: true });
-                                        }}
-                                    >
-                                        <SelectTrigger className="h-9 text-sm">
-                                            <SelectValue placeholder="Kategorie wählen" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {categories.map((category) => (
-                                                <SelectItem key={category.id} value={String(category.id)}>
-                                                    {category.name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <InputError message={topicForm.errors.category_id} />
-                                </div>
-
-                                <div className="rounded-lg bg-zinc-50 p-3">
-                                    <div className="flex items-center justify-between text-sm">
-                                        <span className="text-zinc-500">Kapitel</span>
-                                        <span className="font-medium text-zinc-900">{topic.chapters.length}</span>
+                            {/* Topic Settings */}
+                            {settingsTab === 'topic' && (
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Label className="text-xs font-semibold">Titel</Label>
+                                        <Input
+                                            value={topicForm.data.title}
+                                            onChange={(e) => topicForm.setData('title', e.target.value)}
+                                            onBlur={handleTopicSave}
+                                            className="h-9 text-sm"
+                                        />
+                                        <InputError message={topicForm.errors.title} />
                                     </div>
-                                    <div className="mt-2 flex items-center justify-between text-sm">
-                                        <span className="text-zinc-500">Abschnitte</span>
-                                        <span className="font-medium text-zinc-900">{totalSections}</span>
+
+                                    <div className="space-y-2">
+                                        <Label className="text-xs font-semibold">Slug</Label>
+                                        <Input
+                                            value={topicForm.data.slug}
+                                            onChange={(e) => topicForm.setData('slug', e.target.value)}
+                                            onBlur={handleTopicSave}
+                                            className="h-9 text-sm font-mono"
+                                        />
+                                        <InputError message={topicForm.errors.slug} />
+                                        <p className="text-xs text-muted-foreground">
+                                            URL-freundliche Version des Titels
+                                        </p>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <Label className="text-xs font-semibold">Kategorie</Label>
+                                        <Select
+                                            value={String(topicForm.data.category_id)}
+                                            onValueChange={(value) => {
+                                                topicForm.setData('category_id', parseInt(value));
+                                            }}
+                                        >
+                                            <SelectTrigger className="h-9 text-sm">
+                                                <SelectValue placeholder="Kategorie wählen" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {categories.map((category) => (
+                                                    <SelectItem key={category.id} value={String(category.id)}>
+                                                        {category.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <InputError message={topicForm.errors.category_id} />
+                                    </div>
+
+                                    {topicForm.isDirty && (
+                                        <Button
+                                            onClick={handleTopicSave}
+                                            disabled={topicForm.processing}
+                                            className="w-full h-9 text-sm"
+                                        >
+                                            {topicForm.processing ? 'Speichern...' : 'Änderungen speichern'}
+                                        </Button>
+                                    )}
+
+                                    <div className="rounded-lg bg-zinc-50 p-3">
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-zinc-500">Kapitel</span>
+                                            <span className="font-medium text-zinc-900">{topic.chapters.length}</span>
+                                        </div>
+                                        <div className="mt-2 flex items-center justify-between text-sm">
+                                            <span className="text-zinc-500">Seiten</span>
+                                            <span className="font-medium text-zinc-900">{totalSections}</span>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            )}
+
+                            {/* Chapter Settings */}
+                            {settingsTab === 'chapter' && (() => {
+                                const selectedChapter = topic.chapters.find(ch => ch.id === selectedChapterId);
+                                if (!selectedChapter) {
+                                    return (
+                                        <div className="flex flex-col items-center justify-center py-8 text-center">
+                                            <FolderOpen className="h-12 w-12 text-zinc-300 mb-3" />
+                                            <p className="text-sm text-zinc-500">Kein Kapitel ausgewählt</p>
+                                            <p className="text-xs text-zinc-400 mt-1">Wähle ein Kapitel aus der Seitenleiste</p>
+                                        </div>
+                                    );
+                                }
+                                return (
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-semibold">Kapitel-Titel</Label>
+                                            <Input
+                                                defaultValue={selectedChapter.title}
+                                                onBlur={(e) => {
+                                                    if (e.target.value !== selectedChapter.title) {
+                                                        router.patch(`/admin/chapters/${selectedChapter.id}`, {
+                                                            title: e.target.value,
+                                                        }, { preserveScroll: true });
+                                                    }
+                                                }}
+                                                className="h-9 text-sm"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-semibold">Slug</Label>
+                                            <Input
+                                                defaultValue={selectedChapter.slug}
+                                                onBlur={(e) => {
+                                                    if (e.target.value !== selectedChapter.slug) {
+                                                        router.patch(`/admin/chapters/${selectedChapter.id}`, {
+                                                            slug: e.target.value,
+                                                        }, { preserveScroll: true });
+                                                    }
+                                                }}
+                                                className="h-9 text-sm font-mono"
+                                            />
+                                            <p className="text-xs text-muted-foreground">
+                                                URL-freundliche Version des Titels
+                                            </p>
+                                        </div>
+
+                                        <div className="flex items-center space-x-2">
+                                            <Checkbox
+                                                id={`chapter-published-${selectedChapter.id}`}
+                                                checked={selectedChapter.is_published}
+                                                onCheckedChange={(checked) => {
+                                                    router.patch(`/admin/chapters/${selectedChapter.id}`, {
+                                                        is_published: checked,
+                                                    }, { preserveScroll: true });
+                                                }}
+                                            />
+                                            <Label
+                                                htmlFor={`chapter-published-${selectedChapter.id}`}
+                                                className="text-sm font-normal cursor-pointer"
+                                            >
+                                                Veröffentlicht
+                                            </Label>
+                                        </div>
+
+                                        <div className="pt-4 border-t">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => handleDeleteChapter(selectedChapter.id)}
+                                                className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                                            >
+                                                <Trash2 className="h-4 w-4 mr-2" />
+                                                Kapitel löschen
+                                            </Button>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+
+                            {/* Section Settings */}
+                            {settingsTab === 'section' && (
+                                activeSection ? (
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-semibold">Seiten-Titel</Label>
+                                            <Input
+                                                value={sectionForm.data.title}
+                                                onChange={(e) => sectionForm.setData('title', e.target.value)}
+                                                onBlur={() => {
+                                                    if (sectionForm.data.title !== activeSection.title) {
+                                                        router.patch(`/admin/sections/${activeSection.id}`, {
+                                                            title: sectionForm.data.title,
+                                                        }, { preserveScroll: true });
+                                                    }
+                                                }}
+                                                className="h-9 text-sm"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-semibold">Slug</Label>
+                                            <Input
+                                                defaultValue={activeSection.slug}
+                                                onBlur={(e) => {
+                                                    if (e.target.value !== activeSection.slug) {
+                                                        router.patch(`/admin/sections/${activeSection.id}`, {
+                                                            slug: e.target.value,
+                                                        }, { preserveScroll: true });
+                                                    }
+                                                }}
+                                                className="h-9 text-sm font-mono"
+                                            />
+                                            <p className="text-xs text-muted-foreground">
+                                                URL-freundliche Version des Titels
+                                            </p>
+                                        </div>
+
+                                        <div className="flex items-center space-x-2">
+                                            <Checkbox
+                                                id={`section-published-${activeSection.id}`}
+                                                checked={activeSection.is_published}
+                                                onCheckedChange={(checked) => {
+                                                    router.patch(`/admin/sections/${activeSection.id}`, {
+                                                        is_published: checked,
+                                                    }, { preserveScroll: true });
+                                                }}
+                                            />
+                                            <Label
+                                                htmlFor={`section-published-${activeSection.id}`}
+                                                className="text-sm font-normal cursor-pointer"
+                                            >
+                                                Veröffentlicht
+                                            </Label>
+                                        </div>
+
+                                        <div className="pt-4 border-t">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => handleDeleteSection(activeSection.id)}
+                                                className="w-full text-red-600 hover:text-red-700 hover:bg-red-50"
+                                            >
+                                                <Trash2 className="h-4 w-4 mr-2" />
+                                                Seite löschen
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center py-8 text-center">
+                                        <FileText className="h-12 w-12 text-zinc-300 mb-3" />
+                                        <p className="text-sm text-zinc-500">Keine Seite ausgewählt</p>
+                                        <p className="text-xs text-zinc-400 mt-1">Wähle eine Seite aus der Seitenleiste</p>
+                                    </div>
+                                )
+                            )}
                         </div>
                     </aside>
                 </div>
             </div>
+
+            {/* Dialog for creating chapters/sections */}
+            <CreateItemDialog
+                open={dialogOpen}
+                onOpenChange={setDialogOpen}
+                type={dialogType}
+                topicId={topic.id}
+                chapterId={dialogChapterId}
+            />
         </>
     );
 }

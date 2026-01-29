@@ -20,8 +20,9 @@ class PublicTopicController extends Controller
                 'category:id,name',
                 'user:id,name',
                 'chapters' => fn ($query) => $query
+                    ->where('is_published', true)
                     ->orderBy('sort_order')
-                    ->with(['sections' => fn ($q) => $q->orderBy('sort_order')->limit(1)]),
+                    ->with(['sections' => fn ($q) => $q->where('is_published', true)->orderBy('sort_order')->limit(1)]),
             ])
             ->when(
                 $request->string('category')->isNotEmpty(),
@@ -31,6 +32,7 @@ class PublicTopicController extends Controller
             ->get()
             ->map(fn (Topic $topic) => [
                 'id' => $topic->id,
+                'slug' => $topic->slug,
                 'title' => $topic->title,
                 'excerpt' => $this->excerptFromTopic($topic),
                 'category' => $topic->category?->only(['id', 'name']),
@@ -50,50 +52,66 @@ class PublicTopicController extends Controller
         ]);
     }
 
-    public function show(Topic $topic, ?Section $section = null): Response
+    public function show(Topic $topic, ?Chapter $chapter = null, ?Section $section = null): Response
     {
         $topic->loadMissing([
             'category:id,name',
             'user:id,name',
-            'chapters' => fn ($query) => $query->orderBy('sort_order')->with([
-                'sections' => fn ($q) => $q->orderBy('sort_order'),
-            ]),
+            'chapters' => fn ($query) => $query
+                ->where('is_published', true)
+                ->orderBy('sort_order')
+                ->with([
+                    'sections' => fn ($q) => $q->where('is_published', true)->orderBy('sort_order'),
+                ]),
         ]);
 
-        // Validate section belongs to topic
-        if ($section) {
-            $chapter = $section->chapter;
-            if (! $chapter || $chapter->topic_id !== $topic->id) {
+        // Validate chapter belongs to topic and is published
+        if ($chapter) {
+            if (! $chapter->is_published || $chapter->topic_id !== $topic->id) {
                 abort(404);
             }
         }
 
-        // Default to first section of first chapter
+        // Validate section belongs to chapter and is published
+        if ($section) {
+            if (! $section->is_published) {
+                abort(404);
+            }
+            if (! $chapter || $section->chapter_id !== $chapter->id) {
+                abort(404);
+            }
+        }
+
+        // Default to first published section of first published chapter
         $activeSection = $section;
         if (! $activeSection) {
-            $firstChapter = $topic->chapters->first();
-            $activeSection = $firstChapter?->sections->first();
+            $targetChapter = $chapter ?? $topic->chapters->first();
+            $activeSection = $targetChapter?->sections->first();
         }
 
         return Inertia::render('public/topics/show', [
             'topic' => [
                 'id' => $topic->id,
+                'slug' => $topic->slug,
                 'title' => $topic->title,
                 'category' => $topic->category?->only(['id', 'name']),
                 'author' => $topic->user?->only(['id', 'name']),
                 'updated_at' => $topic->updated_at?->toIso8601String(),
                 'chapters' => $topic->chapters->map(fn (Chapter $chapter) => [
                     'id' => $chapter->id,
+                    'slug' => $chapter->slug,
                     'title' => $chapter->title,
                     'sort_order' => $chapter->sort_order,
                     'sections' => $chapter->sections->map(fn (Section $section) => [
                         'id' => $section->id,
+                        'slug' => $section->slug,
                         'title' => $section->title,
                         'sort_order' => $section->sort_order,
                     ]),
                 ]),
                 'activeSection' => $activeSection ? [
                     'id' => $activeSection->id,
+                    'slug' => $activeSection->slug,
                     'title' => $activeSection->title,
                     'content' => $activeSection->content,
                 ] : null,

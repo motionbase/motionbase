@@ -56,7 +56,9 @@ export interface Section {
     id: number;
     chapter_id: number;
     title: string;
+    slug: string;
     content: OutputData;
+    is_published: boolean;
     sort_order: number;
     created_at: string;
     updated_at: string;
@@ -66,8 +68,10 @@ export interface Chapter {
     id: number;
     topic_id: number;
     title: string;
+    slug: string;
+    is_published: boolean;
     sort_order: number;
-    sections: Pick<Section, 'id' | 'title' | 'sort_order'>[];
+    sections: Pick<Section, 'id' | 'slug' | 'title' | 'sort_order' | 'is_published'>[];
     created_at?: string;
     updated_at?: string;
 }
@@ -75,6 +79,7 @@ export interface Chapter {
 export interface Topic {
     id: number;
     title: string;
+    slug: string;
     category_id?: number;
     category?: Pick<Category, 'id' | 'name'> | null;
     chapters?: Chapter[];

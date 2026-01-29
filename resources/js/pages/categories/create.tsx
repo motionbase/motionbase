@@ -10,8 +10,8 @@ import { ArrowLeft, Layers, Sparkles } from 'lucide-react';
 import { type FormEvent } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Kategorien', href: '/categories' },
-    { title: 'Neue Kategorie', href: '/categories/create' },
+    { title: 'Kategorien', href: '/admin/categories' },
+    { title: 'Neue Kategorie', href: '/admin/categories/create' },
 ];
 
 type CategoryFormData = {
@@ -27,7 +27,7 @@ export default function CategoriesCreate() {
 
     const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        form.post('/categories');
+        form.post('/admin/categories');
     };
 
     return (
@@ -39,7 +39,7 @@ export default function CategoriesCreate() {
                 <div className="border-b border-zinc-100 bg-white px-6 py-8 lg:px-10">
                     <div className="mx-auto max-w-2xl">
                         <Link
-                            href="/categories"
+                            href="/admin/categories"
                             className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-900"
                         >
                             <ArrowLeft className="h-4 w-4" />
@@ -117,7 +117,7 @@ export default function CategoriesCreate() {
                                         className="text-zinc-500 hover:text-zinc-900"
                                         asChild
                                     >
-                                        <Link href="/categories">Abbrechen</Link>
+                                        <Link href="/admin/categories">Abbrechen</Link>
                                     </Button>
                                     <Button
                                         type="submit"

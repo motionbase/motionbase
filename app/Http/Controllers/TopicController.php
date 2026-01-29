@@ -29,6 +29,7 @@ class TopicController extends Controller
             ->get()
             ->map(fn (Topic $topic) => [
                 'id' => $topic->id,
+                'slug' => $topic->slug,
                 'title' => $topic->title,
                 'chapters_count' => $topic->chapters_count,
                 'sections_count' => $topic->sections_count,
@@ -60,20 +61,32 @@ class TopicController extends Controller
             'category_id' => ['required', 'integer', 'exists:categories,id'],
         ]);
 
+        // Generate unique slug for topic
+        $slug = Str::slug($validated['title']);
+        $originalSlug = $slug;
+        $counter = 1;
+        while (Topic::where('slug', $slug)->exists()) {
+            $slug = $originalSlug . '-' . $counter;
+            $counter++;
+        }
+
         $topic = $request->user()->topics()->create([
             'title' => $validated['title'],
+            'slug' => $slug,
             'category_id' => (int) $validated['category_id'],
         ]);
 
         // Create an initial default chapter
         $chapter = $topic->chapters()->create([
             'title' => 'Grundlagen',
+            'slug' => 'grundlagen',
             'sort_order' => 0,
         ]);
 
         // Create an initial default section in the chapter
         $chapter->sections()->create([
             'title' => 'Einführung',
+            'slug' => 'einfuehrung',
             'content' => [
                 'time' => time() * 1000, // JS uses ms
                 'blocks' => [
@@ -92,7 +105,7 @@ class TopicController extends Controller
             ->with('flash', ['status' => 'success', 'message' => 'Thema erstellt.']);
     }
 
-    public function edit(Request $request, Topic $topic): Response
+    public function edit(Topic $topic, ?Section $section = null): Response
     {
         $this->authorize('view', $topic);
 
@@ -100,44 +113,51 @@ class TopicController extends Controller
             'sections' => fn ($q) => $q->orderBy('sort_order'),
         ])]);
 
-        $activeSectionId = $request->integer('section');
-        $activeSection = null;
-
-        // Find the active section across all chapters
-        foreach ($topic->chapters as $chapter) {
-            $found = $chapter->sections->firstWhere('id', $activeSectionId);
-            if ($found) {
-                $activeSection = $found;
-                break;
-            }
-        }
-
-        // Default to first section of first chapter
+        // Use the provided section or default to first section of first chapter
+        $activeSection = $section;
         if (! $activeSection) {
             $firstChapter = $topic->chapters->first();
             $activeSection = $firstChapter?->sections->first();
         }
 
+        // Validate section belongs to topic
+        if ($activeSection) {
+            $belongsToTopic = $topic->chapters->contains(function ($chapter) use ($activeSection) {
+                return $chapter->sections->contains('id', $activeSection->id);
+            });
+
+            if (! $belongsToTopic) {
+                abort(404);
+            }
+        }
+
         return Inertia::render('topics/edit', [
             'topic' => [
                 'id' => $topic->id,
+                'slug' => $topic->slug,
                 'title' => $topic->title,
                 'category_id' => $topic->category_id,
                 'chapters' => $topic->chapters->map(fn (Chapter $chapter) => [
                     'id' => $chapter->id,
+                    'slug' => $chapter->slug,
                     'title' => $chapter->title,
                     'sort_order' => $chapter->sort_order,
+                    'is_published' => $chapter->is_published,
                     'sections' => $chapter->sections->map(fn (Section $section) => [
                         'id' => $section->id,
+                        'slug' => $section->slug,
                         'title' => $section->title,
                         'sort_order' => $section->sort_order,
+                        'is_published' => $section->is_published,
                     ]),
                 ]),
             ],
             'activeSection' => $activeSection ? [
                 'id' => $activeSection->id,
+                'slug' => $activeSection->slug,
                 'title' => $activeSection->title,
                 'content' => $activeSection->content,
+                'is_published' => $activeSection->is_published,
             ] : null,
             'categories' => $this->categoriesForSelect(),
         ]);
@@ -148,14 +168,24 @@ class TopicController extends Controller
         $this->authorize('update', $topic);
 
         $validated = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'category_id' => ['required', 'integer', 'exists:categories,id'],
+            'title' => ['sometimes', 'string', 'max:255'],
+            'slug' => ['sometimes', 'string', 'max:255'],
+            'category_id' => ['sometimes', 'integer', 'exists:categories,id'],
         ]);
 
-        $topic->update([
-            'title' => $validated['title'],
-            'category_id' => (int) $validated['category_id'],
-        ]);
+        // If slug is provided, ensure uniqueness
+        if (isset($validated['slug'])) {
+            $slug = $validated['slug'];
+            $originalSlug = $slug;
+            $counter = 1;
+            while (Topic::where('slug', $slug)->where('id', '!=', $topic->id)->exists()) {
+                $slug = $originalSlug . '-' . $counter;
+                $counter++;
+            }
+            $validated['slug'] = $slug;
+        }
+
+        $topic->update($validated);
 
         return redirect()
             ->back()

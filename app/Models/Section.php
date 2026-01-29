@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\Revisionable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 class Section extends Model
 {
-    use HasFactory;
+    use HasFactory, Revisionable;
 
     /**
      * The attributes that are mass assignable.
@@ -19,7 +20,9 @@ class Section extends Model
     protected $fillable = [
         'chapter_id',
         'title',
+        'slug',
         'content',
+        'is_published',
         'sort_order',
     ];
 
@@ -31,6 +34,7 @@ class Section extends Model
     protected $casts = [
         'content' => 'array',
         'sort_order' => 'integer',
+        'is_published' => 'boolean',
     ];
 
     /**

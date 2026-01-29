@@ -14,34 +14,33 @@ class ChapterController extends Controller
         $this->authorize('update', $topic);
 
         $validated = $request->validate([
-            'title' => ['nullable', 'string', 'max:255'],
+            'title' => ['required', 'string', 'max:255'],
+            'slug' => ['nullable', 'string', 'max:255'],
         ]);
 
         $maxSortOrder = $topic->chapters()->max('sort_order') ?? -1;
 
+        // Generate slug from title if not provided
+        $slug = $validated['slug'] ?? \Illuminate\Support\Str::slug($validated['title']);
+
+        // Ensure slug is unique within the topic
+        $originalSlug = $slug;
+        $counter = 1;
+        while ($topic->chapters()->where('slug', $slug)->exists()) {
+            $slug = $originalSlug . '-' . $counter;
+            $counter++;
+        }
+
         $chapter = $topic->chapters()->create([
-            'title' => $validated['title'] ?? 'Neues Kapitel',
+            'title' => $validated['title'],
+            'slug' => $slug,
             'sort_order' => $maxSortOrder + 1,
         ]);
 
-        // Create an initial section for the chapter
-        $section = $chapter->sections()->create([
-            'title' => 'Einführung',
-            'content' => [
-                'time' => now()->getTimestampMs(),
-                'blocks' => [
-                    [
-                        'type' => 'paragraph',
-                        'data' => ['text' => 'Beginne hier mit deinem Inhalt...'],
-                    ],
-                ],
-                'version' => '2.31.0',
-            ],
-            'sort_order' => 0,
-        ]);
+        // Don't create a default section - leave chapter empty
 
         return redirect()
-            ->route('topics.edit', ['topic' => $topic->id, 'section' => $section->id])
+            ->route('topics.edit', ['topic' => $topic])
             ->with('flash', ['status' => 'success', 'message' => 'Kapitel erstellt.']);
     }
 
@@ -50,8 +49,22 @@ class ChapterController extends Controller
         $this->authorize('update', $chapter->topic);
 
         $validated = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
+            'title' => ['sometimes', 'string', 'max:255'],
+            'slug' => ['sometimes', 'string', 'max:255'],
+            'is_published' => ['sometimes', 'boolean'],
         ]);
+
+        // If slug is provided, ensure uniqueness within the topic
+        if (isset($validated['slug'])) {
+            $slug = $validated['slug'];
+            $originalSlug = $slug;
+            $counter = 1;
+            while ($chapter->topic->chapters()->where('slug', $slug)->where('id', '!=', $chapter->id)->exists()) {
+                $slug = $originalSlug . '-' . $counter;
+                $counter++;
+            }
+            $validated['slug'] = $slug;
+        }
 
         $chapter->update($validated);
 
@@ -80,7 +93,7 @@ class ChapterController extends Controller
         $nextSection = $nextChapter?->sections()->orderBy('sort_order')->first();
 
         return redirect()
-            ->route('topics.edit', ['topic' => $topic->id, 'section' => $nextSection?->id])
+            ->route('topics.edit', ['topic' => $topic, 'section' => $nextSection?->id])
             ->with('flash', ['status' => 'success', 'message' => 'Kapitel gelöscht.']);
     }
 

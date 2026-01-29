@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\Revisionable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Chapter extends Model
 {
-    use HasFactory;
+    use HasFactory, Revisionable;
 
     /**
      * The attributes that are mass assignable.
@@ -19,6 +20,8 @@ class Chapter extends Model
     protected $fillable = [
         'topic_id',
         'title',
+        'slug',
+        'is_published',
         'sort_order',
     ];
 
@@ -29,6 +32,7 @@ class Chapter extends Model
      */
     protected $casts = [
         'sort_order' => 'integer',
+        'is_published' => 'boolean',
     ];
 
     /**

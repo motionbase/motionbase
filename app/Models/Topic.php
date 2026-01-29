@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\Revisionable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Topic extends Model
 {
-    use HasFactory;
+    use HasFactory, Revisionable;
 
     /**
      * The attributes that are mass assignable.
@@ -21,6 +22,7 @@ class Topic extends Model
         'user_id',
         'category_id',
         'title',
+        'slug',
     ];
 
     /**

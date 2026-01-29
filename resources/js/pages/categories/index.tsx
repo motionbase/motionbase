@@ -17,7 +17,7 @@ import { useState } from 'react';
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Kategorien',
-        href: '/categories',
+        href: '/admin/categories',
     },
 ];
 
@@ -34,7 +34,7 @@ export default function Categories({ categories }: { categories: Category[] }) {
 
     const handleSaveEdit = (categoryId: number) => {
         router.put(
-            `/categories/${categoryId}`,
+            `/admin/categories/${categoryId}`,
             { name: editingName, description: editingDescription },
             { preserveScroll: true }
         );
@@ -51,7 +51,7 @@ export default function Categories({ categories }: { categories: Category[] }) {
         if (!confirm('Diese Kategorie wirklich löschen?')) {
             return;
         }
-        router.delete(`/categories/${categoryId}`, { preserveScroll: true });
+        router.delete(`/admin/categories/${categoryId}`, { preserveScroll: true });
     };
 
     return (
@@ -75,7 +75,7 @@ export default function Categories({ categories }: { categories: Category[] }) {
                                 className="h-10 gap-2 bg-zinc-900 px-5 text-white hover:bg-zinc-800"
                                 asChild
                             >
-                                <Link href="/categories/create">
+                                <Link href="/admin/categories/create">
                                     <Plus className="h-4 w-4" />
                                     Neue Kategorie
                                 </Link>
@@ -102,7 +102,7 @@ export default function Categories({ categories }: { categories: Category[] }) {
                                             className="mt-6 bg-zinc-900 text-white hover:bg-zinc-800"
                                             asChild
                                         >
-                                            <Link href="/categories/create">
+                                            <Link href="/admin/categories/create">
                                                 <Plus className="mr-2 h-4 w-4" />
                                                 Kategorie erstellen
                                             </Link>

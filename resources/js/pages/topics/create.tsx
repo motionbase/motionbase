@@ -16,8 +16,8 @@ import { ArrowLeft, BookOpen, Layers, Sparkles } from 'lucide-react';
 import { type FormEvent } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
-    { title: 'Themen', href: '/topics' },
-    { title: 'Neues Thema', href: '/topics/create' },
+    { title: 'Themen', href: '/admin/topics' },
+    { title: 'Neues Thema', href: '/admin/topics/create' },
 ];
 
 interface TopicsCreateProps {
@@ -37,7 +37,7 @@ export default function TopicsCreate({ categories }: TopicsCreateProps) {
 
     const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        form.post('/topics');
+        form.post('/admin/topics');
     };
 
     if (categories.length === 0) {
@@ -60,7 +60,7 @@ export default function TopicsCreate({ categories }: TopicsCreateProps) {
                                 className="mt-8 h-11 gap-2 bg-zinc-900 px-6 text-white hover:bg-zinc-800"
                                 asChild
                             >
-                                <Link href="/categories">
+                                <Link href="/admin/categories">
                                     <Layers className="h-4 w-4" />
                                     Kategorien verwalten
                                 </Link>
@@ -81,7 +81,7 @@ export default function TopicsCreate({ categories }: TopicsCreateProps) {
                 <div className="border-b border-zinc-100 bg-white px-6 py-8 lg:px-10">
                     <div className="mx-auto max-w-2xl">
                         <Link
-                            href="/topics"
+                            href="/admin/topics"
                             className="inline-flex items-center gap-2 text-sm text-zinc-500 hover:text-zinc-900"
                         >
                             <ArrowLeft className="h-4 w-4" />
@@ -165,7 +165,7 @@ export default function TopicsCreate({ categories }: TopicsCreateProps) {
                                         className="text-zinc-500 hover:text-zinc-900"
                                         asChild
                                     >
-                                        <Link href="/topics">Abbrechen</Link>
+                                        <Link href="/admin/topics">Abbrechen</Link>
                                     </Button>
                                     <Button
                                         type="submit"

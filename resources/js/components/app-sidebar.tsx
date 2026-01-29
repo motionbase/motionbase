@@ -27,17 +27,17 @@ const mainNavItems: NavItem[] = [
 const contentNavItems: NavItem[] = [
     {
         title: 'Themen',
-        href: '/topics',
+        href: '/admin/topics',
         icon: NotebookPen,
     },
     {
         title: 'Kategorien',
-        href: '/categories',
+        href: '/admin/categories',
         icon: Layers,
     },
     {
         title: 'Medien',
-        href: '/media',
+        href: '/admin/media',
         icon: Image,
     },
 ];

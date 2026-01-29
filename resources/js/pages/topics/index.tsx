@@ -26,7 +26,7 @@ import { Input } from '@/components/ui/input';
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Themen',
-        href: '/topics',
+        href: '/admin/topics',
     },
 ];
 
@@ -61,7 +61,7 @@ export default function TopicsIndex({
         if (!confirm('Dieses Thema wirklich löschen?')) {
             return;
         }
-        router.delete(`/topics/${topicId}`, { preserveScroll: true });
+        router.delete(`/admin/topics/${topicId}`, { preserveScroll: true });
     };
 
     return (
@@ -85,7 +85,7 @@ export default function TopicsIndex({
                                 className="h-10 gap-2 bg-zinc-900 px-5 text-white hover:bg-zinc-800"
                                 asChild
                             >
-                                <Link href="/topics/create">
+                                <Link href="/admin/topics/create">
                                     <Plus className="h-4 w-4" />
                                     Neues Thema
                                 </Link>
@@ -165,7 +165,7 @@ export default function TopicsIndex({
                                         className="mt-6 bg-zinc-900 text-white hover:bg-zinc-800"
                                         asChild
                                     >
-                                        <Link href="/topics/create">
+                                        <Link href="/admin/topics/create">
                                             <Plus className="mr-2 h-4 w-4" />
                                             Thema erstellen
                                         </Link>
@@ -201,7 +201,7 @@ function TopicCard({ topic, onDelete }: { topic: Topic; onDelete: () => void }) 
                     <div className="space-y-1">
                         <div className="flex flex-wrap items-center gap-2">
                             <Link
-                                href={`/topics/${topic.id}/edit`}
+                                href={`/admin/topics/${topic.id}/edit`}
                                 className="text-lg font-semibold text-zinc-900 hover:underline"
                             >
                                 {topic.title}
@@ -241,7 +241,7 @@ function TopicCard({ topic, onDelete }: { topic: Topic; onDelete: () => void }) 
                         className="h-9 gap-2 border-zinc-200 text-zinc-700 hover:bg-zinc-50"
                         asChild
                     >
-                        <Link href={`/topics/${topic.id}/edit`}>
+                        <Link href={`/admin/topics/${topic.id}/edit`}>
                             Bearbeiten
                             <ArrowUpRight className="h-4 w-4" />
                         </Link>
@@ -258,13 +258,13 @@ function TopicCard({ topic, onDelete }: { topic: Topic; onDelete: () => void }) 
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-40">
                             <DropdownMenuItem asChild>
-                                <Link href={`/topics/${topic.id}/edit`}>
+                                <Link href={`/admin/topics/${topic.id}/edit`}>
                                     Bearbeiten
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>
                                 <a
-                                    href={`/themen/${topic.slug}`}
+                                    href={`/themen/${topic.id}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                 >

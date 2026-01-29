@@ -107,8 +107,8 @@ export default function PublicTopicShow({ topic }: PublicTopicShowProps) {
             }));
     }, [activeSection]);
 
-    const navigateToSection = (sectionId: number) => {
-        router.visit(`/themen/${topic.id}/${sectionId}`, {
+    const navigateToSection = (chapterSlug: string, sectionSlug: string) => {
+        router.visit(`/themen/${topic.slug}/${chapterSlug}/${sectionSlug}`, {
             preserveScroll: true,
             preserveState: true,
         });
@@ -185,7 +185,7 @@ export default function PublicTopicShow({ topic }: PublicTopicShowProps) {
                                                         <button
                                                             key={section.id}
                                                             type="button"
-                                                            onClick={() => navigateToSection(section.id)}
+                                                            onClick={() => navigateToSection(chapter.slug, section.slug)}
                                                             className={cn(
                                                                 'group flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all',
                                                                 isActive
