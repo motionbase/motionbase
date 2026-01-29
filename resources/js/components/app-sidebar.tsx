@@ -12,40 +12,9 @@ import {
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
-import { Link } from '@inertiajs/react';
-import { BookOpen, Github, Image, LayoutGrid, Layers, NotebookPen } from 'lucide-react';
+import { Link, usePage } from '@inertiajs/react';
+import { BookOpen, Github, Image, LayoutGrid, Layers, NotebookPen, Users } from 'lucide-react';
 import AppLogo from './app-logo';
-
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dashboard',
-        href: dashboard(),
-        icon: LayoutGrid,
-    },
-];
-
-const contentNavItems: NavItem[] = [
-    {
-        title: 'Themen',
-        href: '/admin/topics',
-        icon: NotebookPen,
-    },
-    {
-        title: 'Kategorien',
-        href: '/admin/categories',
-        icon: Layers,
-    },
-    {
-        title: 'Medien',
-        href: '/admin/media',
-        icon: Image,
-    },
-];
-
-const navGroups: NavGroup[] = [
-    { label: 'Übersicht', items: mainNavItems },
-    { label: 'Inhalte', items: contentNavItems },
-];
 
 const footerNavItems: NavItem[] = [
     {
@@ -61,6 +30,49 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
+    const { auth } = usePage<{ auth: { user: { is_admin?: boolean } } }>().props;
+    const isAdmin = auth.user?.is_admin ?? false;
+
+    const mainNavItems: NavItem[] = [
+        {
+            title: 'Dashboard',
+            href: dashboard(),
+            icon: LayoutGrid,
+        },
+    ];
+
+    const contentNavItems: NavItem[] = [
+        {
+            title: 'Themen',
+            href: '/admin/topics',
+            icon: NotebookPen,
+        },
+        {
+            title: 'Kategorien',
+            href: '/admin/categories',
+            icon: Layers,
+        },
+        {
+            title: 'Medien',
+            href: '/admin/media',
+            icon: Image,
+        },
+    ];
+
+    const adminNavItems: NavItem[] = [
+        {
+            title: 'Benutzer',
+            href: '/admin/users',
+            icon: Users,
+        },
+    ];
+
+    const navGroups: NavGroup[] = [
+        { label: 'Übersicht', items: mainNavItems },
+        { label: 'Inhalte', items: contentNavItems },
+        ...(isAdmin ? [{ label: 'Administration', items: adminNavItems }] : []),
+    ];
+
     return (
         <Sidebar
             collapsible="icon"

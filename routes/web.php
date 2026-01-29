@@ -9,6 +9,7 @@ use App\Http\Controllers\PublicTopicController;
 use App\Http\Controllers\RevisionController;
 use App\Http\Controllers\SectionController;
 use App\Http\Controllers\TopicController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -92,6 +93,9 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     Route::get('media/{media}', [MediaController::class, 'show'])->name('media.show');
     Route::patch('media/{media}', [MediaController::class, 'update'])->name('media.update');
     Route::delete('media/{media}', [MediaController::class, 'destroy'])->name('media.destroy');
+
+    // User Management (Admin only)
+    Route::resource('users', UserController::class);
 });
 
 require __DIR__.'/settings.php';
