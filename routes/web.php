@@ -17,10 +17,28 @@ Route::get('/', [PublicTopicController::class, 'index'])->name('home');
 Route::get('themen', [PublicTopicController::class, 'index'])->name('public.topics.index');
 Route::get('themen/{topic:slug}/{chapter:slug?}/{section:slug?}', [PublicTopicController::class, 'show'])->name('public.topics.show');
 
+// Admin redirect route
+Route::get('/admin', function () {
+    if (auth()->check()) {
+        return redirect()->route('dashboard');
+    }
+    return redirect()->route('login');
+});
+
 // Admin Backend Routes
 Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     Route::get('dashboard', function () {
-        return Inertia::render('dashboard');
+        $user = auth()->user();
+
+        // Get user's topics with counts
+        $topics = $user->topics()
+            ->withCount(['chapters', 'sections'])
+            ->latest()
+            ->get();
+
+        return Inertia::render('dashboard', [
+            'recentTopics' => $topics->take(5),
+        ]);
     })->name('dashboard');
 
     // Categories

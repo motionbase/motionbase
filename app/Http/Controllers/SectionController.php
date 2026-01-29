@@ -78,7 +78,7 @@ class SectionController extends Controller
         $section->update($validated);
 
         return redirect()
-            ->route('topics.edit', ['topic' => $section->chapter->topic, 'section' => $section->id])
+            ->route('topics.edit.section', ['topic' => $section->chapter->topic_id, 'section' => $section->id])
             ->with('flash', ['status' => 'success', 'message' => 'Abschnitt gespeichert.']);
     }
 

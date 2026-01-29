@@ -7,11 +7,8 @@ import {
     ArrowRight,
     ArrowUpRight,
     BookOpen,
-    FolderOpen,
-    Layers,
     Plus,
     Sparkles,
-    TrendingUp,
     Users,
 } from 'lucide-react';
 
@@ -23,17 +20,10 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 interface DashboardProps {
-    stats?: {
-        topics: number;
-        categories: number;
-        sections: number;
-        chapters: number;
-    };
     recentTopics?: Topic[];
 }
 
-export default function Dashboard({ stats, recentTopics = [] }: DashboardProps) {
-    const displayStats = stats ?? { topics: 0, categories: 0, sections: 0, chapters: 0 };
+export default function Dashboard({ recentTopics = [] }: DashboardProps) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
@@ -82,36 +72,7 @@ export default function Dashboard({ stats, recentTopics = [] }: DashboardProps) 
                 </div>
 
                 <div className="px-6 py-10 lg:px-10">
-                    <div className="mx-auto max-w-6xl space-y-10">
-                        {/* Stats Grid */}
-                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                            <StatCard
-                                label="Themen"
-                                value={displayStats.topics}
-                                icon={BookOpen}
-                                trend="+2 diese Woche"
-                                href="/admin/topics"
-                            />
-                            <StatCard
-                                label="Kapitel"
-                                value={displayStats.chapters}
-                                icon={FolderOpen}
-                                trend="Strukturiert"
-                            />
-                            <StatCard
-                                label="Abschnitte"
-                                value={displayStats.sections}
-                                icon={Layers}
-                                trend="Inhalte"
-                            />
-                            <StatCard
-                                label="Kategorien"
-                                value={displayStats.categories}
-                                icon={TrendingUp}
-                                href="/admin/categories"
-                            />
-                        </div>
-
+                    <div className="mx-auto max-w-6xl">
                         {/* Main Content Grid */}
                         <div className="grid gap-6 lg:grid-cols-3">
                             {/* Recent Topics */}
@@ -250,44 +211,6 @@ export default function Dashboard({ stats, recentTopics = [] }: DashboardProps) 
             </div>
         </AppLayout>
     );
-}
-
-function StatCard({
-    label,
-    value,
-    icon: Icon,
-    trend,
-    href,
-}: {
-    label: string;
-    value: number;
-    icon: React.ComponentType<{ className?: string }>;
-    trend?: string;
-    href?: string;
-}) {
-    const content = (
-        <div className="rounded-2xl border border-zinc-100 bg-white p-6 shadow-sm transition-all hover:border-zinc-200 hover:shadow-md">
-            <div className="flex items-start justify-between">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-zinc-100">
-                    <Icon className="h-5 w-5 text-zinc-600" />
-                </div>
-                {href && <ArrowUpRight className="h-5 w-5 text-zinc-300" />}
-            </div>
-            <div className="mt-4">
-                <p className="text-3xl font-bold text-zinc-900">{value}</p>
-                <p className="text-sm font-medium text-zinc-500">{label}</p>
-            </div>
-            {trend && (
-                <p className="mt-2 text-xs text-zinc-400">{trend}</p>
-            )}
-        </div>
-    );
-
-    if (href) {
-        return <Link href={href}>{content}</Link>;
-    }
-
-    return content;
 }
 
 function QuickAction({
