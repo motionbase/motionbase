@@ -7,6 +7,7 @@ import {
     ArrowRight,
     ArrowUpRight,
     BookOpen,
+    Layers,
     Plus,
     Sparkles,
     Users,
