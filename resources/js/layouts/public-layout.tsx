@@ -1,3 +1,4 @@
+import AppLogoIcon from '@/components/app-logo-icon';
 import { cn } from '@/lib/utils';
 import { Link } from '@inertiajs/react';
 import { Menu, X } from 'lucide-react';
@@ -31,9 +32,7 @@ export default function PublicLayout({
                         href="/"
                         className="flex items-center gap-2.5 text-xl font-bold tracking-tight text-zinc-900 hover:opacity-80 transition-opacity"
                     >
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-900">
-                            <span className="text-sm font-bold text-white">M</span>
-                        </div>
+                        <AppLogoIcon className="h-8 w-8" />
                         <span className="hidden sm:inline">MotionBase</span>
                     </Link>
 
