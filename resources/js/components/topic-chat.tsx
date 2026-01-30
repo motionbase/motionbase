@@ -4,6 +4,8 @@ import { cn } from '@/lib/utils';
 import { router } from '@inertiajs/react';
 import { MessageCircle, Send, X, Loader2 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 interface Message {
     role: 'user' | 'assistant';
@@ -139,9 +141,17 @@ export function TopicChat({ topicSlug }: TopicChatProps) {
                                             : 'bg-zinc-100 text-zinc-900'
                                     )}
                                 >
-                                    <div className="whitespace-pre-wrap break-words">
-                                        {message.content}
-                                    </div>
+                                    {message.role === 'user' ? (
+                                        <div className="whitespace-pre-wrap break-words">
+                                            {message.content}
+                                        </div>
+                                    ) : (
+                                        <div className="prose prose-sm max-w-none [&_p]:my-1 [&_h1]:my-2 [&_h2]:my-2 [&_ul]:my-1 [&_ul]:ml-4 [&_ul]:list-disc [&_ol]:my-1 [&_ol]:ml-4 [&_ol]:list-decimal [&_li]:my-0.5 [&_strong]:font-semibold">
+                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                                {message.content}
+                                            </ReactMarkdown>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ))}
