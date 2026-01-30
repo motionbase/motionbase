@@ -56,7 +56,7 @@ export function MediaLibraryModal({
                 params.append('type', mediaType);
             }
 
-            const response = await fetch(`/media?${params.toString()}`, {
+            const response = await fetch(`/admin/media?${params.toString()}`, {
                 headers: {
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
@@ -102,7 +102,7 @@ export function MediaLibraryModal({
         if (!confirm('Möchtest du diese Datei wirklich löschen?')) return;
 
         try {
-            const response = await fetch(`/media/${id}`, {
+            const response = await fetch(`/admin/media/${id}`, {
                 method: 'DELETE',
                 headers: {
                     'Accept': 'application/json',

@@ -61,7 +61,7 @@ export default function MediaIndex() {
                 params.append('type', mediaType);
             }
 
-            const response = await fetch(`/media?${params.toString()}`, {
+            const response = await fetch(`/admin/media?${params.toString()}`, {
                 headers: {
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
@@ -93,7 +93,7 @@ export default function MediaIndex() {
                 throw new Error('CSRF token not found');
             }
 
-            const response = await fetch(`/media/${id}`, {
+            const response = await fetch(`/admin/media/${id}`, {
                 method: 'DELETE',
                 headers: {
                     'Accept': 'application/json',
@@ -153,7 +153,7 @@ export default function MediaIndex() {
     };
 
     return (
-        <AppLayout breadcrumbs={[{ title: 'Medien', href: '/media' }]}>
+        <AppLayout breadcrumbs={[{ title: 'Medien', href: '/admin/media' }]}>
             <Head title="Medien" />
 
             <div className="min-h-[calc(100vh-80px)] bg-zinc-50/50">
