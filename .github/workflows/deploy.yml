@@ -32,7 +32,7 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           port: 2121
-          source: ".,!node_modules,!vendor,!storage,!tests,!phpunit.xml,!composer.lock,!package-lock.json"
+          source: ".,!node_modules,!vendor,!storage,!tests,!phpunit.xml,!package-lock.json"
           target: ~/motionbase/
           strip_components: 0
 
