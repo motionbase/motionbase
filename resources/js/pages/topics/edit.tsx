@@ -104,6 +104,33 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
         category_id: topic.category_id,
     });
 
+    // Find the selected chapter
+    const selectedChapter = topic.chapters.find(ch => ch.id === selectedChapterId);
+
+    // Chapter settings state (using React state instead of useForm for better control)
+    const [chapterSettings, setChapterSettings] = useState({
+        title: '',
+        slug: '',
+        is_published: false,
+    });
+    const [chapterSettingsOriginal, setChapterSettingsOriginal] = useState({
+        title: '',
+        slug: '',
+        is_published: false,
+    });
+    const [chapterSettingsProcessing, setChapterSettingsProcessing] = useState(false);
+    const [chapterSettingsErrors, setChapterSettingsErrors] = useState<Record<string, string>>({});
+
+    const chapterSettingsIsDirty =
+        chapterSettings.title !== chapterSettingsOriginal.title ||
+        chapterSettings.slug !== chapterSettingsOriginal.slug ||
+        chapterSettings.is_published !== chapterSettingsOriginal.is_published;
+
+    const sectionSettingsForm = useForm({
+        slug: activeSection?.slug ?? '',
+        is_published: activeSection?.is_published ?? false,
+    });
+
     const sectionForm = useForm<{
         title: string;
         content: EditorContent | null;
@@ -115,6 +142,9 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
     // Ref to track the current section ID to prevent stale updates
     const activeSectionIdRef = useRef(activeSection?.id);
     const [isSwitchingSection, setIsSwitchingSection] = useState(false);
+
+    // Ref to track if we're intentionally submitting (to avoid showing warning)
+    const isSubmittingRef = useRef(false);
 
     useEffect(() => {
         // Mark that we're switching sections
@@ -146,40 +176,88 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
         return () => clearTimeout(timer);
     }, [activeSection?.id]);
 
+    // Reset chapter settings when selected chapter changes
+    useEffect(() => {
+        const chapter = topic.chapters.find(ch => ch.id === selectedChapterId);
+        if (chapter) {
+            const newSettings = {
+                title: chapter.title,
+                slug: chapter.slug,
+                is_published: chapter.is_published,
+            };
+            setChapterSettings(newSettings);
+            setChapterSettingsOriginal(newSettings);
+            setChapterSettingsErrors({});
+        } else {
+            // Reset to empty if no chapter selected
+            const emptySettings = {
+                title: '',
+                slug: '',
+                is_published: false,
+            };
+            setChapterSettings(emptySettings);
+            setChapterSettingsOriginal(emptySettings);
+            setChapterSettingsErrors({});
+        }
+    }, [selectedChapterId, topic.chapters]);
+
+    // Reset section settings form when active section changes
+    useEffect(() => {
+        if (activeSection) {
+            sectionSettingsForm.reset({
+                slug: activeSection.slug,
+                is_published: activeSection.is_published,
+            });
+        }
+    }, [activeSection?.id]);
+
     // Warn user about unsaved changes before leaving
     useEffect(() => {
-        const hasUnsavedChanges = sectionForm.isDirty || topicForm.isDirty;
+        const hasUnsavedChanges = sectionForm.isDirty || topicForm.isDirty || chapterSettingsIsDirty || sectionSettingsForm.isDirty;
 
         // Browser navigation (close tab, reload, etc.)
         const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-            if (hasUnsavedChanges) {
+            if (hasUnsavedChanges && !isSubmittingRef.current) {
                 e.preventDefault();
                 e.returnValue = '';
             }
         };
 
-        // Inertia navigation (internal links)
+        // Inertia navigation (internal links and browser back button)
         const handleInertiaNavigate = (event: { detail: { visit: { url: { href: string } } } }) => {
+            // Skip warning if we're intentionally submitting
+            if (isSubmittingRef.current) {
+                return;
+            }
+
             if (hasUnsavedChanges) {
-                const currentUrl = window.location.href;
-                const targetUrl = event.detail.visit.url.href;
-
-                // Don't warn if staying on the same page (section changes)
-                if (targetUrl.includes(`/admin/topics/${topic.id}/edit`)) {
-                    return;
-                }
-
                 if (!confirm('Du hast ungespeicherte Änderungen. Möchtest du die Seite wirklich verlassen?')) {
                     event.preventDefault();
                 }
             }
         };
 
+        // Handle browser back/forward button
+        const handlePopState = (e: PopStateEvent) => {
+            if (hasUnsavedChanges && !isSubmittingRef.current) {
+                const shouldLeave = confirm('Du hast ungespeicherte Änderungen. Möchtest du die Seite wirklich verlassen?');
+                if (!shouldLeave) {
+                    // Push the current state back to cancel the navigation
+                    window.history.pushState(null, '', window.location.href);
+                }
+            }
+        };
+
+        // Push initial state to enable popstate handling
+        window.history.pushState(null, '', window.location.href);
+
         window.addEventListener('beforeunload', handleBeforeUnload);
+        window.addEventListener('popstate', handlePopState);
         const removeInertiaListener = router.on('before', handleInertiaNavigate as any);
 
         return () => {
             window.removeEventListener('beforeunload', handleBeforeUnload);
+            window.removeEventListener('popstate', handlePopState);
             removeInertiaListener();
         };
     }, [sectionForm.isDirty, topicForm.isDirty, topic.id]);
@@ -193,7 +271,13 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
     }, [activeSection?.id, sectionForm]);
 
     const handleTopicSave = () => {
-        topicForm.put(`/admin/topics/${topic.id}`, { preserveScroll: true });
+        isSubmittingRef.current = true;
+        topicForm.put(`/admin/topics/${topic.id}`, {
+            preserveScroll: true,
+            onFinish: () => {
+                isSubmittingRef.current = false;
+            },
+        });
     };
 
     const handleSectionSave = () => {
@@ -211,8 +295,57 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
             return;
         }
 
+        isSubmittingRef.current = true;
         sectionForm.patch(`/admin/sections/${activeSection.id}`, {
             preserveScroll: true,
+            onFinish: () => {
+                isSubmittingRef.current = false;
+            },
+        });
+    };
+
+    const handleBackClick = () => {
+        const hasUnsavedChanges = sectionForm.isDirty || topicForm.isDirty || chapterSettingsIsDirty || sectionSettingsForm.isDirty;
+        if (hasUnsavedChanges) {
+            if (!confirm('Du hast ungespeicherte Änderungen. Möchtest du die Seite wirklich verlassen?')) {
+                return;
+            }
+        }
+        router.visit('/admin/topics');
+    };
+
+    const handleChapterSettingsSave = () => {
+        if (!selectedChapter) return;
+
+        isSubmittingRef.current = true;
+        setChapterSettingsProcessing(true);
+        setChapterSettingsErrors({});
+
+        router.patch(`/admin/chapters/${selectedChapter.id}`, chapterSettings, {
+            preserveScroll: true,
+            onSuccess: () => {
+                // Update the original values to the new saved values
+                setChapterSettingsOriginal({ ...chapterSettings });
+            },
+            onError: (errors) => {
+                setChapterSettingsErrors(errors as Record<string, string>);
+            },
+            onFinish: () => {
+                isSubmittingRef.current = false;
+                setChapterSettingsProcessing(false);
+            },
+        });
+    };
+
+    const handleSectionSettingsSave = () => {
+        if (!activeSection) return;
+
+        isSubmittingRef.current = true;
+        sectionSettingsForm.patch(`/admin/sections/${activeSection.id}`, {
+            preserveScroll: true,
+            onFinish: () => {
+                isSubmittingRef.current = false;
+            },
         });
     };
 
@@ -286,7 +419,7 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                             variant="ghost"
                             size="icon"
                             className="h-9 w-9 text-zinc-500 hover:text-zinc-900"
-                            onClick={() => router.visit('/admin/topics')}
+                            onClick={handleBackClick}
                         >
                             <ArrowLeft className="h-5 w-5" />
                         </Button>
@@ -691,7 +824,6 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
 
                             {/* Chapter Settings */}
                             {settingsTab === 'chapter' && (() => {
-                                const selectedChapter = topic.chapters.find(ch => ch.id === selectedChapterId);
                                 if (!selectedChapter) {
                                     return (
                                         <div className="flex flex-col items-center justify-center py-8 text-center">
@@ -706,31 +838,21 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                                         <div className="space-y-2">
                                             <Label className="text-xs font-semibold">Kapitel-Titel</Label>
                                             <Input
-                                                defaultValue={selectedChapter.title}
-                                                onBlur={(e) => {
-                                                    if (e.target.value !== selectedChapter.title) {
-                                                        router.patch(`/admin/chapters/${selectedChapter.id}`, {
-                                                            title: e.target.value,
-                                                        }, { preserveScroll: true });
-                                                    }
-                                                }}
+                                                value={chapterSettings.title}
+                                                onChange={(e) => setChapterSettings({ ...chapterSettings, title: e.target.value })}
                                                 className="h-9 text-sm"
                                             />
+                                            <InputError message={chapterSettingsErrors.title} />
                                         </div>
 
                                         <div className="space-y-2">
                                             <Label className="text-xs font-semibold">Slug</Label>
                                             <Input
-                                                defaultValue={selectedChapter.slug}
-                                                onBlur={(e) => {
-                                                    if (e.target.value !== selectedChapter.slug) {
-                                                        router.patch(`/admin/chapters/${selectedChapter.id}`, {
-                                                            slug: e.target.value,
-                                                        }, { preserveScroll: true });
-                                                    }
-                                                }}
+                                                value={chapterSettings.slug}
+                                                onChange={(e) => setChapterSettings({ ...chapterSettings, slug: e.target.value })}
                                                 className="h-9 text-sm font-mono"
                                             />
+                                            <InputError message={chapterSettingsErrors.slug} />
                                             <p className="text-xs text-muted-foreground">
                                                 URL-freundliche Version des Titels
                                             </p>
@@ -739,12 +861,8 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                                         <div className="flex items-center space-x-2">
                                             <Checkbox
                                                 id={`chapter-published-${selectedChapter.id}`}
-                                                checked={selectedChapter.is_published}
-                                                onCheckedChange={(checked) => {
-                                                    router.patch(`/admin/chapters/${selectedChapter.id}`, {
-                                                        is_published: checked,
-                                                    }, { preserveScroll: true });
-                                                }}
+                                                checked={chapterSettings.is_published}
+                                                onCheckedChange={(checked) => setChapterSettings({ ...chapterSettings, is_published: checked === true })}
                                             />
                                             <Label
                                                 htmlFor={`chapter-published-${selectedChapter.id}`}
@@ -753,6 +871,16 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                                                 Veröffentlicht
                                             </Label>
                                         </div>
+
+                                        {chapterSettingsIsDirty && (
+                                            <Button
+                                                onClick={handleChapterSettingsSave}
+                                                disabled={chapterSettingsProcessing}
+                                                className="w-full h-9 text-sm"
+                                            >
+                                                {chapterSettingsProcessing ? 'Speichern...' : 'Änderungen speichern'}
+                                            </Button>
+                                        )}
 
                                         <div className="pt-4 border-t">
                                             <Button
@@ -778,30 +906,21 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                                             <Input
                                                 value={sectionForm.data.title}
                                                 onChange={(e) => sectionForm.setData('title', e.target.value)}
-                                                onBlur={() => {
-                                                    if (sectionForm.data.title !== activeSection.title) {
-                                                        router.patch(`/admin/sections/${activeSection.id}`, {
-                                                            title: sectionForm.data.title,
-                                                        }, { preserveScroll: true });
-                                                    }
-                                                }}
                                                 className="h-9 text-sm"
                                             />
+                                            <p className="text-xs text-muted-foreground">
+                                                Speichere mit dem Hauptspeicher-Button
+                                            </p>
                                         </div>
 
                                         <div className="space-y-2">
                                             <Label className="text-xs font-semibold">Slug</Label>
                                             <Input
-                                                defaultValue={activeSection.slug}
-                                                onBlur={(e) => {
-                                                    if (e.target.value !== activeSection.slug) {
-                                                        router.patch(`/admin/sections/${activeSection.id}`, {
-                                                            slug: e.target.value,
-                                                        }, { preserveScroll: true });
-                                                    }
-                                                }}
+                                                value={sectionSettingsForm.data.slug}
+                                                onChange={(e) => sectionSettingsForm.setData('slug', e.target.value)}
                                                 className="h-9 text-sm font-mono"
                                             />
+                                            <InputError message={sectionSettingsForm.errors.slug} />
                                             <p className="text-xs text-muted-foreground">
                                                 URL-freundliche Version des Titels
                                             </p>
@@ -810,12 +929,8 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                                         <div className="flex items-center space-x-2">
                                             <Checkbox
                                                 id={`section-published-${activeSection.id}`}
-                                                checked={activeSection.is_published}
-                                                onCheckedChange={(checked) => {
-                                                    router.patch(`/admin/sections/${activeSection.id}`, {
-                                                        is_published: checked,
-                                                    }, { preserveScroll: true });
-                                                }}
+                                                checked={sectionSettingsForm.data.is_published}
+                                                onCheckedChange={(checked) => sectionSettingsForm.setData('is_published', checked === true)}
                                             />
                                             <Label
                                                 htmlFor={`section-published-${activeSection.id}`}
@@ -824,6 +939,16 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                                                 Veröffentlicht
                                             </Label>
                                         </div>
+
+                                        {sectionSettingsForm.isDirty && (
+                                            <Button
+                                                onClick={handleSectionSettingsSave}
+                                                disabled={sectionSettingsForm.processing}
+                                                className="w-full h-9 text-sm"
+                                            >
+                                                {sectionSettingsForm.processing ? 'Speichern...' : 'Änderungen speichern'}
+                                            </Button>
+                                        )}
 
                                         <div className="pt-4 border-t">
                                             <Button
