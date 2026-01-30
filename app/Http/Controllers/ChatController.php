@@ -58,6 +58,18 @@ PROMPT;
                 'temperature' => 0.7,
             ]);
 
+            // Check if response has the expected structure
+            if (!isset($response->choices) || !isset($response->choices[0])) {
+                \Log::error('OpenAI API Response missing choices', [
+                    'topic_id' => $topic->id,
+                    'response' => json_encode($response),
+                ]);
+
+                return response()->json([
+                    'error' => 'Ungültige Antwort von der KI erhalten. Bitte überprüfe deinen API Key.',
+                ], 500);
+            }
+
             $answer = $response->choices[0]->message->content ?? 'Entschuldigung, ich konnte keine Antwort generieren.';
 
             return response()->json([
@@ -67,10 +79,11 @@ PROMPT;
             \Log::error('OpenAI API Error', [
                 'topic_id' => $topic->id,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
-                'error' => 'Es ist ein Fehler aufgetreten. Bitte versuche es später erneut.',
+                'error' => 'Es ist ein Fehler aufgetreten: ' . $e->getMessage(),
             ], 500);
         }
     }
