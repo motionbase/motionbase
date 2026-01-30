@@ -6,6 +6,8 @@ import { MessageCircle, Send, X, Loader2 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 interface Message {
     role: 'user' | 'assistant';
@@ -146,8 +148,37 @@ export function TopicChat({ topicSlug }: TopicChatProps) {
                                             {message.content}
                                         </div>
                                     ) : (
-                                        <div className="prose prose-sm max-w-none [&_p]:my-1 [&_h1]:my-2 [&_h2]:my-2 [&_ul]:my-1 [&_ul]:ml-4 [&_ul]:list-disc [&_ol]:my-1 [&_ol]:ml-4 [&_ol]:list-decimal [&_li]:my-0.5 [&_strong]:font-semibold">
-                                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                        <div className="prose prose-sm max-w-none [&_p]:my-1 [&_h1]:my-2 [&_h2]:my-2 [&_ul]:my-1 [&_ul]:ml-4 [&_ul]:list-disc [&_ol]:my-1 [&_ol]:ml-4 [&_ol]:list-decimal [&_li]:my-0.5 [&_strong]:font-semibold [&_code]:text-xs [&_code]:bg-zinc-800 [&_code]:text-zinc-100 [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:rounded [&_pre]:my-2 [&_pre]:p-0 [&_pre]:bg-transparent">
+                                            <ReactMarkdown
+                                                remarkPlugins={[remarkGfm]}
+                                                components={{
+                                                    code({ className, children, ...props }) {
+                                                        const match = /language-(\w+)/.exec(className || '');
+                                                        const language = match ? match[1] : '';
+                                                        const isCodeBlock = className?.includes('language-');
+
+                                                        return isCodeBlock ? (
+                                                            <SyntaxHighlighter
+                                                                style={oneDark as any}
+                                                                language={language}
+                                                                PreTag="div"
+                                                                customStyle={{
+                                                                    margin: 0,
+                                                                    borderRadius: '0.375rem',
+                                                                    fontSize: '0.75rem',
+                                                                    lineHeight: '1.25rem',
+                                                                }}
+                                                            >
+                                                                {String(children).replace(/\n$/, '')}
+                                                            </SyntaxHighlighter>
+                                                        ) : (
+                                                            <code className={className} {...props}>
+                                                                {children}
+                                                            </code>
+                                                        );
+                                                    }
+                                                }}
+                                            >
                                                 {message.content}
                                             </ReactMarkdown>
                                         </div>
