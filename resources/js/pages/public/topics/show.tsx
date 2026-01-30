@@ -7,6 +7,7 @@ import type { OutputBlockData } from '@editorjs/editorjs';
 import { createElement, type ReactNode, useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
 import { ChevronDown, ChevronRight, Hash, List, CheckCircle2, XCircle, ArrowRight } from 'lucide-react';
+import { TopicChat } from '@/components/topic-chat';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-javascript';
 import 'prismjs/components/prism-typescript';
@@ -120,8 +121,9 @@ export default function PublicTopicShow({ topic }: PublicTopicShowProps) {
     );
 
     return (
-        <PublicLayout stickyFooter fullWidth>
-            <Head title={`${topic.title} – ${activeSection?.title ?? 'Thema'}`} />
+        <>
+            <PublicLayout stickyFooter fullWidth>
+                <Head title={`${topic.title} – ${activeSection?.title ?? 'Thema'}`} />
 
             <div className="relative bg-white lg:min-h-[calc(100vh-128px)] lg:overflow-hidden">
                 <div
@@ -274,7 +276,11 @@ export default function PublicTopicShow({ topic }: PublicTopicShowProps) {
                     </aside>
                 </div>
             </div>
-        </PublicLayout>
+            </PublicLayout>
+
+            {/* AI Chat Assistant */}
+            <TopicChat topicSlug={topic.slug} />
+        </>
     );
 }
 

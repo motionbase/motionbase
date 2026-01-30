@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ChapterController;
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ImageUploadController;
 use App\Http\Controllers\LottieUploadController;
 use App\Http\Controllers\MediaController;
@@ -17,6 +18,11 @@ use Inertia\Inertia;
 Route::get('/', [PublicTopicController::class, 'index'])->name('home');
 Route::get('themen', [PublicTopicController::class, 'index'])->name('public.topics.index');
 Route::get('themen/{topic:slug}/{chapter:slug?}/{section:slug?}', [PublicTopicController::class, 'show'])->name('public.topics.show');
+
+// Public Chat Route
+Route::post('themen/{topic:slug}/chat', [ChatController::class, 'chat'])
+    ->middleware('throttle:10,1') // 10 requests per minute
+    ->name('topics.chat');
 
 // Admin redirect route
 Route::get('/admin', function () {
