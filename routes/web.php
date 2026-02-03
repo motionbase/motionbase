@@ -133,6 +133,7 @@ Route::prefix('lti')->name('lti.')->group(function () {
     Route::prefix('embed')->name('embed.')->group(function () {
         Route::get('topic/{topic:slug}', [LtiEmbedController::class, 'topic'])->name('topic');
         Route::get('topic/{topic:slug}/chapter/{chapter:slug}', [LtiEmbedController::class, 'chapter'])->name('chapter');
+        Route::get('topic/{topic:slug}/chapter/{chapter:slug}/section/{section:slug}', [LtiEmbedController::class, 'chapterSection'])->name('chapter.section');
         Route::get('topic/{topic:slug}/section/{section:slug}', [LtiEmbedController::class, 'section'])->name('section');
         Route::get('topic/{topic:slug}/chat', [LtiEmbedController::class, 'chat'])->name('chat');
         Route::get('picker', [LtiEmbedController::class, 'picker'])->name('picker');
