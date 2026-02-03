@@ -114,243 +114,128 @@
     <script src="https://cdn.jsdelivr.net/npm/iframe-resizer@4.3.9/js/iframeResizer.contentWindow.min.js"></script>
 
     <script>
-        // Common Moodle iframe IDs to try
-        const MOODLE_FRAME_IDS = [
-            'contentframe',
-            'ltiframe',
-            'mod_lti_launch_container',
-            'lti_tool_frame',
-            'resourceobject',
-            'externalcontentframe'
-        ];
+        (function() {
+            // Track last sent height to prevent duplicates
+            let lastSentHeight = 0;
+            let debounceTimer = null;
 
-        // Send content height to parent iframe for auto-resize
-        function sendHeight() {
-            // Calculate actual content height with some padding
-            const body = document.body;
-            const html = document.documentElement;
-            const height = Math.max(
-                body.scrollHeight,
-                body.offsetHeight,
-                html.clientHeight,
-                html.scrollHeight,
-                html.offsetHeight
-            ) + 2; // +2 to prevent subpixel scrollbar
+            // Calculate content height
+            function getContentHeight() {
+                const body = document.body;
+                const html = document.documentElement;
 
-            // Try to get the iframe ID from the URL
-            const urlParams = new URLSearchParams(window.location.search);
-            const frameIdFromUrl = urlParams.get('frame_id');
+                // Get the actual content height
+                const height = Math.max(
+                    body.scrollHeight,
+                    body.offsetHeight,
+                    html.scrollHeight
+                );
 
-            // Try all common Moodle iframe IDs
-            const frameIdsToTry = frameIdFromUrl
-                ? [frameIdFromUrl, ...MOODLE_FRAME_IDS]
-                : MOODLE_FRAME_IDS;
-
-            // Send to each possible frame ID
-            frameIdsToTry.forEach(function(frameId) {
-                // Moodle LTI standard format (stringified JSON)
-                window.parent.postMessage(JSON.stringify({
-                    subject: 'lti.frameResize',
-                    height: height,
-                    frame_id: frameId
-                }), '*');
-            });
-
-            // Also send without frame_id (some LMS use this)
-            window.parent.postMessage(JSON.stringify({
-                subject: 'lti.frameResize',
-                height: height
-            }), '*');
-
-            // Canvas LMS format (object, not string)
-            window.parent.postMessage({
-                subject: 'lti.frameResize',
-                height: height
-            }, '*');
-
-            // H5P / generic format
-            window.parent.postMessage({
-                context: 'h5p',
-                action: 'resize',
-                height: height
-            }, '*');
-
-            // Generic resize message
-            window.parent.postMessage({
-                type: 'lti-resize',
-                height: height
-            }, '*');
-
-            // Also try resizing via window.frameElement if accessible (same-origin only)
-            try {
-                if (window.frameElement) {
-                    window.frameElement.style.height = height + 'px';
-                    window.frameElement.style.minHeight = height + 'px';
-                }
-            } catch (e) {
-                // Cross-origin restriction, ignore
+                return height;
             }
 
-            // Moodle-specific: try using Moodle's YUI resize
-            try {
-                if (window.parent && window.parent.M && window.parent.M.mod_lti) {
-                    window.parent.M.mod_lti.resize(height);
+            // Send height to parent (debounced)
+            function sendHeight(force) {
+                if (debounceTimer) {
+                    clearTimeout(debounceTimer);
                 }
-            } catch (e) {
-                // Not in Moodle or no access
+
+                debounceTimer = setTimeout(function() {
+                    const height = getContentHeight();
+
+                    // Only send if height changed significantly (more than 5px)
+                    if (!force && Math.abs(height - lastSentHeight) < 5) {
+                        return;
+                    }
+
+                    lastSentHeight = height;
+
+                    // Send to parent via postMessage
+                    window.parent.postMessage(JSON.stringify({
+                        subject: 'lti.frameResize',
+                        height: height
+                    }), '*');
+
+                    // Also send as object for Canvas LMS
+                    window.parent.postMessage({
+                        subject: 'lti.frameResize',
+                        height: height
+                    }, '*');
+                }, 100);
             }
 
-            // Try Moodle's require for AMD modules
-            try {
-                if (window.parent && window.parent.require) {
-                    window.parent.require(['mod_lti/tool'], function(tool) {
-                        if (tool && tool.resize) {
-                            tool.resize(height);
-                        }
-                    });
-                }
-            } catch (e) {
-                // Not available
-            }
+            // Make sendHeight globally available
+            window.sendHeight = sendHeight;
 
-            // Try to find and resize iframe directly from parent (same-origin only)
-            try {
-                if (window.parent && window.parent.document) {
-                    // Find all iframes and check which one contains us
-                    const iframes = window.parent.document.querySelectorAll('iframe');
-                    iframes.forEach(function(iframe) {
-                        try {
-                            if (iframe.contentWindow === window) {
-                                iframe.style.height = height + 'px';
-                                iframe.style.minHeight = height + 'px';
-                                iframe.setAttribute('height', height);
-                            }
-                        } catch (e) {
-                            // Cross-origin, skip
-                        }
-                    });
-                }
-            } catch (e) {
-                // Cross-origin restriction
-            }
-        }
-
-        // Highlight code blocks with Prism.js
-        function highlightCode() {
-            if (typeof Prism !== 'undefined') {
-                try {
-                    Prism.highlightAll();
-                } catch (e) {
-                    console.warn('Prism highlighting failed:', e);
-                }
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            highlightCode();
-            // Initial height send after DOM is ready
-            setTimeout(sendHeight, 100);
-        });
-
-        // Also try on window load as backup
-        window.addEventListener('load', function() {
-            highlightCode();
-        });
-
-        // Copy code to clipboard
-        function copyCode(blockId) {
-            const codeBlock = document.getElementById(blockId);
-            if (!codeBlock) return;
-
-            const code = codeBlock.textContent;
-            const button = codeBlock.closest('.code-block').querySelector('.copy-btn');
-
-            navigator.clipboard.writeText(code).then(function() {
-                button.classList.add('copied');
-                button.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="hidden sm:inline">Kopiert!</span>';
-                setTimeout(function() {
-                    button.classList.remove('copied');
-                    button.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" stroke-width="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" stroke-width="2"/></svg><span class="hidden sm:inline">Kopieren</span>';
-                }, 2000);
-            }).catch(function() {
-                const textArea = document.createElement('textarea');
-                textArea.value = code;
-                textArea.style.position = 'fixed';
-                textArea.style.left = '-999999px';
-                document.body.appendChild(textArea);
-                textArea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textArea);
-                button.classList.add('copied');
-                button.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="hidden sm:inline">Kopiert!</span>';
-                setTimeout(function() {
-                    button.classList.remove('copied');
-                    button.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" stroke-width="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" stroke-width="2"/></svg><span class="hidden sm:inline">Kopieren</span>';
-                }, 2000);
-            });
-        }
-
-        // Send height on load and resize
-        window.addEventListener('load', function() {
-            sendHeight();
-            // Send again after a short delay to account for fonts/styles loading
-            setTimeout(sendHeight, 500);
-            setTimeout(sendHeight, 1000);
-        });
-        window.addEventListener('resize', sendHeight);
-
-        // Also send after images load
-        document.querySelectorAll('img').forEach(img => {
-            img.addEventListener('load', sendHeight);
-        });
-
-        // Use ResizeObserver for more reliable height detection
-        if (typeof ResizeObserver !== 'undefined') {
-            const resizeObserver = new ResizeObserver(function() {
-                sendHeight();
-            });
-            resizeObserver.observe(document.body);
-        }
-
-        // Send periodically for dynamic content
-        setInterval(sendHeight, 2000);
-
-        // Listen for messages from parent (e.g., to get frame ID)
-        window.addEventListener('message', function(event) {
-            try {
-                let data = event.data;
-                if (typeof data === 'string') {
-                    data = JSON.parse(data);
-                }
-                // If parent sends us our frame ID, store it and resize
-                if (data.subject === 'lti.setFrameId' || data.type === 'setFrameId') {
-                    const frameId = data.frame_id || data.frameId;
-                    if (frameId) {
-                        MOODLE_FRAME_IDS.unshift(frameId);
-                        sendHeight();
+            // Highlight code blocks with Prism.js
+            function highlightCode() {
+                if (typeof Prism !== 'undefined') {
+                    try {
+                        Prism.highlightAll();
+                    } catch (e) {
+                        console.warn('Prism highlighting failed:', e);
                     }
                 }
-                // If parent requests height, send it
-                if (data.subject === 'lti.getHeight' || data.type === 'getHeight') {
-                    sendHeight();
-                }
-            } catch (e) {
-                // Ignore parsing errors
             }
-        });
 
-        // Request frame ID from parent on load
-        window.parent.postMessage(JSON.stringify({
-            subject: 'lti.getFrameId'
-        }), '*');
-        window.parent.postMessage({
-            subject: 'lti.getFrameId'
-        }, '*');
+            // Initialize on DOM ready
+            document.addEventListener('DOMContentLoaded', function() {
+                highlightCode();
+                // Send height after content is rendered
+                setTimeout(function() { sendHeight(true); }, 200);
+            });
 
-        // Also send a "ready" message to signal we're loaded
-        window.parent.postMessage(JSON.stringify({
-            subject: 'lti.ready'
-        }), '*');
+            // Also send on window load (after all resources loaded)
+            window.addEventListener('load', function() {
+                highlightCode();
+                sendHeight(true);
+                // Final send after fonts/styles fully loaded
+                setTimeout(function() { sendHeight(true); }, 500);
+            });
+
+            // Send height after images load
+            document.querySelectorAll('img').forEach(function(img) {
+                if (!img.complete) {
+                    img.addEventListener('load', function() { sendHeight(); });
+                }
+            });
+
+            // Copy code to clipboard
+            window.copyCode = function(blockId) {
+                const codeBlock = document.getElementById(blockId);
+                if (!codeBlock) return;
+
+                const code = codeBlock.textContent;
+                const button = codeBlock.closest('.code-block').querySelector('.copy-btn');
+
+                navigator.clipboard.writeText(code).then(function() {
+                    button.classList.add('copied');
+                    button.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="hidden sm:inline">Kopiert!</span>';
+                    setTimeout(function() {
+                        button.classList.remove('copied');
+                        button.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" stroke-width="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" stroke-width="2"/></svg><span class="hidden sm:inline">Kopieren</span>';
+                    }, 2000);
+                }).catch(function() {
+                    const textArea = document.createElement('textarea');
+                    textArea.value = code;
+                    textArea.style.position = 'fixed';
+                    textArea.style.left = '-999999px';
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    button.classList.add('copied');
+                    button.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="hidden sm:inline">Kopiert!</span>';
+                    setTimeout(function() {
+                        button.classList.remove('copied');
+                        button.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" stroke-width="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" stroke-width="2"/></svg><span class="hidden sm:inline">Kopieren</span>';
+                    }, 2000);
+                });
+            };
+
+            // Send ready message
+            window.parent.postMessage(JSON.stringify({ subject: 'lti.ready' }), '*');
+        })();
     </script>
 </body>
 </html>
