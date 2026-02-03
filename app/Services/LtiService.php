@@ -197,7 +197,7 @@ class LtiService
         $privateKey = file_get_contents(storage_path('lti/private.pem'));
 
         $payload = [
-            'iss' => config('app.url'),
+            'iss' => $platform->client_id,
             'aud' => [$platform->issuer],
             'exp' => now()->addMinutes(5)->timestamp,
             'iat' => now()->timestamp,
