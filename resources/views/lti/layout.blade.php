@@ -41,6 +41,17 @@
         }
 
         /* Code block styling - override Prism defaults */
+        .code-block {
+            max-width: 100%;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .code-block > div:last-child {
+            overflow-x: auto;
+            max-width: 100%;
+        }
+
         .code-block pre[class*="language-"],
         .code-block pre,
         pre[class*="language-"] {
@@ -48,11 +59,9 @@
             margin: 0 !important;
             padding: 1rem !important;
             border-radius: 0 !important;
-            overflow-x: auto !important;
             white-space: pre !important;
             word-wrap: normal !important;
-            max-width: 100% !important;
-            box-sizing: border-box !important;
+            overflow: visible !important;
         }
 
         .code-block code[class*="language-"],
@@ -63,14 +72,21 @@
             background: transparent !important;
             white-space: pre !important;
             word-wrap: normal !important;
+            display: block;
         }
 
-        .code-block {
-            max-width: 100%;
+        /* Ensure main content area constrains width */
+        main {
+            min-width: 0;
             overflow: hidden;
         }
 
-        .code-block > div {
+        article {
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        article > * {
             max-width: 100%;
         }
 
