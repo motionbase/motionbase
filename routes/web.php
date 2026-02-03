@@ -120,8 +120,8 @@ Route::prefix('lti')->name('lti.')->group(function () {
     // OIDC Login Initiation
     Route::match(['get', 'post'], 'login', [LtiController::class, 'login'])->name('login');
 
-    // LTI Launch (receives id_token via POST)
-    Route::post('launch', [LtiController::class, 'launch'])->name('launch');
+    // LTI Launch (POST for actual launch, GET for Moodle validation)
+    Route::match(['get', 'post'], 'launch', [LtiController::class, 'launch'])->name('launch');
 
     // JWKS endpoint for public keys
     Route::get('.well-known/jwks.json', [LtiController::class, 'jwks'])->name('jwks');

@@ -68,6 +68,15 @@ class LtiController extends Controller
      */
     public function launch(Request $request)
     {
+        // Handle GET request (Moodle validation or direct access)
+        if ($request->isMethod('get')) {
+            return response()->json([
+                'status' => 'ok',
+                'message' => 'MotionBase LTI 1.3 Tool - Launch endpoint ready',
+                'supported_methods' => ['POST'],
+            ]);
+        }
+
         $request->validate([
             'id_token' => 'required|string',
             'state' => 'required|string',
