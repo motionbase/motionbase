@@ -54,6 +54,11 @@ class LtiEmbedController extends Controller
     {
         $session = $this->validateSession($request);
 
+        // Ensure chapter belongs to topic
+        if ($chapter->topic_id !== $topic->id) {
+            abort(404);
+        }
+
         // Load only this chapter with its sections
         $chapter->loadMissing([
             'sections' => fn ($sq) => $sq->where('is_published', true)->orderBy('sort_order'),
