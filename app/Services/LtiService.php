@@ -26,7 +26,7 @@ class LtiService
         try {
             $jwks = $this->getPlatformJwks($platform);
             $decoded = JWT::decode($idToken, JWK::parseKeySet($jwks));
-            $claims = (array) $decoded;
+            $claims = $this->objectToArray($decoded);
 
             // Validate required claims
             if (($claims['iss'] ?? null) !== $platform->issuer) {
@@ -158,5 +158,18 @@ class LtiService
 
             return $response->json();
         });
+    }
+
+    private function objectToArray(mixed $data): mixed
+    {
+        if (is_object($data)) {
+            $data = (array) $data;
+        }
+
+        if (is_array($data)) {
+            return array_map([$this, 'objectToArray'], $data);
+        }
+
+        return $data;
     }
 }
