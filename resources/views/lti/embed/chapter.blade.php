@@ -3,10 +3,10 @@
 @section('title', ($activeSection->title ?? $chapter->title) . ' - ' . $topic->title)
 
 @section('content')
-<div class="flex flex-col lg:flex-row min-h-screen">
-    {{-- Sidebar Navigation (sticky) --}}
+<div class="flex flex-col lg:flex-row">
+    {{-- Sidebar Navigation --}}
     <aside class="w-full lg:w-72 flex-shrink-0 border-b lg:border-b-0 lg:border-r border-zinc-100 bg-white">
-        <div class="lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto p-4 lg:p-6">
+        <div class="p-4 lg:p-6">
             <div class="mb-6 pb-4 border-b border-zinc-100">
                 <p class="text-xs text-zinc-400 mb-1">{{ $topic->title }}</p>
                 <h1 class="text-lg font-semibold text-zinc-900">{{ $chapter->title }}</h1>
@@ -40,10 +40,21 @@
     {{-- Main Content - Single section --}}
     <main class="flex-1 p-6 lg:p-10">
         @if($activeSection)
-            <header class="mb-8">
+            <header class="mb-8 flex items-start justify-between gap-4">
                 <h2 class="text-3xl lg:text-4xl font-bold tracking-tight text-zinc-900">
                     {{ $activeSection->title }}
                 </h2>
+                <a
+                    href="{{ url()->current() }}?lti_session={{ $session->session_token }}"
+                    target="_blank"
+                    class="flex-shrink-0 flex items-center gap-2 px-3 py-2 text-xs font-medium text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors"
+                    title="In neuem Tab öffnen"
+                >
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                    </svg>
+                    <span class="hidden sm:inline">Vollbild</span>
+                </a>
             </header>
 
             <article class="prose prose-zinc max-w-none">

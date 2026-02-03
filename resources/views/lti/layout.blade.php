@@ -15,18 +15,29 @@
     @vite(['resources/css/app.css'])
 
     <style>
-        /* Ensure content fills the iframe */
+        /* Ensure content fills the iframe - no viewport constraints for iframe embedding */
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
         html, body {
             margin: 0;
             padding: 0;
-            min-height: 100vh;
             height: auto;
+            min-height: auto;
+            overflow: hidden;
         }
 
         /* Remove any default scrollbars when in iframe */
         html {
-            overflow-y: auto;
-            overflow-x: hidden;
+            overflow-y: visible;
+        }
+
+        /* Prevent last element margins from causing scrollbar */
+        body > div:last-child,
+        main > *:last-child,
+        article > *:last-child,
+        .prose > *:last-child {
+            margin-bottom: 0 !important;
         }
 
         /* Code block styling - override Prism defaults */
@@ -99,10 +110,23 @@
     <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-sql.min.js"></script>
 
+    {{-- iframe-resizer library for LMS platforms that support it --}}
+    <script src="https://cdn.jsdelivr.net/npm/iframe-resizer@4.3.9/js/iframeResizer.contentWindow.min.js"></script>
+
     <script>
+        // Common Moodle iframe IDs to try
+        const MOODLE_FRAME_IDS = [
+            'contentframe',
+            'ltiframe',
+            'mod_lti_launch_container',
+            'lti_tool_frame',
+            'resourceobject',
+            'externalcontentframe'
+        ];
+
         // Send content height to parent iframe for auto-resize
         function sendHeight() {
-            // Calculate actual content height
+            // Calculate actual content height with some padding
             const body = document.body;
             const html = document.documentElement;
             const height = Math.max(
@@ -111,29 +135,43 @@
                 html.clientHeight,
                 html.scrollHeight,
                 html.offsetHeight
-            );
+            ) + 2; // +2 to prevent subpixel scrollbar
 
-            // Try to get the iframe ID from the URL or use a default
+            // Try to get the iframe ID from the URL
             const urlParams = new URLSearchParams(window.location.search);
-            const frameId = urlParams.get('frame_id') || 'lti_tool_frame';
+            const frameIdFromUrl = urlParams.get('frame_id');
 
-            // Moodle LTI standard format (stringified JSON)
+            // Try all common Moodle iframe IDs
+            const frameIdsToTry = frameIdFromUrl
+                ? [frameIdFromUrl, ...MOODLE_FRAME_IDS]
+                : MOODLE_FRAME_IDS;
+
+            // Send to each possible frame ID
+            frameIdsToTry.forEach(function(frameId) {
+                // Moodle LTI standard format (stringified JSON)
+                window.parent.postMessage(JSON.stringify({
+                    subject: 'lti.frameResize',
+                    height: height,
+                    frame_id: frameId
+                }), '*');
+            });
+
+            // Also send without frame_id (some LMS use this)
             window.parent.postMessage(JSON.stringify({
                 subject: 'lti.frameResize',
-                height: height,
-                frame_id: frameId
-            }), '*');
-
-            // Alternative Moodle format with message_id
-            window.parent.postMessage(JSON.stringify({
-                subject: 'lti.frameResize',
-                message_id: 'frame_resize_' + Date.now(),
                 height: height
             }), '*');
 
-            // Canvas LMS format
+            // Canvas LMS format (object, not string)
             window.parent.postMessage({
                 subject: 'lti.frameResize',
+                height: height
+            }, '*');
+
+            // H5P / generic format
+            window.parent.postMessage({
+                context: 'h5p',
+                action: 'resize',
                 height: height
             }, '*');
 
@@ -143,10 +181,11 @@
                 height: height
             }, '*');
 
-            // Also try resizing via window.frameElement if accessible
+            // Also try resizing via window.frameElement if accessible (same-origin only)
             try {
                 if (window.frameElement) {
                     window.frameElement.style.height = height + 'px';
+                    window.frameElement.style.minHeight = height + 'px';
                 }
             } catch (e) {
                 // Cross-origin restriction, ignore
@@ -164,12 +203,35 @@
             // Try Moodle's require for AMD modules
             try {
                 if (window.parent && window.parent.require) {
-                    window.parent.require(['core/event'], function(event) {
-                        event.notifyFilterContentUpdated(window.parent.document.body);
+                    window.parent.require(['mod_lti/tool'], function(tool) {
+                        if (tool && tool.resize) {
+                            tool.resize(height);
+                        }
                     });
                 }
             } catch (e) {
                 // Not available
+            }
+
+            // Try to find and resize iframe directly from parent (same-origin only)
+            try {
+                if (window.parent && window.parent.document) {
+                    // Find all iframes and check which one contains us
+                    const iframes = window.parent.document.querySelectorAll('iframe');
+                    iframes.forEach(function(iframe) {
+                        try {
+                            if (iframe.contentWindow === window) {
+                                iframe.style.height = height + 'px';
+                                iframe.style.minHeight = height + 'px';
+                                iframe.setAttribute('height', height);
+                            }
+                        } catch (e) {
+                            // Cross-origin, skip
+                        }
+                    });
+                }
+            } catch (e) {
+                // Cross-origin restriction
             }
         }
 
@@ -250,8 +312,45 @@
             resizeObserver.observe(document.body);
         }
 
-        // Send periodically for dynamic content (less frequently)
+        // Send periodically for dynamic content
         setInterval(sendHeight, 2000);
+
+        // Listen for messages from parent (e.g., to get frame ID)
+        window.addEventListener('message', function(event) {
+            try {
+                let data = event.data;
+                if (typeof data === 'string') {
+                    data = JSON.parse(data);
+                }
+                // If parent sends us our frame ID, store it and resize
+                if (data.subject === 'lti.setFrameId' || data.type === 'setFrameId') {
+                    const frameId = data.frame_id || data.frameId;
+                    if (frameId) {
+                        MOODLE_FRAME_IDS.unshift(frameId);
+                        sendHeight();
+                    }
+                }
+                // If parent requests height, send it
+                if (data.subject === 'lti.getHeight' || data.type === 'getHeight') {
+                    sendHeight();
+                }
+            } catch (e) {
+                // Ignore parsing errors
+            }
+        });
+
+        // Request frame ID from parent on load
+        window.parent.postMessage(JSON.stringify({
+            subject: 'lti.getFrameId'
+        }), '*');
+        window.parent.postMessage({
+            subject: 'lti.getFrameId'
+        }, '*');
+
+        // Also send a "ready" message to signal we're loaded
+        window.parent.postMessage(JSON.stringify({
+            subject: 'lti.ready'
+        }), '*');
     </script>
 </body>
 </html>
