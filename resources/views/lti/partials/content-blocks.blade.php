@@ -118,14 +118,15 @@
                 return $html;
 
             case 'quiz':
-                // Quiz placeholder - interactive quizzes need JS
                 $questions = $data['questions'] ?? [];
-                $count = count($questions);
-                return "<div class=\"mb-6 p-6 bg-zinc-50 rounded-xl border border-zinc-200 text-center\">
-                    <div class=\"text-lg font-semibold text-zinc-900 mb-2\">Quiz</div>
-                    <div class=\"text-sm text-zinc-500\">{$count} Fragen</div>
-                    <div class=\"mt-3 text-xs text-zinc-400\">Interaktive Quizze sind in der Vollversion verfügbar.</div>
-                </div>";
+                if (empty($questions)) {
+                    return "<div class=\"mb-6 p-6 bg-zinc-50 rounded-xl border border-zinc-200 text-center\">
+                        <div class=\"text-sm text-zinc-500\">Keine Fragen vorhanden.</div>
+                    </div>";
+                }
+                $quizId = 'quiz-' . md5(json_encode($questions) . $index);
+                $quizData = htmlspecialchars(json_encode($questions), ENT_QUOTES, 'UTF-8');
+                return "<div class=\"quiz-container mb-6\" id=\"{$quizId}\" data-questions=\"{$quizData}\"></div>";
 
             default:
                 return '';
