@@ -27,6 +27,8 @@ import {
     Check,
     ChevronDown,
     ChevronRight,
+    Code,
+    Copy,
     FileText,
     FolderOpen,
     MoreHorizontal,
@@ -43,6 +45,7 @@ import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { TopicHistory } from '@/components/revisions/topic-history';
 import { CreateItemDialog } from '@/components/create-item-dialog';
+import { SortableCourseStructure } from '@/components/sortable-course-structure';
 
 type EditorContent = {
     time: number;
@@ -508,144 +511,41 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                         </div>
 
                         <div className="flex-1 overflow-y-auto p-3">
-                            <div className="space-y-2">
-                                {topic.chapters.map((chapter, chapterIndex) => {
-                                    const isExpanded = expandedChapters.has(chapter.id);
-                                    const isEditing = editingChapterId === chapter.id;
-                                    return (
-                                        <div key={chapter.id} className="rounded-lg bg-white shadow-sm">
-                                            <div className="flex items-center gap-1 p-2">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => toggleChapter(chapter.id)}
-                                                    className="flex h-6 w-6 items-center justify-center rounded text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
-                                                >
-                                                    {isExpanded ? (
-                                                        <ChevronDown className="h-4 w-4" />
-                                                    ) : (
-                                                        <ChevronRight className="h-4 w-4" />
-                                                    )}
-                                                </button>
-                                                <FolderOpen className="h-4 w-4 shrink-0 text-amber-500" />
-                                                
-                                                {isEditing ? (
-                                                    <div className="flex flex-1 items-center gap-1">
-                                                        <input
-                                                            type="text"
-                                                            value={editingChapterTitle}
-                                                            onChange={(e) => setEditingChapterTitle(e.target.value)}
-                                                            onKeyDown={(e) => {
-                                                                if (e.key === 'Enter') {
-                                                                    handleSaveChapterTitle(chapter.id);
-                                                                } else if (e.key === 'Escape') {
-                                                                    handleCancelEditChapter();
-                                                                }
-                                                            }}
-                                                            className="h-6 flex-1 rounded border border-zinc-300 bg-white px-2 text-sm font-medium text-zinc-700 focus:border-zinc-500 focus:outline-none focus:ring-1 focus:ring-zinc-500"
-                                                            autoFocus
-                                                        />
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleSaveChapterTitle(chapter.id)}
-                                                            className="flex h-6 w-6 items-center justify-center rounded text-green-600 hover:bg-green-50"
-                                                        >
-                                                            <Check className="h-4 w-4" />
-                                                        </button>
-                                                        <button
-                                                            type="button"
-                                                            onClick={handleCancelEditChapter}
-                                                            className="flex h-6 w-6 items-center justify-center rounded text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
-                                                        >
-                                                            <X className="h-4 w-4" />
-                                                        </button>
-                                                    </div>
-                                                ) : (
-                                                    <>
-                                                        <button
-                                                            type="button"
-                                                            className="flex-1 cursor-pointer truncate text-left text-sm font-medium text-zinc-700 hover:text-zinc-900"
-                                                            onClick={() => {
-                                                                setSelectedChapterId(chapter.id);
-                                                                setSettingsTab('chapter');
-                                                                setSettingsOpen(true);
-                                                            }}
-                                                        >
-                                                            {chapter.title}
-                                                        </button>
-                                                        <span className="rounded-full bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500">
-                                                            {chapter.sections.length}
-                                                        </span>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleCreateSection(chapter.id)}
-                                                            className="flex h-6 w-6 items-center justify-center rounded text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600"
-                                                            title="Seite hinzufügen"
-                                                        >
-                                                            <Plus className="h-4 w-4" />
-                                                        </button>
-                                                    </>
-                                                )}
-                                            </div>
-
-                                            {isExpanded && (
-                                                <div className="space-y-0.5 px-2 pb-2">
-                                                    {chapter.sections.map((section) => {
-                                                        const isActive = section.id === activeSection?.id;
-                                                        return (
-                                                            <div
-                                                                key={section.id}
-                                                                className={cn(
-                                                                    'group flex items-center gap-2 rounded-md px-2 py-1.5 transition-colors',
-                                                                    isActive
-                                                                        ? 'bg-zinc-900 text-white'
-                                                                        : 'text-zinc-600 hover:bg-zinc-50',
-                                                                )}
-                                                            >
-                                                                <button
-                                                                    type="button"
-                                                                    className="flex flex-1 items-center gap-2 text-left"
-                                                                    onClick={() => handleNavigateToSection(section.id)}
-                                                                >
-                                                                    <FileText
-                                                                        className={cn(
-                                                                            'h-4 w-4 shrink-0',
-                                                                            isActive ? 'text-white/70' : 'text-zinc-400',
-                                                                        )}
-                                                                    />
-                                                                    <span className="truncate text-sm">
-                                                                        {section.title}
-                                                                    </span>
-                                                                </button>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                    {chapter.sections.length === 0 && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => handleCreateSection(chapter.id)}
-                                                            className="flex w-full items-center gap-2 rounded-md border border-dashed border-zinc-200 px-2 py-2 text-xs text-zinc-400 hover:border-zinc-300 hover:text-zinc-500"
-                                                        >
-                                                            <Plus className="h-3.5 w-3.5" />
-                                                            Abschnitt hinzufügen
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-
-                                {topic.chapters.length === 0 && (
-                                    <button
-                                        type="button"
-                                        onClick={handleCreateChapter}
-                                        className="flex w-full flex-col items-center gap-2 rounded-xl border-2 border-dashed border-zinc-200 px-4 py-8 text-zinc-400 transition-colors hover:border-zinc-300 hover:text-zinc-500"
-                                    >
-                                        <FolderOpen className="h-8 w-8" />
-                                        <span className="text-sm font-medium">Erstes Kapitel anlegen</span>
-                                    </button>
-                                )}
-                            </div>
+                            {topic.chapters.length > 0 ? (
+                                <SortableCourseStructure
+                                    topicId={topic.id}
+                                    chapters={topic.chapters}
+                                    activeSection={activeSection}
+                                    expandedChapters={expandedChapters}
+                                    editingChapterId={editingChapterId}
+                                    editingChapterTitle={editingChapterTitle}
+                                    onToggleChapter={toggleChapter}
+                                    onNavigateToSection={handleNavigateToSection}
+                                    onCreateChapter={handleCreateChapter}
+                                    onCreateSection={handleCreateSection}
+                                    onChapterClick={(chapterId) => {
+                                        setSelectedChapterId(chapterId);
+                                        setSettingsTab('chapter');
+                                        setSettingsOpen(true);
+                                    }}
+                                    onEditChapterTitle={(chapterId, title) => {
+                                        setEditingChapterId(chapterId);
+                                        setEditingChapterTitle(title);
+                                    }}
+                                    onSaveChapterTitle={handleSaveChapterTitle}
+                                    onCancelEditChapter={handleCancelEditChapter}
+                                    setEditingChapterTitle={setEditingChapterTitle}
+                                />
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={handleCreateChapter}
+                                    className="flex w-full flex-col items-center gap-2 rounded-xl border-2 border-dashed border-zinc-200 px-4 py-8 text-zinc-400 transition-colors hover:border-zinc-300 hover:text-zinc-500"
+                                >
+                                    <FolderOpen className="h-8 w-8" />
+                                    <span className="text-sm font-medium">Erstes Kapitel anlegen</span>
+                                </button>
+                            )}
                         </div>
                     </aside>
 
@@ -882,6 +782,37 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                                             </Button>
                                         )}
 
+                                        {/* Embed Link Section */}
+                                        <div className="pt-4 border-t">
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <Code className="h-4 w-4 text-zinc-500" />
+                                                <Label className="text-xs font-semibold">Embed Code</Label>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <div className="relative">
+                                                    <textarea
+                                                        readOnly
+                                                        value={`<iframe src="${window.location.origin}/embed/chapter/${selectedChapter.id}" width="100%" height="700" style="border: 1px solid #e4e4e7; border-radius: 8px;" allowfullscreen></iframe>`}
+                                                        className="w-full h-20 p-3 text-xs font-mono bg-zinc-50 border border-zinc-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-zinc-900"
+                                                    />
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="absolute top-2 right-2 h-7 text-xs"
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(`<iframe src="${window.location.origin}/embed/chapter/${selectedChapter.id}" width="100%" height="700" style="border: 1px solid #e4e4e7; border-radius: 8px;" allowfullscreen></iframe>`);
+                                                        }}
+                                                    >
+                                                        <Copy className="h-3 w-3 mr-1" />
+                                                        Kopieren
+                                                    </Button>
+                                                </div>
+                                                <p className="text-xs text-zinc-500">
+                                                    Füge diesen Code in Moodle (HTML-Modus) ein.
+                                                </p>
+                                            </div>
+                                        </div>
+
                                         <div className="pt-4 border-t">
                                             <Button
                                                 variant="outline"
@@ -949,6 +880,37 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                                                 {sectionSettingsForm.processing ? 'Speichern...' : 'Änderungen speichern'}
                                             </Button>
                                         )}
+
+                                        {/* Embed Link Section */}
+                                        <div className="pt-4 border-t">
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <Code className="h-4 w-4 text-zinc-500" />
+                                                <Label className="text-xs font-semibold">Embed Code</Label>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <div className="relative">
+                                                    <textarea
+                                                        readOnly
+                                                        value={`<iframe src="${window.location.origin}/embed/section/${activeSection.id}" width="100%" height="700" style="border: 1px solid #e4e4e7; border-radius: 8px;" allowfullscreen></iframe>`}
+                                                        className="w-full h-20 p-3 text-xs font-mono bg-zinc-50 border border-zinc-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-zinc-900"
+                                                    />
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="absolute top-2 right-2 h-7 text-xs"
+                                                        onClick={() => {
+                                                            navigator.clipboard.writeText(`<iframe src="${window.location.origin}/embed/section/${activeSection.id}" width="100%" height="700" style="border: 1px solid #e4e4e7; border-radius: 8px;" allowfullscreen></iframe>`);
+                                                        }}
+                                                    >
+                                                        <Copy className="h-3 w-3 mr-1" />
+                                                        Kopieren
+                                                    </Button>
+                                                </div>
+                                                <p className="text-xs text-zinc-500">
+                                                    Füge diesen Code in Moodle (HTML-Modus) ein.
+                                                </p>
+                                            </div>
+                                        </div>
 
                                         <div className="pt-4 border-t">
                                             <Button

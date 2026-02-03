@@ -9,6 +9,7 @@ use App\Http\Controllers\LtiAdminController;
 use App\Http\Controllers\LtiController;
 use App\Http\Controllers\LtiEmbedController;
 use App\Http\Controllers\MediaController;
+use App\Http\Controllers\PublicEmbedController;
 use App\Http\Controllers\PublicTopicController;
 use App\Http\Controllers\RevisionController;
 use App\Http\Controllers\SectionController;
@@ -26,6 +27,14 @@ Route::get('themen/{topic:slug}/{chapter:slug?}/{section:slug?}', [PublicTopicCo
 Route::post('themen/{topic:slug}/chat', [ChatController::class, 'chat'])
     ->middleware('throttle:10,1') // 10 requests per minute
     ->name('topics.chat');
+
+// Public Embed Routes (for iframe embedding without LTI)
+Route::prefix('embed')->name('embed.')->group(function () {
+    Route::get('topic/{topic}', [PublicEmbedController::class, 'topic'])->name('topic');
+    Route::get('chapter/{chapter}', [PublicEmbedController::class, 'chapter'])->name('chapter');
+    Route::get('chapter/{chapter}/section/{section}', [PublicEmbedController::class, 'chapterSection'])->name('chapter.section');
+    Route::get('section/{section}', [PublicEmbedController::class, 'section'])->name('section');
+});
 
 // Admin redirect route
 Route::get('/admin', function () {
