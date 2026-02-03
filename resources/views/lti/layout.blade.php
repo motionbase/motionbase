@@ -188,9 +188,25 @@
                 }
             }
 
+            // Request parent to scroll iframe into view
+            function scrollToTop() {
+                // Scroll within iframe
+                window.scrollTo(0, 0);
+
+                // Request parent to scroll iframe into view
+                window.parent.postMessage(JSON.stringify({
+                    subject: 'lti.scrollToTop'
+                }), '*');
+                window.parent.postMessage({
+                    subject: 'lti.scrollToTop'
+                }, '*');
+            }
+
             // Initialize on DOM ready
             document.addEventListener('DOMContentLoaded', function() {
                 highlightCode();
+                // Scroll to top on page load
+                scrollToTop();
                 // Send height after content is rendered
                 setTimeout(function() { sendHeight(true); }, 200);
             });
