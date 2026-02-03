@@ -3,7 +3,7 @@
 @section('title', 'Chat - ' . $topic->title)
 
 @section('content')
-<div class="min-h-screen flex flex-col">
+<div class="flex flex-col" style="min-height: 500px;">
     {{-- Header --}}
     <header class="border-b border-zinc-100 bg-white px-4 py-3">
         <h1 class="text-lg font-semibold text-zinc-900">
@@ -126,15 +126,16 @@
                     'X-CSRF-TOKEN': csrfToken,
                     'Accept': 'application/json',
                 },
-                body: JSON.stringify({ message }),
+                body: JSON.stringify({ question: message }),
             });
 
+            const data = await response.json();
+
             if (!response.ok) {
-                throw new Error('Anfrage fehlgeschlagen');
+                throw new Error(data.error || 'Anfrage fehlgeschlagen');
             }
 
-            const data = await response.json();
-            addMessage(data.response || 'Keine Antwort erhalten.');
+            addMessage(data.answer || 'Keine Antwort erhalten.');
         } catch (error) {
             addMessage('Es ist ein Fehler aufgetreten. Bitte versuche es erneut.');
             console.error('Chat error:', error);
