@@ -253,7 +253,7 @@ export default class ImageBlock implements BlockTool {
 
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
-            const response = await fetch('/upload/image', {
+            const response = await fetch('/admin/upload/image', {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': csrfToken ?? '',
@@ -293,7 +293,7 @@ export default class ImageBlock implements BlockTool {
         try {
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
-            const response = await fetch('/upload/image-by-url', {
+            const response = await fetch('/admin/upload/image-by-url', {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': csrfToken ?? '',
