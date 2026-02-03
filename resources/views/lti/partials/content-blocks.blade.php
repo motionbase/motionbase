@@ -1,6 +1,7 @@
 @php
     use Illuminate\Support\Str;
 
+    if (!function_exists('renderEditorBlock')) {
     function renderEditorBlock($block, $index = 0) {
         $type = $block['type'] ?? 'paragraph';
         $data = $block['data'] ?? [];
@@ -130,7 +131,9 @@
                 return '';
         }
     }
+    } // end if !function_exists('renderEditorBlock')
 
+    if (!function_exists('renderListItems')) {
     function renderListItems($items, $style = 'unordered', $depth = 0) {
         $html = '';
         foreach ($items as $index => $item) {
@@ -148,6 +151,7 @@
         }
         return $html;
     }
+    } // end if !function_exists('renderListItems')
 @endphp
 
 @if(empty($blocks))
