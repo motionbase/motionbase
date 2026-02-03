@@ -3,14 +3,14 @@
 @section('title', 'Inhalt für Moodle auswählen')
 
 @section('content')
-<div class="min-h-screen bg-zinc-50">
+<div class="bg-zinc-50">
     {{-- Header --}}
     <header class="bg-white border-b border-zinc-200 px-6 py-4">
         <h1 class="text-xl font-bold text-zinc-900">Inhalt für Moodle auswählen</h1>
         <p class="text-sm text-zinc-500 mt-1">Wähle ein Thema und dann ein Kapitel aus.</p>
     </header>
 
-    <div class="flex flex-col lg:flex-row min-h-[calc(100vh-73px)]">
+    <div class="flex flex-col lg:flex-row">
         {{-- Topics List (Left) --}}
         <div class="w-full lg:w-80 border-b lg:border-b-0 lg:border-r border-zinc-200 bg-white overflow-y-auto">
             <div class="p-4">
@@ -40,7 +40,7 @@
         {{-- Chapters Panel (Right) --}}
         <div class="flex-1 p-6 overflow-y-auto">
             {{-- Empty State --}}
-            <div id="empty-state" class="flex flex-col items-center justify-center h-full text-center">
+            <div id="empty-state" class="flex flex-col items-center justify-center py-12 text-center">
                 <div class="w-16 h-16 rounded-full bg-zinc-100 flex items-center justify-center mb-4">
                     <svg class="w-8 h-8 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
@@ -160,6 +160,11 @@
             emptyState.classList.add('hidden');
             chapterPanels.forEach(panel => panel.classList.add('hidden'));
             document.getElementById('chapters-' + topicId).classList.remove('hidden');
+
+            // Update iframe height after content change
+            if (typeof window.sendHeight === 'function') {
+                setTimeout(function() { window.sendHeight(true); }, 50);
+            }
         });
     });
 </script>
