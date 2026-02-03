@@ -45,24 +45,12 @@ jobs:
           port: 2121
           script: |
             cd ~/motionbase-beta/
-
-            # Create storage directories if they don't exist
             mkdir -p storage/app/public
             mkdir -p storage/framework/cache/data
             mkdir -p storage/framework/sessions
             mkdir -p storage/framework/views
             mkdir -p storage/logs
             mkdir -p storage/lti
-
-            # Fix permissions
-            chmod -R 775 storage
-            chmod -R 775 bootstrap/cache
-
-            # Remove broken symlink and recreate
-            rm -f public/storage
-            ln -s ../storage/app/public public/storage
-
+            mkdir -p bootstrap/cache
             /opt/php83/bin/php /usr/bin/composer install --no-dev --optimize-autoloader
-            /opt/php83/bin/php artisan migrate --force
-            /opt/php83/bin/php artisan config:cache
-            /opt/php83/bin/php artisan route:cache
+            /opt/php83/bin/php artisan storage:link
