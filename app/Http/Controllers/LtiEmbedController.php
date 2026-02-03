@@ -50,6 +50,25 @@ class LtiEmbedController extends Controller
         ]);
     }
 
+    public function chapter(Request $request, Topic $topic, Chapter $chapter)
+    {
+        $session = $this->validateSession($request);
+
+        // Load only this chapter with its sections
+        $chapter->loadMissing([
+            'sections' => fn ($sq) => $sq->where('is_published', true)->orderBy('sort_order'),
+        ]);
+
+        $firstSection = $chapter->sections->first();
+
+        return View::make('lti.embed.chapter', [
+            'topic' => $topic,
+            'chapter' => $chapter,
+            'activeSection' => $firstSection,
+            'session' => $session,
+        ]);
+    }
+
     public function chat(Request $request, Topic $topic)
     {
         $session = $this->validateSession($request);

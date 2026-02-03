@@ -230,6 +230,10 @@ class LtiController extends Controller
         foreach ($request->input('selected') as $selection) {
             $type = $selection['type'] ?? 'topic';
             $url = match ($type) {
+                'chapter' => route('lti.embed.chapter', [
+                    'topic' => $selection['topic_slug'],
+                    'chapter' => $selection['chapter_slug'],
+                ]),
                 'section' => route('lti.embed.section', [
                     'topic' => $selection['topic_slug'],
                     'section' => $selection['section_slug'],
@@ -249,6 +253,7 @@ class LtiController extends Controller
                 'custom' => [
                     'content_type' => $type,
                     'topic_slug' => $selection['topic_slug'],
+                    'chapter_slug' => $selection['chapter_slug'] ?? null,
                     'section_slug' => $selection['section_slug'] ?? null,
                 ],
             ];
