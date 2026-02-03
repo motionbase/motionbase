@@ -29,8 +29,29 @@
 
             case 'code':
                 $code = htmlspecialchars($data['code'] ?? '', ENT_QUOTES, 'UTF-8');
-                $language = $data['language'] ?? 'text';
-                return "<pre class=\"language-{$language} rounded-xl overflow-x-auto\"><code class=\"language-{$language}\">{$code}</code></pre>";
+                $language = $data['language'] ?? 'plaintext';
+                $languageLabels = [
+                    'javascript' => 'JavaScript', 'typescript' => 'TypeScript', 'jsx' => 'JSX', 'tsx' => 'TSX',
+                    'php' => 'PHP', 'css' => 'CSS', 'html' => 'HTML', 'markup' => 'HTML', 'bash' => 'Terminal',
+                    'shell' => 'Terminal', 'sh' => 'Terminal', 'json' => 'JSON', 'yaml' => 'YAML', 'sql' => 'SQL',
+                    'python' => 'Python', 'ruby' => 'Ruby', 'go' => 'Go', 'rust' => 'Rust', 'java' => 'Java',
+                    'plaintext' => 'Text', 'text' => 'Text',
+                ];
+                $languageLabel = $languageLabels[$language] ?? ucfirst($language);
+                $blockId = 'code-' . md5($code . $index);
+                return "
+                <div class=\"code-block group relative mb-6 overflow-hidden rounded-xl border border-zinc-200 bg-zinc-50\">
+                    <div class=\"flex items-center justify-between border-b border-zinc-200 bg-zinc-100/80 px-4 py-2\">
+                        <span class=\"text-xs font-medium text-zinc-600\">{$languageLabel}</span>
+                        <button onclick=\"copyCode('{$blockId}')\" class=\"copy-btn flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-zinc-500 hover:bg-zinc-200 hover:text-zinc-800 transition-all\">
+                            <svg class=\"copy-icon w-3.5 h-3.5\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\" stroke-width=\"2\"/><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\" stroke-width=\"2\"/></svg>
+                            <span class=\"hidden sm:inline\">Kopieren</span>
+                        </button>
+                    </div>
+                    <div class=\"overflow-x-auto bg-white\">
+                        <pre class=\"p-4 text-sm leading-relaxed language-{$language}\" id=\"{$blockId}\"><code class=\"language-{$language}\">{$code}</code></pre>
+                    </div>
+                </div>";
 
             case 'image':
                 $url = $data['url'] ?? $data['file']['url'] ?? '';

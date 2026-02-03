@@ -3,9 +3,9 @@
 @section('title', $chapter->title . ' - ' . $topic->title)
 
 @section('content')
-<div class="min-h-screen flex flex-col lg:flex-row">
+<div class="flex flex-col lg:flex-row">
     {{-- Sidebar Navigation --}}
-    <aside class="w-full lg:w-72 border-b lg:border-b-0 lg:border-r border-zinc-100 bg-white p-4 lg:p-6 lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto">
+    <aside class="w-full lg:w-72 border-b lg:border-b-0 lg:border-r border-zinc-100 bg-white p-4 lg:p-6">
         <div class="mb-6 pb-4 border-b border-zinc-100">
             <p class="text-xs text-zinc-400 mb-1">{{ $topic->title }}</p>
             <h1 class="text-lg font-semibold text-zinc-900">{{ $chapter->title }}</h1>
@@ -36,7 +36,7 @@
     </aside>
 
     {{-- Main Content - All sections of this chapter --}}
-    <main class="flex-1 p-6 lg:p-10 lg:max-h-screen lg:overflow-y-auto">
+    <main class="flex-1 p-6 lg:p-10">
         @foreach($chapter->sections as $section)
             <section id="section-{{ $section->slug }}" class="mb-16 pb-16 border-b border-zinc-100 last:border-b-0 last:mb-0 last:pb-0">
                 <header class="mb-8">
@@ -84,8 +84,9 @@
         });
     }
 
-    document.querySelector('main').addEventListener('scroll', updateActiveSection);
     window.addEventListener('scroll', updateActiveSection);
+    // Also check on initial load
+    updateActiveSection();
 </script>
 @endpush
 @endsection

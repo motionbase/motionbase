@@ -3,9 +3,9 @@
 @section('title', $topic->title . ' - ' . ($activeSection->title ?? 'Inhalt'))
 
 @section('content')
-<div class="min-h-screen flex flex-col lg:flex-row">
+<div class="flex flex-col lg:flex-row">
     {{-- Sidebar Navigation --}}
-    <aside class="w-full lg:w-72 border-b lg:border-b-0 lg:border-r border-zinc-100 bg-white p-4 lg:p-6 lg:sticky lg:top-0 lg:h-screen lg:overflow-y-auto">
+    <aside class="w-full lg:w-72 border-b lg:border-b-0 lg:border-r border-zinc-100 bg-white p-4 lg:p-6">
         <div class="mb-6 pb-4 border-b border-zinc-100">
             <h1 class="text-lg font-semibold text-zinc-900">{{ $topic->title }}</h1>
         </div>
@@ -43,7 +43,7 @@
     </aside>
 
     {{-- Main Content --}}
-    <main class="flex-1 p-6 lg:p-10 lg:max-h-screen lg:overflow-y-auto">
+    <main class="flex-1 p-6 lg:p-10">
         @if($activeSection)
             <header class="mb-8">
                 <h2 class="text-3xl lg:text-4xl font-bold tracking-tight text-zinc-900">
