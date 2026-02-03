@@ -30,18 +30,37 @@
         }
 
         /* Code block styling - override Prism defaults */
-        .code-block pre[class*="language-"] {
-            background: transparent;
-            margin: 0;
-            padding: 1rem;
-            border-radius: 0;
-            overflow-x: auto;
+        .code-block pre[class*="language-"],
+        .code-block pre,
+        pre[class*="language-"] {
+            background: transparent !important;
+            margin: 0 !important;
+            padding: 1rem !important;
+            border-radius: 0 !important;
+            overflow-x: auto !important;
+            white-space: pre !important;
+            word-wrap: normal !important;
+            max-width: 100% !important;
+            box-sizing: border-box !important;
         }
 
-        .code-block code[class*="language-"] {
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-            font-size: 0.875rem;
-            background: transparent;
+        .code-block code[class*="language-"],
+        .code-block code,
+        code[class*="language-"] {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+            font-size: 0.875rem !important;
+            background: transparent !important;
+            white-space: pre !important;
+            word-wrap: normal !important;
+        }
+
+        .code-block {
+            max-width: 100%;
+            overflow: hidden;
+        }
+
+        .code-block > div {
+            max-width: 100%;
         }
 
         /* Copy button success state */
@@ -153,12 +172,25 @@
         }
 
         // Highlight code blocks with Prism.js
-        document.addEventListener('DOMContentLoaded', function() {
+        function highlightCode() {
             if (typeof Prism !== 'undefined') {
-                Prism.highlightAll();
+                try {
+                    Prism.highlightAll();
+                } catch (e) {
+                    console.warn('Prism highlighting failed:', e);
+                }
             }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            highlightCode();
             // Initial height send after DOM is ready
             setTimeout(sendHeight, 100);
+        });
+
+        // Also try on window load as backup
+        window.addEventListener('load', function() {
+            highlightCode();
         });
 
         // Copy code to clipboard
