@@ -15,10 +15,39 @@ class LtiService
 {
     public function findPlatformByIssuer(string $issuer, string $clientId): ?LtiPlatform
     {
-        return LtiPlatform::where('issuer', $issuer)
+        // Normalize issuer by removing trailing slash
+        $normalizedIssuer = rtrim($issuer, '/');
+
+        \Log::info('LTI Platform Lookup', [
+            'received_issuer' => $issuer,
+            'normalized_issuer' => $normalizedIssuer,
+            'received_client_id' => $clientId,
+        ]);
+
+        // First try exact match
+        $platform = LtiPlatform::where('issuer', $issuer)
             ->where('client_id', $clientId)
             ->where('is_active', true)
             ->first();
+
+        // If not found, try with normalized issuer (without trailing slash)
+        if (! $platform) {
+            $platform = LtiPlatform::where(function ($query) use ($issuer, $normalizedIssuer) {
+                $query->where('issuer', $issuer)
+                    ->orWhere('issuer', $normalizedIssuer)
+                    ->orWhere('issuer', $normalizedIssuer.'/');
+            })
+                ->where('client_id', $clientId)
+                ->where('is_active', true)
+                ->first();
+        }
+
+        \Log::info('LTI Platform Lookup Result', [
+            'found' => $platform ? true : false,
+            'platform_id' => $platform?->id,
+        ]);
+
+        return $platform;
     }
 
     public function validateIdToken(string $idToken, LtiPlatform $platform): ?array

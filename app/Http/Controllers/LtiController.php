@@ -19,6 +19,14 @@ class LtiController extends Controller
      */
     public function login(Request $request)
     {
+        \Log::info('LTI Login Request', [
+            'all_params' => $request->all(),
+            'iss' => $request->input('iss'),
+            'client_id' => $request->input('client_id'),
+            'login_hint' => $request->input('login_hint'),
+            'target_link_uri' => $request->input('target_link_uri'),
+        ]);
+
         $request->validate([
             'iss' => 'required|string',
             'login_hint' => 'required|string',
@@ -32,6 +40,10 @@ class LtiController extends Controller
         );
 
         if (! $platform) {
+            \Log::error('LTI Platform not found', [
+                'iss' => $request->input('iss'),
+                'client_id' => $request->input('client_id'),
+            ]);
             abort(403, 'Unknown LTI platform');
         }
 
