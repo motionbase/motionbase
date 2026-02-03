@@ -119,19 +119,29 @@
             let lastSentHeight = 0;
             let debounceTimer = null;
 
-            // Calculate content height
+            // Calculate content height by measuring actual content
             function getContentHeight() {
-                const body = document.body;
-                const html = document.documentElement;
+                // Get the direct children of body and measure their total height
+                const children = document.body.children;
+                let maxBottom = 0;
 
-                // Get the actual content height
-                const height = Math.max(
-                    body.scrollHeight,
-                    body.offsetHeight,
-                    html.scrollHeight
-                );
+                for (let i = 0; i < children.length; i++) {
+                    const child = children[i];
+                    // Skip script tags
+                    if (child.tagName === 'SCRIPT') continue;
 
-                return height;
+                    const rect = child.getBoundingClientRect();
+                    const style = window.getComputedStyle(child);
+                    const marginBottom = parseInt(style.marginBottom) || 0;
+
+                    const bottom = rect.bottom + marginBottom;
+                    if (bottom > maxBottom) {
+                        maxBottom = bottom;
+                    }
+                }
+
+                // Add a small buffer for safety
+                return Math.ceil(maxBottom) + 2;
             }
 
             // Send height to parent (debounced)
