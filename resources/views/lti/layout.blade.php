@@ -16,7 +16,14 @@
         html, body {
             margin: 0;
             padding: 0;
-            min-height: 100%;
+            min-height: 100vh;
+            height: auto;
+        }
+
+        /* Remove any default scrollbars when in iframe */
+        html {
+            overflow-y: auto;
+            overflow-x: hidden;
         }
 
         /* Code highlighting */
@@ -47,5 +54,36 @@
     @yield('content')
 
     @stack('scripts')
+
+    <script>
+        // Send content height to parent iframe for auto-resize (LTI standard)
+        function sendHeight() {
+            const height = document.documentElement.scrollHeight;
+
+            // Try LTI standard message format
+            window.parent.postMessage(JSON.stringify({
+                subject: 'lti.frameResize',
+                height: height
+            }), '*');
+
+            // Also send custom format as fallback
+            window.parent.postMessage({
+                type: 'lti-resize',
+                height: height
+            }, '*');
+        }
+
+        // Send height on load and resize
+        window.addEventListener('load', sendHeight);
+        window.addEventListener('resize', sendHeight);
+
+        // Also send after images load
+        document.querySelectorAll('img').forEach(img => {
+            img.addEventListener('load', sendHeight);
+        });
+
+        // Send periodically for dynamic content
+        setInterval(sendHeight, 1000);
+    </script>
 </body>
 </html>
