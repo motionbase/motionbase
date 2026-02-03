@@ -26,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'upload/image',
             'upload/image-by-url',
             'upload/lottie',
+            'lti/*', // LTI endpoints use JWT authentication
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

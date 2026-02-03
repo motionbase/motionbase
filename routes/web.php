@@ -5,6 +5,9 @@ use App\Http\Controllers\ChapterController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ImageUploadController;
 use App\Http\Controllers\LottieUploadController;
+use App\Http\Controllers\LtiAdminController;
+use App\Http\Controllers\LtiController;
+use App\Http\Controllers\LtiEmbedController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\PublicTopicController;
 use App\Http\Controllers\RevisionController;
@@ -102,6 +105,35 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
 
     // User Management (Admin only)
     Route::resource('users', UserController::class);
+
+    // LTI Platform Management (Admin only)
+    Route::get('lti', [LtiAdminController::class, 'index'])->name('lti.index');
+    Route::post('lti', [LtiAdminController::class, 'store'])->name('lti.store');
+    Route::patch('lti/{platform}', [LtiAdminController::class, 'update'])->name('lti.update');
+    Route::delete('lti/{platform}', [LtiAdminController::class, 'destroy'])->name('lti.destroy');
 });
 
 require __DIR__.'/settings.php';
+
+// LTI 1.3 Routes
+Route::prefix('lti')->name('lti.')->group(function () {
+    // OIDC Login Initiation
+    Route::match(['get', 'post'], 'login', [LtiController::class, 'login'])->name('login');
+
+    // LTI Launch (receives id_token via POST)
+    Route::post('launch', [LtiController::class, 'launch'])->name('launch');
+
+    // JWKS endpoint for public keys
+    Route::get('.well-known/jwks.json', [LtiController::class, 'jwks'])->name('jwks');
+
+    // Deep Linking return
+    Route::post('deep-linking/return', [LtiController::class, 'deepLinkingReturn'])->name('deep-linking.return');
+
+    // Embedded content views (accessed after LTI launch)
+    Route::prefix('embed')->name('embed.')->group(function () {
+        Route::get('topic/{topic:slug}', [LtiEmbedController::class, 'topic'])->name('topic');
+        Route::get('topic/{topic:slug}/section/{section:slug}', [LtiEmbedController::class, 'section'])->name('section');
+        Route::get('topic/{topic:slug}/chat', [LtiEmbedController::class, 'chat'])->name('chat');
+        Route::get('picker', [LtiEmbedController::class, 'picker'])->name('picker');
+    });
+});

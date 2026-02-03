@@ -8,6 +8,7 @@
 /resources/js/routes
 /resources/js/wayfinder
 /storage/*.key
+/storage/lti/*.pem
 /storage/pail
 /vendor
 .DS_Store
