@@ -168,10 +168,18 @@ class LtiController extends Controller
         $contentType = $custom['content_type'] ?? 'topic';
         $contentId = $custom['content_id'] ?? null;
         $topicSlug = $custom['topic_slug'] ?? null;
+        $chapterSlug = $custom['chapter_slug'] ?? null;
         $sectionSlug = $custom['section_slug'] ?? null;
 
         // Redirect to embedded view with session token
         $params = ['lti_session' => $session->session_token];
+
+        if ($contentType === 'chapter' && $topicSlug && $chapterSlug) {
+            return redirect()->route('lti.embed.chapter', array_merge($params, [
+                'topic' => $topicSlug,
+                'chapter' => $chapterSlug,
+            ]));
+        }
 
         if ($contentType === 'section' && $topicSlug && $sectionSlug) {
             return redirect()->route('lti.embed.section', array_merge($params, [
