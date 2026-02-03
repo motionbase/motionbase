@@ -130,6 +130,26 @@
             } catch (e) {
                 // Cross-origin restriction, ignore
             }
+
+            // Moodle-specific: try using Moodle's YUI resize
+            try {
+                if (window.parent && window.parent.M && window.parent.M.mod_lti) {
+                    window.parent.M.mod_lti.resize(height);
+                }
+            } catch (e) {
+                // Not in Moodle or no access
+            }
+
+            // Try Moodle's require for AMD modules
+            try {
+                if (window.parent && window.parent.require) {
+                    window.parent.require(['core/event'], function(event) {
+                        event.notifyFilterContentUpdated(window.parent.document.body);
+                    });
+                }
+            } catch (e) {
+                // Not available
+            }
         }
 
         // Highlight code blocks with Prism.js
