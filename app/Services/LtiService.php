@@ -209,6 +209,13 @@ class LtiService
             'https://purl.imsglobal.org/spec/lti-dl/claim/data' => $claims['https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings']['data'] ?? null,
         ];
 
+        \Log::info('LTI Deep Linking Response', [
+            'iss' => $payload['iss'],
+            'aud' => $payload['aud'],
+            'deployment_id' => $payload['https://purl.imsglobal.org/spec/lti/claim/deployment_id'],
+            'items_count' => count($items),
+        ]);
+
         return JWT::encode($payload, $privateKey, 'RS256', config('app.lti.key_id', 'motionbase-lti-key'));
     }
 

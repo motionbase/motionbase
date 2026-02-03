@@ -201,6 +201,11 @@ class LtiController extends Controller
      */
     public function deepLinkingReturn(Request $request)
     {
+        \Log::info('LTI Deep Linking Return', [
+            'lti_session' => $request->input('lti_session'),
+            'selected_count' => count($request->input('selected', [])),
+        ]);
+
         $request->validate([
             'lti_session' => 'required|string',
             'selected' => 'required|array',
@@ -208,11 +213,17 @@ class LtiController extends Controller
 
         $session = $this->ltiService->getSessionByToken($request->input('lti_session'));
         if (! $session) {
+            \Log::error('LTI Deep Linking: Invalid session');
             abort(403, 'Invalid session');
         }
 
         $platform = $session->platform;
         $claims = $session->claims;
+
+        \Log::info('LTI Deep Linking: Building response', [
+            'platform_id' => $platform->id,
+            'app_url' => config('app.url'),
+        ]);
 
         // Build content items
         $items = [];
