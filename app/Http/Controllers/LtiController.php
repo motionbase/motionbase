@@ -121,8 +121,11 @@ class LtiController extends Controller
         // Validate the token
         $claims = $this->ltiService->validateIdToken($request->input('id_token'), $platform);
         if (! $claims) {
+            \Log::error('LTI Token validation failed in launch');
             abort(403, 'Invalid LTI token');
         }
+
+        \Log::info('LTI Launch successful, creating session');
 
         // Create session
         $session = $this->ltiService->createSession($platform, $claims);

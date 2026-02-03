@@ -53,12 +53,31 @@ class LtiService
     public function validateIdToken(string $idToken, LtiPlatform $platform): ?array
     {
         try {
+            \Log::info('LTI Token Validation Start', ['platform_id' => $platform->id]);
+
             $jwks = $this->getPlatformJwks($platform);
+            \Log::info('LTI JWKS fetched', ['jwks_keys_count' => count($jwks['keys'] ?? [])]);
+
             $decoded = JWT::decode($idToken, JWK::parseKeySet($jwks));
             $claims = $this->objectToArray($decoded);
 
-            // Validate required claims
-            if (($claims['iss'] ?? null) !== $platform->issuer) {
+            \Log::info('LTI Token decoded successfully', [
+                'iss' => $claims['iss'] ?? 'missing',
+                'aud' => $claims['aud'] ?? 'missing',
+                'message_type' => $claims['https://purl.imsglobal.org/spec/lti/claim/message_type'] ?? 'missing',
+            ]);
+
+            // Validate required claims - use flexible issuer matching
+            $tokenIssuer = $claims['iss'] ?? null;
+            $normalizedTokenIssuer = rtrim($tokenIssuer, '/');
+            $normalizedPlatformIssuer = rtrim($platform->issuer, '/');
+
+            if ($normalizedTokenIssuer !== $normalizedPlatformIssuer) {
+                \Log::error('LTI Issuer mismatch', [
+                    'token_issuer' => $tokenIssuer,
+                    'platform_issuer' => $platform->issuer,
+                ]);
+
                 return null;
             }
 
@@ -66,6 +85,11 @@ class LtiService
                 // aud can be array
                 $aud = is_array($claims['aud']) ? $claims['aud'] : [$claims['aud']];
                 if (! in_array($platform->client_id, $aud)) {
+                    \Log::error('LTI Audience mismatch', [
+                        'token_aud' => $claims['aud'] ?? 'missing',
+                        'platform_client_id' => $platform->client_id,
+                    ]);
+
                     return null;
                 }
             }
@@ -73,17 +97,27 @@ class LtiService
             // Validate nonce
             $nonce = $claims['nonce'] ?? null;
             if (! $nonce || ! LtiNonce::isValid($nonce)) {
+                \Log::error('LTI Nonce validation failed', ['nonce' => $nonce]);
+
                 return null;
             }
 
             // Validate message type
             $messageType = $claims['https://purl.imsglobal.org/spec/lti/claim/message_type'] ?? null;
             if (! in_array($messageType, ['LtiResourceLinkRequest', 'LtiDeepLinkingRequest'])) {
+                \Log::error('LTI Invalid message type', ['message_type' => $messageType]);
+
                 return null;
             }
 
+            \Log::info('LTI Token validation successful');
+
             return $claims;
         } catch (\Exception $e) {
+            \Log::error('LTI Token validation exception', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             report($e);
 
             return null;
