@@ -636,5 +636,6 @@
             window.parent.postMessage(JSON.stringify({ subject: 'embed.ready' }), '*');
         })();
     </script>
+    @include('partials.interactive-resize')
 </body>
 </html>

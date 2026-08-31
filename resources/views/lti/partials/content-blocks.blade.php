@@ -117,6 +117,34 @@
                 $html .= "</figure>";
                 return $html;
 
+            case 'interactive':
+                $url = trim($data['url'] ?? '');
+                $caption = $data['caption'] ?? '';
+
+                // Only same-app paths and http(s) URLs may become an iframe src
+                if (!$url || !(Str::startsWith($url, '/') || preg_match('#^https?://#i', $url))) {
+                    return '';
+                }
+
+                $height = (int) ($data['height'] ?? 480);
+                $height = max(120, min(5000, $height > 0 ? $height : 480));
+
+                $safeUrl = htmlspecialchars($url, ENT_QUOTES, 'UTF-8');
+                $safeCaption = htmlspecialchars($caption, ENT_QUOTES, 'UTF-8');
+                $title = $safeCaption !== '' ? $safeCaption : 'Interaktive Grafik';
+
+                $html = "<figure class=\"mb-6\">";
+                $html .= "<div class=\"overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50\">";
+                // No allow-same-origin: the graphic runs on an opaque origin and
+                // cannot reach the app's cookies or localStorage.
+                $html .= "<iframe src=\"{$safeUrl}\" class=\"interactive-frame block w-full border-0\" style=\"height: {$height}px\" sandbox=\"allow-scripts\" loading=\"lazy\" title=\"{$title}\"></iframe>";
+                $html .= "</div>";
+                if ($safeCaption !== '') {
+                    $html .= "<figcaption class=\"mt-3 text-center text-sm text-zinc-500\">{$safeCaption}</figcaption>";
+                }
+                $html .= "</figure>";
+                return $html;
+
             case 'quiz':
                 $questions = $data['questions'] ?? [];
                 if (empty($questions)) {

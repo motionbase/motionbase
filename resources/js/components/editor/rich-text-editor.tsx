@@ -2,7 +2,7 @@ import { MediaLibraryModal } from '@/components/editor/media-library-modal';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 import type { OutputData, ToolConstructable } from '@editorjs/editorjs';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 
 type EditorInstance = import('@editorjs/editorjs').default;
 
@@ -11,6 +11,14 @@ interface MediaItem {
     url: string;
     alt: string | null;
 }
+
+/**
+ * Editor.js fires onChange on every keystroke. Serialising the whole document
+ * that often is wasteful and re-renders the surrounding page, so batch it.
+ * Callers that need the very latest state (e.g. before saving) should use the
+ * imperative `save()` handle instead of waiting for this to settle.
+ */
+const CHANGE_DEBOUNCE_MS = 400;
 
 const defaultValue: OutputData = {
     time: Date.now(),
@@ -25,6 +33,11 @@ const defaultValue: OutputData = {
     version: '2.31.0',
 };
 
+export interface RichTextEditorHandle {
+    /** Returns the current document straight from Editor.js. */
+    save: () => Promise<OutputData | null>;
+}
+
 interface RichTextEditorProps {
     initialValue?: OutputData;
     onChange?: (value: OutputData) => void;
@@ -33,18 +46,19 @@ interface RichTextEditorProps {
     readOnly?: boolean;
 }
 
-export function RichTextEditor({
+export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(function RichTextEditor({
     initialValue,
     onChange,
     placeholder = 'Starte mit deinem ersten Abschnitt…',
     className,
     readOnly = false,
-}: RichTextEditorProps) {
+}: RichTextEditorProps, ref) {
     const holderRef = useRef<HTMLDivElement | null>(null);
     const editorRef = useRef<EditorInstance | null>(null);
     const initialValueRef = useRef<OutputData | undefined>(initialValue);
     const hasHydratedRef = useRef(false);
     const onChangeRef = useRef(onChange);
+    const changeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [isReady, setIsReady] = useState(false);
     
     // Media library state
@@ -105,6 +119,7 @@ export function RichTextEditor({
                 { default: QuizBlock },
                 { default: YouTubeBlock },
                 { default: LottieBlock },
+                { default: InteractiveBlock },
             ] =
                 await Promise.all([
                     import('@editorjs/editorjs'),
@@ -117,6 +132,7 @@ export function RichTextEditor({
                     import('@/components/editor/tools/quiz-block'),
                     import('@/components/editor/tools/youtube-block'),
                     import('@/components/editor/tools/lottie-block'),
+                    import('@/components/editor/tools/interactive-block'),
                 ]);
 
             if (!isActive || !holderRef.current) {
@@ -190,10 +206,21 @@ export function RichTextEditor({
                             placeholder: 'Lottie JSON-URL einfügen…',
                         },
                     },
+                    interactive: {
+                        class: InteractiveBlock as unknown as ToolConstructable,
+                        config: {
+                            placeholder: 'URL der interaktiven Grafik einfügen…',
+                        },
+                    },
                 },
-                async onChange(api) {
-                    const data = await api.saver.save();
-                    onChangeRef.current?.(data);
+                onChange(api) {
+                    if (changeTimerRef.current !== null) {
+                        clearTimeout(changeTimerRef.current);
+                    }
+
+                    changeTimerRef.current = setTimeout(() => {
+                        void api.saver.save().then((data) => onChangeRef.current?.(data));
+                    }, CHANGE_DEBOUNCE_MS);
                 },
                 onReady() {
                     hasHydratedRef.current = true;
@@ -208,10 +235,31 @@ export function RichTextEditor({
 
         return () => {
             isActive = false;
+            if (changeTimerRef.current !== null) {
+                clearTimeout(changeTimerRef.current);
+                changeTimerRef.current = null;
+            }
             editorRef.current?.destroy();
             editorRef.current = null;
         };
     }, [placeholder, readOnly]);
+
+    useImperativeHandle(ref, () => ({
+        save: async () => {
+            if (!editorRef.current) {
+                return null;
+            }
+
+            // Any queued debounce is now redundant — we are reading the source
+            // of truth directly.
+            if (changeTimerRef.current !== null) {
+                clearTimeout(changeTimerRef.current);
+                changeTimerRef.current = null;
+            }
+
+            return editorRef.current.save();
+        },
+    }), []);
 
     const isGutenbergStyle = className?.includes('gutenberg-editor');
 
@@ -247,5 +295,4 @@ export function RichTextEditor({
             />
         </>
     );
-}
-
+});

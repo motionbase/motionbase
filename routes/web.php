@@ -4,6 +4,7 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ChapterController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ImageUploadController;
+use App\Http\Controllers\InteractiveController;
 use App\Http\Controllers\LottieUploadController;
 use App\Http\Controllers\LtiAdminController;
 use App\Http\Controllers\LtiController;
@@ -35,6 +36,9 @@ Route::prefix('embed')->name('embed.')->group(function () {
     Route::get('chapter/{chapter}/section/{section}', [PublicEmbedController::class, 'chapterSection'])->name('chapter.section');
     Route::get('section/{section}', [PublicEmbedController::class, 'section'])->name('section');
 });
+
+// Interactive graphics (served on an opaque origin, see InteractiveController::show)
+Route::get('interactive/{media}', [InteractiveController::class, 'show'])->name('interactive.show');
 
 // Admin redirect route
 Route::get('/admin', function () {
@@ -98,6 +102,9 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     // Lottie upload for Editor.js
     Route::post('upload/lottie', [LottieUploadController::class, 'upload'])->name('upload.lottie');
 
+    // Interactive HTML graphic upload for Editor.js
+    Route::post('upload/interactive', [InteractiveController::class, 'upload'])->name('upload.interactive');
+
     // Media Library
     Route::get('media', function (\Illuminate\Http\Request $request) {
         if ($request->header('X-Inertia')) {
@@ -113,7 +120,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     Route::delete('media/{media}', [MediaController::class, 'destroy'])->name('media.destroy');
 
     // User Management (Admin only)
-    Route::resource('users', UserController::class);
+    Route::resource('users', UserController::class)->except(['show']);
 
     // LTI Platform Management (Admin only)
     Route::get('lti', [LtiAdminController::class, 'index'])->name('lti.index');

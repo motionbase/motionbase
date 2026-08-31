@@ -6,7 +6,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import type { OutputBlockData } from '@editorjs/editorjs';
 import { createElement, type ReactNode, useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-import { ChevronDown, ChevronRight, Hash, List, CheckCircle2, XCircle, ArrowRight } from 'lucide-react';
+import { ChevronDown, ChevronRight, Hash, List, CheckCircle2, XCircle, ArrowRight, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { TopicChat } from '@/components/topic-chat';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-javascript';
@@ -33,6 +33,7 @@ export default function PublicTopicShow({ topic }: PublicTopicShowProps) {
     const contentRef = useRef<HTMLElement | null>(null);
 
     // Track expanded chapters
+    const [isTocCollapsed, setIsTocCollapsed] = useState(false);
     const [expandedChapters, setExpandedChapters] = useState<Set<number>>(() => {
         // Initially expand all chapters, or at least the one containing the active section
         return new Set(topic.chapters.map((ch) => ch.id));
@@ -128,8 +129,10 @@ export default function PublicTopicShow({ topic }: PublicTopicShowProps) {
             <div className="relative bg-white lg:min-h-[calc(100vh-128px)] lg:overflow-hidden">
                 <div
                     className={cn(
-                        'grid',
-                        'lg:grid-cols-[320px_minmax(0,1fr)_320px]'
+                        'grid transition-[grid-template-columns] duration-200',
+                        isTocCollapsed
+                            ? 'lg:grid-cols-[320px_minmax(0,1fr)_56px]'
+                            : 'lg:grid-cols-[320px_minmax(0,1fr)_320px]'
                     )}
                 >
                     <aside className="border-b border-zinc-100 px-4 py-6 lg:border-b-0 lg:border-r lg:px-6 lg:py-8 flex flex-col gap-6 lg:sticky lg:top-16 lg:max-h-[calc(100vh-128px)] lg:overflow-y-auto lg:bg-white">
@@ -238,11 +241,41 @@ export default function PublicTopicShow({ topic }: PublicTopicShowProps) {
                         </div>
                     </section>
 
-                    <aside className="hidden lg:flex border-t border-zinc-100 px-6 py-8 flex-col gap-4 lg:border-t-0 lg:border-l lg:sticky lg:top-16 lg:max-h-[calc(100vh-128px)] lg:overflow-y-auto lg:bg-white">
-                        <div className="flex items-center justify-between">
+                    <aside
+                        className={cn(
+                            'hidden lg:flex border-t border-zinc-100 flex-col lg:border-t-0 lg:border-l lg:sticky lg:top-16 lg:max-h-[calc(100vh-128px)] lg:overflow-y-auto lg:bg-white',
+                            isTocCollapsed ? 'items-center gap-0 px-2 py-8' : 'gap-4 px-6 py-8'
+                        )}
+                    >
+                        {isTocCollapsed && (
+                            <button
+                                type="button"
+                                onClick={() => setIsTocCollapsed(false)}
+                                aria-expanded={false}
+                                aria-label="Auf dieser Seite einblenden"
+                                title="Auf dieser Seite einblenden"
+                                className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-900"
+                            >
+                                <PanelRightOpen className="h-4 w-4" />
+                            </button>
+                        )}
+
+                        {!isTocCollapsed && (
+                        <>
+                        <div className="flex items-center justify-between gap-2">
                             <h4 className="text-xs font-bold uppercase tracking-widest text-zinc-400 flex items-center gap-2">
                                 <Hash className="w-3 h-3" /> Auf dieser Seite
                             </h4>
+                            <button
+                                type="button"
+                                onClick={() => setIsTocCollapsed(true)}
+                                aria-expanded
+                                aria-label="Auf dieser Seite ausblenden"
+                                title="Auf dieser Seite ausblenden"
+                                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-900"
+                            >
+                                <PanelRightClose className="h-4 w-4" />
+                            </button>
                         </div>
                         <ul className="space-y-2.5 text-sm">
                             {tocItems.length > 0 ? (
@@ -273,6 +306,8 @@ export default function PublicTopicShow({ topic }: PublicTopicShowProps) {
                                 <li className="text-sm text-zinc-400">Keine Überschriften vorhanden.</li>
                             )}
                         </ul>
+                        </>
+                        )}
                     </aside>
                 </div>
             </div>
@@ -460,6 +495,25 @@ function renderBlocks(blocks: OutputBlockData[], theme?: RenderTheme) {
                         caption={lottieCaption}
                         loop={loop}
                         autoplay={autoplay}
+                    />
+                );
+            }
+
+            case 'interactive': {
+                const interactiveUrl = block.data?.url as string | undefined;
+                const interactiveCaption = (block.data?.caption as string | undefined)?.trim();
+                const interactiveHeight = block.data?.height as number | undefined;
+
+                if (!interactiveUrl || !isSafeInteractiveUrl(interactiveUrl)) {
+                    return null;
+                }
+
+                return (
+                    <InteractiveRenderer
+                        key={key}
+                        url={interactiveUrl}
+                        caption={interactiveCaption}
+                        height={interactiveHeight}
                     />
                 );
             }
@@ -851,6 +905,87 @@ function QuizRenderer({ data }: { data: QuizData }) {
                 )}
             </div>
         </div>
+    );
+}
+
+// Interactive Renderer Component - Sandboxed HTML graphics with auto-height
+const INTERACTIVE_DEFAULT_HEIGHT = 480;
+const INTERACTIVE_MIN_HEIGHT = 120;
+const INTERACTIVE_MAX_HEIGHT = 5000;
+
+// Only same-app paths and http(s) URLs may become an iframe src
+function isSafeInteractiveUrl(url: string): boolean {
+    return url.startsWith('/') || /^https?:\/\//i.test(url);
+}
+
+function clampInteractiveHeight(value: unknown): number {
+    const height = Number(value);
+
+    if (!Number.isFinite(height) || height <= 0) {
+        return INTERACTIVE_DEFAULT_HEIGHT;
+    }
+
+    return Math.round(Math.min(INTERACTIVE_MAX_HEIGHT, Math.max(INTERACTIVE_MIN_HEIGHT, height)));
+}
+
+function InteractiveRenderer({
+    url,
+    caption,
+    height,
+}: {
+    url: string;
+    caption?: string;
+    height?: number;
+}) {
+    const iframeRef = useRef<HTMLIFrameElement>(null);
+    const [frameHeight, setFrameHeight] = useState(() => clampInteractiveHeight(height));
+
+    useEffect(() => {
+        setFrameHeight(clampInteractiveHeight(height));
+    }, [height]);
+
+    useEffect(() => {
+        // Sandboxed frames have an opaque origin, so event.origin is always
+        // "null" and useless for verification - identify the sender by window.
+        const handleMessage = (event: MessageEvent) => {
+            if (!iframeRef.current || event.source !== iframeRef.current.contentWindow) {
+                return;
+            }
+
+            const payload = event.data;
+            if (!payload || payload.type !== 'motionbase:resize') {
+                return;
+            }
+
+            setFrameHeight(clampInteractiveHeight(payload.height));
+        };
+
+        window.addEventListener('message', handleMessage);
+
+        return () => window.removeEventListener('message', handleMessage);
+    }, []);
+
+    return (
+        <figure className="my-8">
+            <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50">
+                <iframe
+                    ref={iframeRef}
+                    src={url}
+                    // No allow-same-origin: the graphic runs on an opaque origin
+                    // and cannot reach the app's cookies or localStorage.
+                    sandbox="allow-scripts"
+                    loading="lazy"
+                    title={caption || 'Interaktive Grafik'}
+                    className="block w-full border-0 transition-[height] duration-200"
+                    style={{ height: `${frameHeight}px` }}
+                />
+            </div>
+            {caption && caption.length > 0 && (
+                <figcaption className="mt-3 text-center text-sm text-zinc-500">
+                    {caption}
+                </figcaption>
+            )}
+        </figure>
     );
 }
 

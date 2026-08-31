@@ -653,5 +653,6 @@
             window.parent.postMessage(JSON.stringify({ subject: 'lti.ready' }), '*');
         })();
     </script>
+    @include('partials.interactive-resize')
 </body>
 </html>
