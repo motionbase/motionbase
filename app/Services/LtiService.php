@@ -9,16 +9,28 @@ use Firebase\JWT\JWK;
 use Firebase\JWT\JWT;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class LtiService
 {
+    /**
+     * Launch diagnostics contain platform user identifiers, so they are only
+     * written when LTI_DEBUG is explicitly enabled.
+     */
+    public function debug(string $message, array $context = []): void
+    {
+        if (config('lti.debug')) {
+            Log::debug($message, $context);
+        }
+    }
+
     public function findPlatformByIssuer(string $issuer, string $clientId): ?LtiPlatform
     {
         // Normalize issuer by removing trailing slash
         $normalizedIssuer = rtrim($issuer, '/');
 
-        \Log::info('LTI Platform Lookup', [
+        $this->debug('LTI Platform Lookup', [
             'received_issuer' => $issuer,
             'normalized_issuer' => $normalizedIssuer,
             'received_client_id' => $clientId,
@@ -42,7 +54,7 @@ class LtiService
                 ->first();
         }
 
-        \Log::info('LTI Platform Lookup Result', [
+        $this->debug('LTI Platform Lookup Result', [
             'found' => $platform ? true : false,
             'platform_id' => $platform?->id,
         ]);
@@ -53,15 +65,15 @@ class LtiService
     public function validateIdToken(string $idToken, LtiPlatform $platform): ?array
     {
         try {
-            \Log::info('LTI Token Validation Start', ['platform_id' => $platform->id]);
+            $this->debug('LTI Token Validation Start', ['platform_id' => $platform->id]);
 
             $jwks = $this->getPlatformJwks($platform);
-            \Log::info('LTI JWKS fetched', ['jwks_keys_count' => count($jwks['keys'] ?? [])]);
+            $this->debug('LTI JWKS fetched', ['jwks_keys_count' => count($jwks['keys'] ?? [])]);
 
             $decoded = JWT::decode($idToken, JWK::parseKeySet($jwks));
             $claims = $this->objectToArray($decoded);
 
-            \Log::info('LTI Token decoded successfully', [
+            $this->debug('LTI Token decoded successfully', [
                 'iss' => $claims['iss'] ?? 'missing',
                 'aud' => $claims['aud'] ?? 'missing',
                 'message_type' => $claims['https://purl.imsglobal.org/spec/lti/claim/message_type'] ?? 'missing',
@@ -73,7 +85,7 @@ class LtiService
             $normalizedPlatformIssuer = rtrim($platform->issuer, '/');
 
             if ($normalizedTokenIssuer !== $normalizedPlatformIssuer) {
-                \Log::error('LTI Issuer mismatch', [
+                Log::error('LTI Issuer mismatch', [
                     'token_issuer' => $tokenIssuer,
                     'platform_issuer' => $platform->issuer,
                 ]);
@@ -85,7 +97,7 @@ class LtiService
                 // aud can be array
                 $aud = is_array($claims['aud']) ? $claims['aud'] : [$claims['aud']];
                 if (! in_array($platform->client_id, $aud)) {
-                    \Log::error('LTI Audience mismatch', [
+                    Log::error('LTI Audience mismatch', [
                         'token_aud' => $claims['aud'] ?? 'missing',
                         'platform_client_id' => $platform->client_id,
                     ]);
@@ -97,7 +109,7 @@ class LtiService
             // Validate nonce
             $nonce = $claims['nonce'] ?? null;
             if (! $nonce || ! LtiNonce::isValid($nonce)) {
-                \Log::error('LTI Nonce validation failed', ['nonce' => $nonce]);
+                Log::error('LTI Nonce validation failed', ['nonce' => $nonce]);
 
                 return null;
             }
@@ -105,16 +117,16 @@ class LtiService
             // Validate message type
             $messageType = $claims['https://purl.imsglobal.org/spec/lti/claim/message_type'] ?? null;
             if (! in_array($messageType, ['LtiResourceLinkRequest', 'LtiDeepLinkingRequest'])) {
-                \Log::error('LTI Invalid message type', ['message_type' => $messageType]);
+                Log::error('LTI Invalid message type', ['message_type' => $messageType]);
 
                 return null;
             }
 
-            \Log::info('LTI Token validation successful');
+            $this->debug('LTI Token validation successful');
 
             return $claims;
         } catch (\Exception $e) {
-            \Log::error('LTI Token validation exception', [
+            Log::error('LTI Token validation exception', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
@@ -133,7 +145,7 @@ class LtiService
             'resource_link_id' => $claims['https://purl.imsglobal.org/spec/lti/claim/resource_link']['id'] ?? null,
             'claims' => $claims,
             'session_token' => Str::random(64),
-            'expires_at' => now()->addHours(8),
+            'expires_at' => now()->addHours((int) config('lti.session_duration', 8)),
         ]);
     }
 
@@ -175,7 +187,7 @@ class LtiService
 
     public function getToolPublicJwks(): array
     {
-        $publicKey = file_get_contents(storage_path('lti/public.pem'));
+        $publicKey = file_get_contents(config('lti.public_key_path'));
         $keyInfo = openssl_pkey_get_details(openssl_pkey_get_public($publicKey));
 
         return [
@@ -184,7 +196,7 @@ class LtiService
                     'kty' => 'RSA',
                     'alg' => 'RS256',
                     'use' => 'sig',
-                    'kid' => config('app.lti.key_id', 'motionbase-lti-key'),
+                    'kid' => config('lti.key_id'),
                     'n' => rtrim(strtr(base64_encode($keyInfo['rsa']['n']), '+/', '-_'), '='),
                     'e' => rtrim(strtr(base64_encode($keyInfo['rsa']['e']), '+/', '-_'), '='),
                 ],
@@ -194,7 +206,7 @@ class LtiService
 
     public function createDeepLinkingResponse(LtiPlatform $platform, array $claims, array $items): string
     {
-        $privateKey = file_get_contents(storage_path('lti/private.pem'));
+        $privateKey = file_get_contents(config('lti.private_key_path'));
 
         $payload = [
             'iss' => $platform->client_id,
@@ -209,25 +221,41 @@ class LtiService
             'https://purl.imsglobal.org/spec/lti-dl/claim/data' => $claims['https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings']['data'] ?? null,
         ];
 
-        \Log::info('LTI Deep Linking Response', [
+        $this->debug('LTI Deep Linking Response', [
             'iss' => $payload['iss'],
             'aud' => $payload['aud'],
             'deployment_id' => $payload['https://purl.imsglobal.org/spec/lti/claim/deployment_id'],
             'items_count' => count($items),
         ]);
 
-        return JWT::encode($payload, $privateKey, 'RS256', config('app.lti.key_id', 'motionbase-lti-key'));
+        return JWT::encode($payload, $privateKey, 'RS256', config('lti.key_id'));
     }
 
     private function getPlatformJwks(LtiPlatform $platform): array
     {
         $cacheKey = "lti_jwks_{$platform->id}";
 
-        return Cache::remember($cacheKey, now()->addHour(), function () use ($platform) {
-            $response = Http::get($platform->jwks_url);
+        if ($cached = Cache::get($cacheKey)) {
+            return $cached;
+        }
 
-            return $response->json();
-        });
+        $response = Http::timeout(10)->connectTimeout(5)->get($platform->jwks_url);
+        $jwks = $response->successful() ? $response->json() : null;
+
+        // A failed or malformed fetch must not be cached for an hour - that
+        // would break every launch until the cache expires.
+        if (! is_array($jwks) || ! isset($jwks['keys'])) {
+            Log::error('LTI JWKS fetch failed', [
+                'platform_id' => $platform->id,
+                'status' => $response->status(),
+            ]);
+
+            throw new \RuntimeException('Could not load platform JWKS.');
+        }
+
+        Cache::put($cacheKey, $jwks, now()->addMinutes((int) config('lti.jwks_cache_duration', 60)));
+
+        return $jwks;
     }
 
     private function objectToArray(mixed $data): mixed

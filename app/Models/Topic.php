@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasUniqueSlug;
 use App\Models\Traits\Revisionable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -11,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Topic extends Model
 {
-    use HasFactory, Revisionable;
+    use HasFactory, HasUniqueSlug, Revisionable;
 
     /**
      * The attributes that are mass assignable.
@@ -24,6 +26,14 @@ class Topic extends Model
         'title',
         'slug',
     ];
+
+    /**
+     * @return Builder<static>
+     */
+    protected function slugSiblings(): Builder
+    {
+        return static::query();
+    }
 
     /**
      * @return BelongsTo<Category, $this>

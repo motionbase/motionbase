@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\HasUniqueSlug;
 use App\Models\Traits\Revisionable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 class Section extends Model
 {
-    use HasFactory, Revisionable;
+    use HasFactory, HasUniqueSlug, Revisionable;
 
     /**
      * The attributes that are mass assignable.
@@ -36,6 +38,14 @@ class Section extends Model
         'sort_order' => 'integer',
         'is_published' => 'boolean',
     ];
+
+    /**
+     * @return Builder<static>
+     */
+    protected function slugSiblings(): Builder
+    {
+        return static::query()->where('chapter_id', $this->chapter_id);
+    }
 
     /**
      * @return BelongsTo<Chapter, $this>

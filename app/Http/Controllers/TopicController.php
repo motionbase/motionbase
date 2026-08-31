@@ -61,18 +61,9 @@ class TopicController extends Controller
             'category_id' => ['required', 'integer', 'exists:categories,id'],
         ]);
 
-        // Generate unique slug for topic
-        $slug = Str::slug($validated['title']);
-        $originalSlug = $slug;
-        $counter = 1;
-        while (Topic::where('slug', $slug)->exists()) {
-            $slug = $originalSlug . '-' . $counter;
-            $counter++;
-        }
-
         $topic = $request->user()->topics()->create([
             'title' => $validated['title'],
-            'slug' => $slug,
+            'slug' => (new Topic)->uniqueSlug($validated['title']),
             'category_id' => (int) $validated['category_id'],
         ]);
 
@@ -173,16 +164,8 @@ class TopicController extends Controller
             'category_id' => ['sometimes', 'integer', 'exists:categories,id'],
         ]);
 
-        // If slug is provided, ensure uniqueness
         if (isset($validated['slug'])) {
-            $slug = $validated['slug'];
-            $originalSlug = $slug;
-            $counter = 1;
-            while (Topic::where('slug', $slug)->where('id', '!=', $topic->id)->exists()) {
-                $slug = $originalSlug . '-' . $counter;
-                $counter++;
-            }
-            $validated['slug'] = $slug;
+            $validated['slug'] = $topic->uniqueSlug($validated['slug']);
         }
 
         $topic->update($validated);

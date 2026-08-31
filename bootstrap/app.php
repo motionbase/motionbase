@@ -23,10 +23,10 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->validateCsrfTokens(except: [
-            'upload/image',
-            'upload/image-by-url',
-            'upload/lottie',
-            'lti/*', // LTI endpoints use JWT authentication
+            // The upload endpoints live under admin/ and send X-CSRF-TOKEN, so
+            // they stay protected. Only LTI is exempt: launches are POSTed by
+            // Moodle and authenticated by the signed id_token instead.
+            'lti/*',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

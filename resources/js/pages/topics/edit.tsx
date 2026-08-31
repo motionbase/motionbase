@@ -1,5 +1,5 @@
 import InputError from '@/components/input-error';
-import { RichTextEditor } from '@/components/editor/rich-text-editor';
+import { RichTextEditor, type RichTextEditorHandle } from '@/components/editor/rich-text-editor';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -11,47 +11,118 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import AppLayout from '@/layouts/app-layout';
-import { type BreadcrumbItem, type Category, type Chapter, type Section, type Topic } from '@/types';
+import { type Category, type Chapter, type Section, type Topic } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
 import type { OutputData } from '@editorjs/editorjs';
 import { useEffect, useRef, useCallback } from 'react';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
     ArrowLeft,
     Check,
-    ChevronDown,
     ChevronRight,
     Code,
     Copy,
     FileText,
     FolderOpen,
-    MoreHorizontal,
     PanelLeftClose,
     PanelLeftOpen,
-    Pencil,
     Plus,
     Save,
     Settings,
+    TriangleAlert,
     Trash2,
-    X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { TopicHistory } from '@/components/revisions/topic-history';
 import { CreateItemDialog } from '@/components/create-item-dialog';
 import { SortableCourseStructure } from '@/components/sortable-course-structure';
+import { useAutosave, type AutosaveStatus } from '@/hooks/use-autosave';
+import { Spinner } from '@/components/ui/spinner';
 
-type EditorContent = {
-    time: number;
-    blocks: Array<Record<string, unknown>>;
-    version: string;
-};
+type EditorContent = OutputData;
+
+function SaveIndicator({
+    status,
+    lastSavedAt,
+    errorMessage,
+}: {
+    status: AutosaveStatus;
+    lastSavedAt: Date | null;
+    errorMessage: string | null;
+}) {
+    const [, forceTick] = useState(0);
+
+    // Keep the "vor X" label honest without re-rendering the whole editor.
+    useEffect(() => {
+        if (status !== 'saved') {
+            return;
+        }
+
+        const interval = setInterval(() => forceTick((tick) => tick + 1), 30_000);
+        return () => clearInterval(interval);
+    }, [status, lastSavedAt]);
+
+    if (status === 'error') {
+        return (
+            <span className="flex items-center gap-1.5 text-xs font-medium text-red-600">
+                <TriangleAlert className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">{errorMessage ?? 'Nicht gespeichert'}</span>
+            </span>
+        );
+    }
+
+    if (status === 'saving') {
+        return (
+            <span className="flex items-center gap-1.5 text-xs text-zinc-500">
+                <Spinner className="size-3.5" />
+                <span className="hidden sm:inline">Wird gespeichert…</span>
+            </span>
+        );
+    }
+
+    if (status === 'unsaved') {
+        return (
+            <span className="flex items-center gap-1.5 text-xs text-amber-600">
+                <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+                <span className="hidden sm:inline">Ungespeicherte Änderungen</span>
+            </span>
+        );
+    }
+
+    if (status === 'saved') {
+        return (
+            <span className="flex items-center gap-1.5 text-xs text-zinc-400">
+                <Check className="h-3.5 w-3.5 text-emerald-600" />
+                <span className="hidden sm:inline">{describeSaveTime(lastSavedAt)}</span>
+            </span>
+        );
+    }
+
+    return null;
+}
+
+function describeSaveTime(savedAt: Date | null): string {
+    if (!savedAt) {
+        return 'Gespeichert';
+    }
+
+    const seconds = Math.floor((Date.now() - savedAt.getTime()) / 1000);
+
+    if (seconds < 60) {
+        return 'Gerade gespeichert';
+    }
+
+    const minutes = Math.floor(seconds / 60);
+
+    return minutes < 60
+        ? `Gespeichert vor ${minutes} Min.`
+        : `Gespeichert um ${savedAt.toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' })}`;
+}
+
+/** Stable serialisation used to decide whether a section still needs saving. */
+function snapshot(title: string, content: EditorContent | null): string {
+    return JSON.stringify({ title, content });
+}
 
 interface TopicsEditProps {
     topic: Topic & {
@@ -63,11 +134,6 @@ interface TopicsEditProps {
 }
 
 export default function TopicsEdit({ topic, activeSection, categories }: TopicsEditProps) {
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Themen', href: '/admin/topics' },
-        { title: topic.title, href: `/admin/topics/${topic.id}/edit` },
-    ];
-
     // Sidebar visibility
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [settingsOpen, setSettingsOpen] = useState(false);
@@ -134,32 +200,48 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
         is_published: activeSection?.is_published ?? false,
     });
 
-    const sectionForm = useForm<{
-        title: string;
-        content: EditorContent | null;
-    }>({
-        title: activeSection?.title ?? '',
-        content: (activeSection?.content ?? null) as EditorContent | null,
-    });
-
-    // Ref to track the current section ID to prevent stale updates
+    // --- Section editing state -------------------------------------------
+    // The section body is deliberately not a useForm: the editor is the source
+    // of truth for the content and we compare against the last persisted
+    // snapshot, which keeps "is there anything to save?" unambiguous.
+    const editorRef = useRef<RichTextEditorHandle | null>(null);
     const activeSectionIdRef = useRef(activeSection?.id);
-    const [isSwitchingSection, setIsSwitchingSection] = useState(false);
 
-    // Ref to track if we're intentionally submitting (to avoid showing warning)
-    const isSubmittingRef = useRef(false);
+    const [sectionTitle, setSectionTitle] = useState(activeSection?.title ?? '');
+    const sectionTitleRef = useRef(sectionTitle);
+    const sectionContentRef = useRef<EditorContent | null>(
+        activeSection?.content ?? null,
+    );
+    const savedSnapshotRef = useRef(
+        snapshot(activeSection?.title ?? '', activeSection?.content ?? null),
+    );
+    const [isSectionDirty, setIsSectionDirty] = useState(false);
+    const [sectionSaveError, setSectionSaveError] = useState<string | null>(null);
+
+    const recomputeSectionDirty = useCallback(() => {
+        setIsSectionDirty(
+            snapshot(sectionTitleRef.current, sectionContentRef.current) !== savedSnapshotRef.current,
+        );
+    }, []);
+
+    const updateSectionTitle = useCallback((value: string) => {
+        sectionTitleRef.current = value;
+        setSectionTitle(value);
+        recomputeSectionDirty();
+    }, [recomputeSectionDirty]);
 
     useEffect(() => {
-        // Mark that we're switching sections
-        setIsSwitchingSection(true);
-
         activeSectionIdRef.current = activeSection?.id;
 
-        sectionForm.reset({
-            title: activeSection?.title ?? '',
-            content: (activeSection?.content ?? null) as EditorContent | null,
-        });
-        sectionForm.clearErrors();
+        const title = activeSection?.title ?? '';
+        const content = activeSection?.content ?? null;
+
+        sectionTitleRef.current = title;
+        sectionContentRef.current = content;
+        savedSnapshotRef.current = snapshot(title, content);
+        setSectionTitle(title);
+        setIsSectionDirty(false);
+        setSectionSaveError(null);
 
         // Auto-select chapter when section changes
         if (activeSection) {
@@ -170,13 +252,6 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                 setSelectedChapterId(chapter.id);
             }
         }
-
-        // Allow saving after a short delay to ensure form is properly reset
-        const timer = setTimeout(() => {
-            setIsSwitchingSection(false);
-        }, 100);
-
-        return () => clearTimeout(timer);
     }, [activeSection?.id]);
 
     // Reset chapter settings when selected chapter changes
@@ -207,120 +282,147 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
     // Reset section settings form when active section changes
     useEffect(() => {
         if (activeSection) {
-            sectionSettingsForm.reset({
+            sectionSettingsForm.setDefaults({
                 slug: activeSection.slug,
                 is_published: activeSection.is_published,
             });
+            sectionSettingsForm.reset();
         }
     }, [activeSection?.id]);
 
-    // Warn user about unsaved changes before leaving
+    const handleEditorChange = useCallback((value: EditorContent) => {
+        // Ignore a late change event that belongs to the section we just left.
+        if (activeSectionIdRef.current !== activeSection?.id) {
+            return;
+        }
+
+        sectionContentRef.current = value;
+        recomputeSectionDirty();
+    }, [activeSection?.id, recomputeSectionDirty]);
+
+    const saveSection = useCallback(async (): Promise<void> => {
+        const section = activeSection;
+        if (!section) {
+            return;
+        }
+
+        // Read straight from Editor.js so a save never lags behind the caret.
+        const latest = await editorRef.current?.save();
+        if (latest) {
+            sectionContentRef.current = latest;
+        }
+
+        // The user may have switched sections while we were serialising.
+        if (activeSectionIdRef.current !== section.id) {
+            return;
+        }
+
+        const payload = {
+            title: sectionTitleRef.current,
+            content: sectionContentRef.current,
+        };
+        const pending = snapshot(payload.title, payload.content);
+
+        // Nothing actually changed (e.g. the user undid their edit). Clear the
+        // dirty flag here, otherwise the autosave effect would keep rescheduling.
+        if (pending === savedSnapshotRef.current) {
+            recomputeSectionDirty();
+            return;
+        }
+
+        await new Promise<void>((resolve, reject) => {
+            router.patch(`/admin/sections/${section.id}`, payload as unknown as Record<string, never>, {
+                preserveScroll: true,
+                preserveState: true,
+                replace: true,
+                onSuccess: () => {
+                    savedSnapshotRef.current = pending;
+                    setSectionSaveError(null);
+                    recomputeSectionDirty();
+                    resolve();
+                },
+                onError: (errors) => {
+                    setSectionSaveError(Object.values(errors)[0] ?? 'Speichern fehlgeschlagen.');
+                    reject(new Error('save failed'));
+                },
+            });
+        });
+    }, [activeSection, recomputeSectionDirty]);
+
+    const autosave = useAutosave({
+        isDirty: isSectionDirty,
+        save: saveSection,
+        enabled: Boolean(activeSection),
+    });
+
+    // Cmd/Ctrl+S saves immediately instead of triggering the browser dialog.
+    const { saveNow } = autosave;
+
     useEffect(() => {
-        const hasUnsavedChanges = sectionForm.isDirty || topicForm.isDirty || chapterSettingsIsDirty || sectionSettingsForm.isDirty;
-
-        // Browser navigation (close tab, reload, etc.)
-        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-            if (hasUnsavedChanges && !isSubmittingRef.current) {
-                e.preventDefault();
-                e.returnValue = '';
+        const handleKeyDown = (event: KeyboardEvent) => {
+            if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+                event.preventDefault();
+                void saveNow();
             }
         };
 
-        // Inertia navigation (internal links and browser back button)
-        const handleInertiaNavigate = (event: { detail: { visit: { url: { href: string } } } }) => {
-            // Skip warning if we're intentionally submitting
-            if (isSubmittingRef.current) {
-                return;
-            }
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [saveNow]);
 
-            if (hasUnsavedChanges) {
-                if (!confirm('Du hast ungespeicherte Änderungen. Möchtest du die Seite wirklich verlassen?')) {
-                    event.preventDefault();
-                }
-            }
+    // The section body autosaves; only the manually-saved panels can still hold
+    // work that a reload would throw away.
+    const hasUnsavedPanelChanges = topicForm.isDirty || chapterSettingsIsDirty || sectionSettingsForm.isDirty;
+
+    useEffect(() => {
+        const stillWorking = hasUnsavedPanelChanges || isSectionDirty;
+        if (!stillWorking) {
+            return;
+        }
+
+        const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+            event.preventDefault();
+            event.returnValue = '';
         };
-
-        // Handle browser back/forward button
-        const handlePopState = (e: PopStateEvent) => {
-            if (hasUnsavedChanges && !isSubmittingRef.current) {
-                const shouldLeave = confirm('Du hast ungespeicherte Änderungen. Möchtest du die Seite wirklich verlassen?');
-                if (!shouldLeave) {
-                    // Push the current state back to cancel the navigation
-                    window.history.pushState(null, '', window.location.href);
-                }
-            }
-        };
-
-        // Push initial state to enable popstate handling
-        window.history.pushState(null, '', window.location.href);
 
         window.addEventListener('beforeunload', handleBeforeUnload);
-        window.addEventListener('popstate', handlePopState);
-        const removeInertiaListener = router.on('before', handleInertiaNavigate as any);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+    }, [hasUnsavedPanelChanges, isSectionDirty]);
 
-        return () => {
-            window.removeEventListener('beforeunload', handleBeforeUnload);
-            window.removeEventListener('popstate', handlePopState);
-            removeInertiaListener();
-        };
-    }, [sectionForm.isDirty, topicForm.isDirty, topic.id]);
-
-    // Memoized onChange handler that checks section ID
-    const handleEditorChange = useCallback((value: EditorContent) => {
-        // Only update if we're still on the same section
-        if (activeSectionIdRef.current === activeSection?.id) {
-            sectionForm.setData('content', value);
+    /** Flushes the current section, then runs the navigation. */
+    const leaveSection = useCallback(async (go: () => void) => {
+        if (isSectionDirty) {
+            try {
+                await autosave.saveNow();
+            } catch {
+                if (!confirm('Der Abschnitt konnte nicht gespeichert werden. Trotzdem fortfahren?')) {
+                    return;
+                }
+            }
         }
-    }, [activeSection?.id, sectionForm]);
+
+        if (hasUnsavedPanelChanges && !confirm('In den Einstellungen gibt es ungespeicherte Änderungen. Trotzdem fortfahren?')) {
+            return;
+        }
+
+        go();
+    }, [isSectionDirty, hasUnsavedPanelChanges, autosave]);
 
     const handleTopicSave = () => {
-        isSubmittingRef.current = true;
-        topicForm.put(`/admin/topics/${topic.id}`, {
-            preserveScroll: true,
-            onFinish: () => {
-                isSubmittingRef.current = false;
-            },
-        });
+        topicForm.put(`/admin/topics/${topic.id}`, { preserveScroll: true });
     };
 
     const handleSectionSave = () => {
-        if (!activeSection) return;
-
-        // Double-check we're not trying to save stale data
-        if (isSwitchingSection) {
-            console.warn('Cannot save while switching sections');
-            return;
-        }
-
-        // Verify we're saving to the correct section
-        if (activeSectionIdRef.current !== activeSection.id) {
-            console.error('Section ID mismatch - preventing save');
-            return;
-        }
-
-        isSubmittingRef.current = true;
-        sectionForm.patch(`/admin/sections/${activeSection.id}`, {
-            preserveScroll: true,
-            onFinish: () => {
-                isSubmittingRef.current = false;
-            },
-        });
+        void autosave.saveNow();
     };
 
     const handleBackClick = () => {
-        const hasUnsavedChanges = sectionForm.isDirty || topicForm.isDirty || chapterSettingsIsDirty || sectionSettingsForm.isDirty;
-        if (hasUnsavedChanges) {
-            if (!confirm('Du hast ungespeicherte Änderungen. Möchtest du die Seite wirklich verlassen?')) {
-                return;
-            }
-        }
-        router.visit('/admin/topics');
+        void leaveSection(() => router.visit('/admin/topics'));
     };
 
     const handleChapterSettingsSave = () => {
         if (!selectedChapter) return;
 
-        isSubmittingRef.current = true;
         setChapterSettingsProcessing(true);
         setChapterSettingsErrors({});
 
@@ -334,7 +436,6 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                 setChapterSettingsErrors(errors as Record<string, string>);
             },
             onFinish: () => {
-                isSubmittingRef.current = false;
                 setChapterSettingsProcessing(false);
             },
         });
@@ -343,18 +444,20 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
     const handleSectionSettingsSave = () => {
         if (!activeSection) return;
 
-        isSubmittingRef.current = true;
         sectionSettingsForm.patch(`/admin/sections/${activeSection.id}`, {
             preserveScroll: true,
-            onFinish: () => {
-                isSubmittingRef.current = false;
-            },
         });
     };
 
     const handleNavigateToSection = (sectionId: number) => {
-        router.visit(`/admin/topics/${topic.id}/edit/${sectionId}`, {
-            preserveScroll: true,
+        if (sectionId === activeSection?.id) {
+            return;
+        }
+
+        void leaveSection(() => {
+            router.visit(`/admin/topics/${topic.id}/edit/${sectionId}`, {
+                preserveScroll: true,
+            });
         });
     };
 
@@ -385,16 +488,10 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
     };
 
     const totalSections = topic.chapters.reduce((acc, ch) => acc + ch.sections.length, 0);
-    const hasUnsavedChanges = sectionForm.isDirty;
 
     // Chapter editing state
     const [editingChapterId, setEditingChapterId] = useState<number | null>(null);
     const [editingChapterTitle, setEditingChapterTitle] = useState('');
-
-    const handleStartEditChapter = (chapter: Chapter) => {
-        setEditingChapterId(chapter.id);
-        setEditingChapterTitle(chapter.title);
-    };
 
     const handleSaveChapterTitle = (chapterId: number) => {
         if (editingChapterTitle.trim()) {
@@ -458,11 +555,11 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                     </div>
 
                     <div className="flex items-center gap-2">
-                        {hasUnsavedChanges && (
-                            <span className="hidden text-xs text-amber-600 sm:block">
-                                Ungespeicherte Änderungen
-                            </span>
-                        )}
+                        <SaveIndicator
+                            status={autosave.status}
+                            lastSavedAt={autosave.lastSavedAt}
+                            errorMessage={sectionSaveError}
+                        />
 
                         <TopicHistory topicId={topic.id} />
 
@@ -477,11 +574,12 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
 
                         <Button
                             onClick={handleSectionSave}
-                            disabled={sectionForm.processing || !activeSection || isSwitchingSection}
+                            disabled={autosave.status === 'saving' || !activeSection}
+                            title="Speichern (⌘/Strg + S)"
                             className="h-9 bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-800"
                         >
                             <Save className="mr-2 h-4 w-4" />
-                            {sectionForm.processing ? 'Speichern…' : 'Speichern'}
+                            {autosave.status === 'saving' ? 'Speichern…' : 'Speichern'}
                         </Button>
                     </div>
                 </header>
@@ -557,8 +655,8 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                                 <div className="shrink-0 border-b border-zinc-100 py-6 pl-16 pr-8 lg:pl-20 lg:pr-12">
                                     <input
                                         type="text"
-                                        value={sectionForm.data.title}
-                                        onChange={(event) => sectionForm.setData('title', event.target.value)}
+                                        value={sectionTitle}
+                                        onChange={(event) => updateSectionTitle(event.target.value)}
                                         placeholder="Titel eingeben…"
                                         className="w-full border-none bg-transparent text-3xl font-bold text-zinc-900 placeholder:text-zinc-300 focus:outline-none focus:ring-0"
                                     />
@@ -568,8 +666,9 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                                 <div className="flex-1 overflow-y-auto py-6 pl-16 pr-8 lg:pl-20 lg:pr-12">
                                     <RichTextEditor
                                         key={activeSection.id}
-                                        initialValue={(activeSection.content ?? null) as OutputData}
-                                        onChange={(value) => handleEditorChange(value as EditorContent)}
+                                        ref={editorRef}
+                                        initialValue={activeSection.content ?? undefined}
+                                        onChange={handleEditorChange}
                                         className="gutenberg-editor min-h-[60vh] border-0 bg-transparent shadow-none"
                                         placeholder="Beginne zu schreiben oder drücke / für Blöcke…"
                                     />
@@ -835,12 +934,12 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                                         <div className="space-y-2">
                                             <Label className="text-xs font-semibold">Seiten-Titel</Label>
                                             <Input
-                                                value={sectionForm.data.title}
-                                                onChange={(e) => sectionForm.setData('title', e.target.value)}
+                                                value={sectionTitle}
+                                                onChange={(e) => updateSectionTitle(e.target.value)}
                                                 className="h-9 text-sm"
                                             />
                                             <p className="text-xs text-muted-foreground">
-                                                Speichere mit dem Hauptspeicher-Button
+                                                Wird automatisch gespeichert
                                             </p>
                                         </div>
 

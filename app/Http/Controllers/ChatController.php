@@ -66,7 +66,7 @@ PROMPT;
                 ]);
 
                 return response()->json([
-                    'error' => 'Ungültige Antwort von der KI erhalten. Bitte überprüfe deinen API Key.',
+                    'error' => 'Der Lern-Assistent hat keine gültige Antwort geliefert. Bitte versuche es erneut.',
                 ], 500);
             }
 
@@ -83,7 +83,7 @@ PROMPT;
             ]);
 
             return response()->json([
-                'error' => 'Es ist ein Fehler aufgetreten: ' . $e->getMessage(),
+                'error' => 'Der Lern-Assistent ist gerade nicht erreichbar. Bitte versuche es in einem Moment erneut.',
             ], 500);
         }
     }

@@ -46,6 +46,12 @@ trait Revisionable
             return;
         }
 
+        // The editor autosaves continuously; collapse a burst of saves into a
+        // single restore point so real versions don't get pruned away.
+        if ($type === 'update' && $this->hasRecentRevision()) {
+            return;
+        }
+
         // Get the attributes that should be saved
         $content = $this->getRevisionableAttributes();
 
@@ -58,6 +64,20 @@ trait Revisionable
 
         // Clean up old revisions (keep only 30)
         $this->pruneOldRevisions();
+    }
+
+    protected function hasRecentRevision(): bool
+    {
+        $window = (int) config('revisions.coalesce_minutes', 5);
+
+        if ($window <= 0) {
+            return false;
+        }
+
+        return $this->revisions()
+            ->where('user_id', auth()->id())
+            ->where('created_at', '>=', now()->subMinutes($window))
+            ->exists();
     }
 
     protected function getRevisionableAttributes(): array
@@ -95,7 +115,9 @@ trait Revisionable
 
     protected function getMaxRevisions(): int
     {
-        return property_exists($this, 'maxRevisions') ? $this->maxRevisions : 30;
+        return property_exists($this, 'maxRevisions')
+            ? $this->maxRevisions
+            : (int) config('revisions.max', 30);
     }
 
     public function restoreRevision(Revision $revision): bool

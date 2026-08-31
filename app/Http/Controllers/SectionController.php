@@ -6,6 +6,7 @@ use App\Models\Chapter;
 use App\Models\Section;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class SectionController extends Controller
 {
@@ -20,20 +21,9 @@ class SectionController extends Controller
 
         $maxSortOrder = $chapter->sections()->max('sort_order') ?? -1;
 
-        // Generate slug from title if not provided
-        $slug = $validated['slug'] ?? \Illuminate\Support\Str::slug($validated['title']);
-
-        // Ensure slug is unique within the chapter
-        $originalSlug = $slug;
-        $counter = 1;
-        while ($chapter->sections()->where('slug', $slug)->exists()) {
-            $slug = $originalSlug . '-' . $counter;
-            $counter++;
-        }
-
         $section = $chapter->sections()->create([
             'title' => $validated['title'],
-            'slug' => $slug,
+            'slug' => $chapter->sections()->make()->uniqueSlug($validated['slug'] ?? $validated['title']),
             'content' => [
                 'time' => now()->getTimestampMs(),
                 'blocks' => [
@@ -63,16 +53,8 @@ class SectionController extends Controller
             'is_published' => ['sometimes', 'boolean'],
         ]);
 
-        // If slug is provided, ensure uniqueness within the chapter
         if (isset($validated['slug'])) {
-            $slug = $validated['slug'];
-            $originalSlug = $slug;
-            $counter = 1;
-            while ($section->chapter->sections()->where('slug', $slug)->where('id', '!=', $section->id)->exists()) {
-                $slug = $originalSlug . '-' . $counter;
-                $counter++;
-            }
-            $validated['slug'] = $slug;
+            $validated['slug'] = $section->uniqueSlug($validated['slug']);
         }
 
         $section->update($validated);
@@ -121,11 +103,13 @@ class SectionController extends Controller
             'order.*' => ['integer', 'exists:sections,id'],
         ]);
 
-        foreach ($validated['order'] as $index => $sectionId) {
-            $chapter->sections()
-                ->whereKey($sectionId)
-                ->update(['sort_order' => $index]);
-        }
+        DB::transaction(function () use ($chapter, $validated): void {
+            foreach ($validated['order'] as $index => $sectionId) {
+                $chapter->sections()
+                    ->whereKey($sectionId)
+                    ->update(['sort_order' => $index]);
+            }
+        });
 
         return redirect()
             ->back()

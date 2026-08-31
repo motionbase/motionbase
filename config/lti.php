@@ -24,4 +24,8 @@ return [
 
     // Platform JWKS cache duration in minutes
     'jwks_cache_duration' => env('LTI_JWKS_CACHE_DURATION', 60),
+
+    // Verbose launch logging. Launch payloads carry Moodle user identifiers,
+    // so keep this off outside of integration debugging.
+    'debug' => env('LTI_DEBUG', false),
 ];

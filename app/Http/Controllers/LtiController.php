@@ -6,6 +6,7 @@ use App\Models\LtiPlatform;
 use App\Models\Topic;
 use App\Services\LtiService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
 
 class LtiController extends Controller
@@ -19,13 +20,9 @@ class LtiController extends Controller
      */
     public function login(Request $request)
     {
-        \Log::info('LTI Login Request', [
-            'all_params' => $request->all(),
-            'iss' => $request->input('iss'),
-            'client_id' => $request->input('client_id'),
-            'login_hint' => $request->input('login_hint'),
-            'target_link_uri' => $request->input('target_link_uri'),
-        ]);
+        // login_hint identifies the Moodle user, so the raw payload only goes
+        // to the log while LTI_DEBUG is on.
+        $this->ltiService->debug('LTI Login Request', ['all_params' => $request->all()]);
 
         $request->validate([
             'iss' => 'required|string',
@@ -40,7 +37,7 @@ class LtiController extends Controller
         );
 
         if (! $platform) {
-            \Log::error('LTI Platform not found', [
+            Log::error('LTI Platform not found', [
                 'iss' => $request->input('iss'),
                 'client_id' => $request->input('client_id'),
             ]);
@@ -121,11 +118,11 @@ class LtiController extends Controller
         // Validate the token
         $claims = $this->ltiService->validateIdToken($request->input('id_token'), $platform);
         if (! $claims) {
-            \Log::error('LTI Token validation failed in launch');
+            Log::error('LTI Token validation failed in launch');
             abort(403, 'Invalid LTI token');
         }
 
-        \Log::info('LTI Launch successful, creating session');
+        $this->ltiService->debug('LTI Launch successful, creating session');
 
         // Create session
         $session = $this->ltiService->createSession($platform, $claims);
@@ -209,7 +206,7 @@ class LtiController extends Controller
      */
     public function deepLinkingReturn(Request $request)
     {
-        \Log::info('LTI Deep Linking Return', [
+        $this->ltiService->debug('LTI Deep Linking Return', [
             'lti_session' => $request->input('lti_session'),
             'selected_count' => count($request->input('selected', [])),
         ]);
@@ -221,14 +218,14 @@ class LtiController extends Controller
 
         $session = $this->ltiService->getSessionByToken($request->input('lti_session'));
         if (! $session) {
-            \Log::error('LTI Deep Linking: Invalid session');
+            Log::error('LTI Deep Linking: Invalid session');
             abort(403, 'Invalid session');
         }
 
         $platform = $session->platform;
         $claims = $session->claims;
 
-        \Log::info('LTI Deep Linking: Building response', [
+        $this->ltiService->debug('LTI Deep Linking: Building response', [
             'platform_id' => $platform->id,
             'app_url' => config('app.url'),
         ]);

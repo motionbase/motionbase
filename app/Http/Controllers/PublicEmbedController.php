@@ -15,17 +15,19 @@ class PublicEmbedController extends Controller
      */
     public function topic(Topic $topic)
     {
-        // Only allow published topics
-        if (! $topic->is_published) {
-            abort(404);
-        }
-
         $topic->loadMissing([
             'chapters' => fn ($q) => $q->where('is_published', true)->orderBy('sort_order')
                 ->with(['sections' => fn ($sq) => $sq->where('is_published', true)->orderBy('sort_order')]),
         ]);
 
-        $firstSection = $topic->chapters->first()?->sections->first();
+        $firstSection = $topic->chapters
+            ->flatMap(fn (Chapter $chapter) => $chapter->sections)
+            ->first();
+
+        // A topic is only embeddable once it has at least one published section.
+        if (! $firstSection) {
+            abort(404);
+        }
 
         return View::make('embed.topic', [
             'topic' => $topic,
