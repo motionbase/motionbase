@@ -16,6 +16,7 @@ use App\Models\Topic;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 
+use function Pest\Laravel\actingAs;
 use function Pest\Laravel\postJson;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
@@ -184,4 +185,26 @@ it('stores interactive graphics off the public disk', function () {
     expect(Storage::disk('local')->exists($media->path))->toBeTrue()
         ->and(Storage::disk('public')->exists($media->path))->toBeFalse()
         ->and($media->url)->toBe("/interactive/{$media->id}");
+});
+
+it('renders the consent screen instead of dying on an unbound view', function () {
+    // Passport binds AuthorizationViewResponse only from inside
+    // Passport::authorizationView(). Without that call every real client hits
+    // "Target [AuthorizationViewResponse] is not instantiable" the moment it
+    // starts the OAuth flow - while discovery and token auth still look fine.
+    $client = app(Laravel\Passport\ClientRepository::class)->createAuthorizationCodeGrantClient(
+        'Consent Test', ['https://claude.ai/api/mcp/auth_callback'], false,
+    );
+
+    actingAs(User::factory()->create())
+        ->get('/oauth/authorize?' . http_build_query([
+            'client_id' => $client->getKey(),
+            'redirect_uri' => 'https://claude.ai/api/mcp/auth_callback',
+            'response_type' => 'code',
+            'scope' => 'mcp:use',
+            'code_challenge' => 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM',
+            'code_challenge_method' => 'S256',
+        ]))
+        ->assertOk()
+        ->assertSee('Consent Test');
 });
