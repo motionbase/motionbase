@@ -1,8 +1,10 @@
 import type {
     API,
+    BlockAPI,
     BlockTool,
     BlockToolConstructorOptions,
     BlockToolData,
+    PatternPasteEvent,
 } from '@editorjs/editorjs';
 
 interface YouTubeBlockData extends BlockToolData {
@@ -17,6 +19,7 @@ interface YouTubeBlockConfig {
 
 export default class YouTubeBlock implements BlockTool {
     private api: API;
+    private block?: BlockAPI;
     private data: YouTubeBlockData;
     private readOnly: boolean;
     private config: YouTubeBlockConfig;
@@ -24,11 +27,13 @@ export default class YouTubeBlock implements BlockTool {
 
     constructor({
         api,
+        block,
         data,
         readOnly,
         config = {},
     }: BlockToolConstructorOptions<YouTubeBlockData, YouTubeBlockConfig>) {
         this.api = api;
+        this.block = block;
         this.readOnly = Boolean(readOnly);
         this.config = config;
 
@@ -150,7 +155,7 @@ export default class YouTubeBlock implements BlockTool {
             this.data.url = url;
             this.data.videoId = videoId;
             this.renderPreview();
-            this.api.blocks.getBlockByIndex(this.api.blocks.getCurrentBlockIndex())?.save();
+            this.block?.dispatchChange();
         }
     }
 
@@ -186,7 +191,7 @@ export default class YouTubeBlock implements BlockTool {
             
             const saveCaption = () => {
                 this.data.caption = captionInput.value;
-                this.api.blocks.getBlockByIndex(this.api.blocks.getCurrentBlockIndex())?.save();
+                this.block?.dispatchChange();
             };
             
             captionInput.addEventListener('input', (e) => {
@@ -235,7 +240,7 @@ export default class YouTubeBlock implements BlockTool {
         return Boolean(data.videoId);
     }
 
-    onPaste(event: { detail: { data: string } }) {
+    onPaste(event: PatternPasteEvent) {
         const url = event.detail.data;
         this.handleUrlChange(url);
     }

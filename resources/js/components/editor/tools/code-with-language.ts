@@ -1,5 +1,6 @@
 import type {
     API,
+    BlockAPI,
     BlockTool,
     BlockToolConstructorOptions,
 } from '@editorjs/editorjs';
@@ -31,6 +32,7 @@ const DEFAULT_LANGUAGES: LanguageOption[] = [
 
 export default class CodeWithLanguage implements BlockTool {
     private api: API;
+    private block?: BlockAPI;
     private readOnly: boolean;
     private config: CodeWithLanguageConfig;
     private data: Required<CodeWithLanguageData>;
@@ -40,11 +42,13 @@ export default class CodeWithLanguage implements BlockTool {
 
     constructor({
         api,
+        block,
         config = {},
         data,
         readOnly,
     }: BlockToolConstructorOptions<CodeWithLanguageData, CodeWithLanguageConfig>) {
         this.api = api;
+        this.block = block;
         this.config = config;
         this.readOnly = Boolean(readOnly);
         const defaultLanguage =
@@ -92,7 +96,7 @@ export default class CodeWithLanguage implements BlockTool {
         this.select.addEventListener('change', (event) => {
             const target = event.target as HTMLSelectElement;
             this.data.language = target.value;
-            this.api.blocks.save();
+            this.block?.dispatchChange();
         });
 
         controlRow.appendChild(this.select);

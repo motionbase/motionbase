@@ -117,9 +117,13 @@ export default function UsersIndex({ users }: { users: User[] }) {
                                                             </Badge>
                                                         )}
                                                         {user.email_verified_at ? (
-                                                            <Check className="h-4 w-4 text-green-600" title="E-Mail verifiziert" />
+                                                            <span className="inline-flex" role="img" aria-label="E-Mail verifiziert" title="E-Mail verifiziert">
+                                                                <Check className="h-4 w-4 text-green-600" />
+                                                            </span>
                                                         ) : (
-                                                            <X className="h-4 w-4 text-zinc-400" title="E-Mail nicht verifiziert" />
+                                                            <span className="inline-flex" role="img" aria-label="E-Mail nicht verifiziert" title="E-Mail nicht verifiziert">
+                                                                <X className="h-4 w-4 text-zinc-400" />
+                                                            </span>
                                                         )}
                                                     </div>
                                                     <p className="mt-0.5 text-sm text-zinc-500">

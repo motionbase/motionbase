@@ -1,5 +1,6 @@
 import type {
     API,
+    BlockAPI,
     BlockTool,
     BlockToolConstructorOptions,
     BlockToolData,
@@ -18,6 +19,7 @@ interface LottieBlockConfig {
 
 export default class LottieBlock implements BlockTool {
     private api: API;
+    private block?: BlockAPI;
     private data: LottieBlockData;
     private readOnly: boolean;
     private config: LottieBlockConfig;
@@ -25,11 +27,13 @@ export default class LottieBlock implements BlockTool {
 
     constructor({
         api,
+        block,
         data,
         readOnly,
         config = {},
     }: BlockToolConstructorOptions<LottieBlockData, LottieBlockConfig>) {
         this.api = api;
+        this.block = block;
         this.readOnly = Boolean(readOnly);
         this.config = config;
 
@@ -172,7 +176,7 @@ export default class LottieBlock implements BlockTool {
                 `;
             }
 
-            const response = await fetch('/upload/lottie', {
+            const response = await fetch('/admin/upload/lottie', {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': csrfToken,
@@ -194,7 +198,7 @@ export default class LottieBlock implements BlockTool {
             if (result.success === 1) {
                 this.data.url = result.file.url;
                 this.renderPreview();
-                this.api.blocks.getBlockByIndex(this.api.blocks.getCurrentBlockIndex())?.save();
+                this.block?.dispatchChange();
             } else {
                 console.error('Lottie upload failed:', result.message);
                 alert('Datei konnte nicht hochgeladen werden: ' + (result.message || 'Unbekannter Fehler'));
@@ -211,7 +215,7 @@ export default class LottieBlock implements BlockTool {
         if (url && (url.endsWith('.json') || url.endsWith('.lottie') || url.includes('lottiefiles.com') || url.includes('assets'))) {
             this.data.url = url;
             this.renderPreview();
-            this.api.blocks.getBlockByIndex(this.api.blocks.getCurrentBlockIndex())?.save();
+            this.block?.dispatchChange();
         }
     }
 
@@ -245,7 +249,7 @@ export default class LottieBlock implements BlockTool {
             loopCheckbox.checked = this.data.loop ?? true;
             loopCheckbox.addEventListener('change', () => {
                 this.data.loop = loopCheckbox.checked;
-                this.api.blocks.getBlockByIndex(this.api.blocks.getCurrentBlockIndex())?.save();
+                this.block?.dispatchChange();
             });
             loopLabel.appendChild(loopCheckbox);
             loopLabel.appendChild(document.createTextNode(' Loop'));
@@ -259,7 +263,7 @@ export default class LottieBlock implements BlockTool {
             autoplayCheckbox.checked = this.data.autoplay ?? true;
             autoplayCheckbox.addEventListener('change', () => {
                 this.data.autoplay = autoplayCheckbox.checked;
-                this.api.blocks.getBlockByIndex(this.api.blocks.getCurrentBlockIndex())?.save();
+                this.block?.dispatchChange();
             });
             autoplayLabel.appendChild(autoplayCheckbox);
             autoplayLabel.appendChild(document.createTextNode(' Autoplay'));
@@ -276,7 +280,7 @@ export default class LottieBlock implements BlockTool {
 
             const saveCaption = () => {
                 this.data.caption = captionInput.value;
-                this.api.blocks.getBlockByIndex(this.api.blocks.getCurrentBlockIndex())?.save();
+                this.block?.dispatchChange();
             };
 
             captionInput.addEventListener('input', (e) => {

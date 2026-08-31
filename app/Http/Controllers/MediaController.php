@@ -59,6 +59,8 @@ class MediaController extends Controller
      */
     public function update(Request $request, Media $media): JsonResponse
     {
+        abort_unless(auth()->user()?->is_admin, 403);
+
         $validated = $request->validate([
             'alt' => 'nullable|string|max:255',
         ]);
@@ -76,6 +78,8 @@ class MediaController extends Controller
      */
     public function destroy(Media $media): JsonResponse
     {
+        abort_unless(auth()->user()?->is_admin, 403);
+
         // Delete the file from storage
         if (Storage::disk('public')->exists($media->path)) {
             Storage::disk('public')->delete($media->path);

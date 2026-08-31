@@ -68,6 +68,19 @@ class CategoryController extends Controller
 
     public function destroy(Category $category): RedirectResponse
     {
+        abort_unless(auth()->user()?->is_admin, 403);
+
+        // topics.category_id cascades on delete, so removing a category that is
+        // still in use silently destroys every course in it - other people's
+        // included, with all their chapters and sections.
+        $topics = $category->topics()->count();
+
+        if ($topics > 0) {
+            return redirect()
+                ->back()
+                ->withErrors(['category' => "Diese Kategorie wird von {$topics} Thema/Themen verwendet und kann nicht gelöscht werden."]);
+        }
+
         $category->delete();
 
         return redirect()

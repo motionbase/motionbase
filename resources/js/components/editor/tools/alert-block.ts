@@ -109,6 +109,7 @@ export default class AlertBlock implements BlockTool {
                 this.data.contentBlocks?.blocks
                     ?.map((block) => ('text' in block.data ? String(block.data.text) : ''))
                     .join('<br />') ?? '',
+                { b: true, i: true, u: true, a: { href: true }, code: true, br: true },
             );
         }
 
@@ -152,7 +153,7 @@ export default class AlertBlock implements BlockTool {
                     inlineToolbar: true,
                 },
                 header: {
-                    class: Header as ToolConstructable,
+                    class: Header as unknown as ToolConstructable,
                     config: {
                         levels: [3, 4],
                         defaultLevel: 3,

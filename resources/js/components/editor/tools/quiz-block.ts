@@ -1,5 +1,6 @@
 import type {
     API,
+    BlockAPI,
     BlockTool,
     BlockToolConstructorOptions,
     BlockToolData,
@@ -26,6 +27,7 @@ interface QuizBlockConfig {
 
 export default class QuizBlock implements BlockTool {
     private api: API;
+    private block?: BlockAPI;
     private data: QuizBlockData;
     private readOnly: boolean;
     private config: QuizBlockConfig;
@@ -33,11 +35,13 @@ export default class QuizBlock implements BlockTool {
 
     constructor({
         api,
+        block,
         data,
         readOnly,
         config = {},
     }: BlockToolConstructorOptions<QuizBlockData, QuizBlockConfig>) {
         this.api = api;
+        this.block = block;
         this.readOnly = Boolean(readOnly);
         this.config = config;
 
@@ -122,7 +126,7 @@ export default class QuizBlock implements BlockTool {
             addBtn.addEventListener('click', () => {
                 this.data.questions.push(this.createEmptyQuestion());
                 this.renderQuestions();
-                this.api.blocks.getBlockByIndex(this.api.blocks.getCurrentBlockIndex())?.save();
+                this.block?.dispatchChange();
             });
             header.appendChild(addBtn);
         }
@@ -168,7 +172,7 @@ export default class QuizBlock implements BlockTool {
             deleteBtn.addEventListener('click', () => {
                 this.data.questions.splice(qIndex, 1);
                 this.renderQuestions();
-                this.api.blocks.getBlockByIndex(this.api.blocks.getCurrentBlockIndex())?.save();
+                this.block?.dispatchChange();
             });
             questionHeader.appendChild(deleteBtn);
         }
@@ -199,7 +203,7 @@ export default class QuizBlock implements BlockTool {
                 removeImgBtn.addEventListener('click', () => {
                     question.imageUrl = undefined;
                     this.renderQuestions();
-                    this.api.blocks.getBlockByIndex(this.api.blocks.getCurrentBlockIndex())?.save();
+                    this.block?.dispatchChange();
                 });
                 imgPreview.appendChild(removeImgBtn);
             }
@@ -248,7 +252,7 @@ export default class QuizBlock implements BlockTool {
             question.question = (e.target as HTMLInputElement).value;
         });
         questionInput.addEventListener('blur', () => {
-            this.api.blocks.getBlockByIndex(this.api.blocks.getCurrentBlockIndex())?.save();
+            this.block?.dispatchChange();
         });
 
         questionWrapper.appendChild(questionInput);
@@ -278,7 +282,7 @@ export default class QuizBlock implements BlockTool {
             addAnswerBtn.addEventListener('click', () => {
                 question.answers.push(this.createEmptyAnswer());
                 this.renderQuestions();
-                this.api.blocks.getBlockByIndex(this.api.blocks.getCurrentBlockIndex())?.save();
+                this.block?.dispatchChange();
             });
             questionWrapper.appendChild(addAnswerBtn);
         }
@@ -307,7 +311,7 @@ export default class QuizBlock implements BlockTool {
             question.answers.forEach((a) => (a.isCorrect = false));
             answer.isCorrect = true;
             this.renderQuestions();
-            this.api.blocks.getBlockByIndex(this.api.blocks.getCurrentBlockIndex())?.save();
+            this.block?.dispatchChange();
         });
 
         const radioIcon = document.createElement('span');
@@ -342,7 +346,7 @@ export default class QuizBlock implements BlockTool {
             answer.text = (e.target as HTMLInputElement).value;
         });
         answerInput.addEventListener('blur', () => {
-            this.api.blocks.getBlockByIndex(this.api.blocks.getCurrentBlockIndex())?.save();
+            this.block?.dispatchChange();
         });
 
         answerWrapper.appendChild(answerInput);
@@ -368,7 +372,7 @@ export default class QuizBlock implements BlockTool {
                         question.answers[0].isCorrect = true;
                     }
                     this.renderQuestions();
-                    this.api.blocks.getBlockByIndex(this.api.blocks.getCurrentBlockIndex())?.save();
+                    this.block?.dispatchChange();
                 }
             });
             answerWrapper.appendChild(deleteAnswerBtn);
@@ -384,7 +388,7 @@ export default class QuizBlock implements BlockTool {
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
 
         try {
-            const response = await fetch('/upload/image', {
+            const response = await fetch('/admin/upload/image', {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': csrfToken,
@@ -397,7 +401,7 @@ export default class QuizBlock implements BlockTool {
             if (result.success === 1) {
                 question.imageUrl = result.file.url;
                 this.renderQuestions();
-                this.api.blocks.getBlockByIndex(this.api.blocks.getCurrentBlockIndex())?.save();
+                this.block?.dispatchChange();
             } else {
                 console.error('Image upload failed:', result.message);
                 alert('Bild konnte nicht hochgeladen werden. Bitte versuche es erneut.');
