@@ -298,3 +298,22 @@ it('marks read-only tools so clients do not lump them in with writes', function 
     expect($annotations)->toMatchArray(['readOnlyHint' => true])
         ->and((array) (new UpdateSection)->toArray()['annotations'])->toBe([]);
 });
+
+it('tells the client which icon to use', function () {
+    // Declaring none leaves the client guessing at the domain, which is how a
+    // leftover Laravel favicon kept representing the connector.
+    // Read off the class attributes: the server itself cannot be constructed
+    // without a transport, and the declaration is what we care about.
+    $icons = collect((new ReflectionClass(MotionBaseServer::class))
+        ->getAttributes(Laravel\Mcp\Server\Attributes\Icon::class))
+        ->map(fn (ReflectionAttribute $a) => $a->newInstance());
+
+    expect($icons)->not->toBeEmpty()
+        ->and($icons->pluck('mimeType')->all())->toContain('image/svg+xml');
+
+    // A renamed logo must fail here rather than silently serving a 404 to
+    // every client that shows the connector.
+    foreach ($icons as $icon) {
+        expect(is_file(public_path($icon->src)))->toBeTrue("Icon fehlt: {$icon->src}");
+    }
+});

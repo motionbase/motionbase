@@ -12,11 +12,17 @@ use App\Mcp\Tools\ListBlockTypes;
 use App\Mcp\Tools\ListTopics;
 use App\Mcp\Tools\UpdateSection;
 use Laravel\Mcp\Server;
+use Laravel\Mcp\Server\Attributes\Icon;
 use Laravel\Mcp\Server\Attributes\Instructions;
 use Laravel\Mcp\Server\Attributes\Name;
 use Laravel\Mcp\Server\Attributes\Version;
 
 #[Name('MotionBase')]
+// Without these the client has nothing to go on and falls back to guessing at
+// the domain, which is how the old Laravel favicon kept showing up. Relative
+// paths are resolved against APP_URL by the package.
+#[Icon('/favicon.svg', 'image/svg+xml', ['any'])]
+#[Icon('/favicon-96x96.png', 'image/png', ['96x96'])]
 #[Version('1.0.0')]
 #[Instructions(<<<'TXT'
 MotionBase is a course authoring platform. Courses are called topics; each topic
