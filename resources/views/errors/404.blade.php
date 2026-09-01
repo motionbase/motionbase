@@ -72,14 +72,6 @@
             color: var(--muted);
             transition: opacity 0.35s ease;
         }
-        .joke code {
-            font-family: var(--mono);
-            font-size: 0.8125em;
-            color: var(--ink-soft);
-            background: var(--line-soft);
-            padding: 0.1em 0.35em;
-            border-radius: 0.25rem;
-        }
 
         .actions { margin-top: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.625rem; justify-content: center; }
 
@@ -172,6 +164,7 @@
         }
 
         .counter {
+            pointer-events: none;
             position: absolute;
             right: 0;
             top: 138px;
@@ -182,6 +175,74 @@
             line-height: 1.7;
         }
         .counter b { color: var(--ink); font-weight: 600; }
+
+        .pad {
+            position: absolute;
+            bottom: 8px;
+            left: 0;
+            width: 92px;
+            height: 10px;
+            margin-left: -46px;
+            border-radius: 999px;
+            background: var(--ink);
+            will-change: transform;
+        }
+
+        .score {
+            position: absolute;
+            left: 0;
+            top: 0;
+            font-family: var(--mono);
+            font-size: 0.75rem;
+            color: var(--muted);
+            line-height: 1.7;
+            text-align: left;
+        }
+        .score b { display: block; font-size: 1.75rem; color: var(--ink); line-height: 1.1; }
+
+        .hint {
+            position: absolute;
+            left: 50%;
+            bottom: -1.75rem;
+            transform: translateX(-50%);
+            margin: 0;
+            font-size: 0.8125rem;
+            color: var(--muted);
+            white-space: nowrap;
+            opacity: 0;
+            transition: opacity 0.4s ease;
+        }
+        .hint.is-visible { opacity: 1; }
+        .hint kbd {
+            font-family: var(--mono);
+            font-size: 0.9em;
+            border: 1px solid var(--line);
+            border-bottom-width: 2px;
+            border-radius: 0.3rem;
+            padding: 0.1em 0.4em;
+            background: var(--surface);
+            color: var(--ink-soft);
+        }
+
+        .stage {
+            transition: height 0.35s cubic-bezier(0, 0, 0.58, 1),
+                        background-color 0.35s ease, border-color 0.35s ease;
+            border: 1px solid transparent;
+            border-radius: 0.75rem;
+        }
+        /* Im Spiel wird aus der Strecke ein Feld - die leere Fläche darunter
+           war ohnehin nur da, damit der Ball hinausfallen kann. */
+        .stage.is-playing {
+            height: 380px;
+            cursor: none;
+            background: var(--surface);
+            border-color: var(--line);
+        }
+        .stage.is-playing .track,
+        .stage.is-playing .sign,
+        .stage.is-playing .counter { opacity: 0; }
+
+        .track, .sign, .counter { transition: opacity 0.3s ease; }
 
         footer {
             margin-top: auto;
@@ -201,7 +262,7 @@
 
     <p class="code">4<span>0</span>4</p>
     <h1>Du hast das Ende des Internets erreicht.</h1>
-    <p class="joke" id="joke">Einen Moment, wir holen noch jemanden.</p>
+    <p class="joke" id="joke">Einen Moment, wir schauen noch kurz nach.</p>
 
     <div class="actions">
         <a class="btn btn--primary" href="{{ url('/') }}">Zurück auf festen Boden</a>
@@ -212,14 +273,23 @@
         <div class="track"></div>
         <div class="sign">ENDE</div>
         <div class="ball" id="ball"></div>
+        <div class="pad" id="pad" hidden></div>
+
         <div class="counter">
             <div>Abstürze: <b id="falls">0</b></div>
             <div>Gefundene Seiten: <b>0</b></div>
         </div>
+
+        <div class="score" id="score" hidden>
+            <b id="scoreValue">0</b>
+            <span id="scoreBest"></span>
+        </div>
+
+        <p class="hint" id="hint" hidden></p>
     </div>
 
     <footer>
-        MotionBase — hier wird sonst über Easing geredet, nicht darunter gelitten.
+        MotionBase — normalerweise finden wir Dinge.
     </footer>
 </div>
 
@@ -232,16 +302,17 @@
         const againBtn = document.getElementById('again');
 
         const JOKES = [
-            'Wir haben überall gesucht. Sogar in <code>node_modules</code>.',
-            'Diese Seite hat einen Overshoot gemacht und ist über das Ziel hinausgeschossen.',
-            'Die URL läuft mit <code>cubic-bezier(0, 0, 0, 0)</code> — sie kommt nie an.',
-            'Ab hier ist nur noch Weißraum. Und zwar der echte, nicht der aus dem Styleguide.',
-            'Letzte Ausfahrt vor <code>undefined</code>.',
-            'Der Ball unten sucht mit. Er ist nur nicht besonders gut darin.',
-            '<code>animation-fill-mode: none</code> — deshalb ist am Ende nichts mehr da.',
-            'Serverseitig alles in Ordnung. Diese Seite ist nur menschlich verschwunden.',
-            'Das Timing war perfekt. Das Ziel leider nicht.',
-            'Wir hätten das mit <code>ease-in-out</code> sanfter gestalten können. Haben wir aber nicht.',
+            'Wir haben überall gesucht. Sogar hinter dem Sofa.',
+            'Diese Seite ist umgezogen und hat keine Nachsendeadresse hinterlassen.',
+            'Hier ist Schluss. Weiter hinten kommt nur noch Serverraum.',
+            'Wenn du das liest, bist du weiter gekommen als vorgesehen.',
+            'Vielleicht ein Tippfehler. Vielleicht Schicksal. Wir wollen uns nicht festlegen.',
+            'Bitte weitergehen, hier gibt es wirklich nichts zu sehen.',
+            'Der Ball da unten sucht auch. Seit Jahren. Ohne Erfolg.',
+            'Das Internet endet an dieser Stelle. Wir sind selbst überrascht.',
+            'Die Seite hat sich krankgemeldet. Auf unbestimmte Zeit.',
+            'Hinter der Kante beginnt das Nichts. Gepflegt, aber leer.',
+            'Du bist der Erste hier unten. Vermutlich. Es führt niemand Buch.',
         ];
 
         const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -287,6 +358,12 @@
         }
 
         function frame(now) {
+            if (playing) {
+                gameFrame(now);
+                requestAnimationFrame(frame);
+                return;
+            }
+
             const t = now - phaseStart;
             const edge = edgeX();
 
@@ -330,9 +407,176 @@
 
         // Ungeduldig? Dann eben sofort.
         againBtn.addEventListener('click', () => {
+            if (playing) return;
             phase = 'fall';
             phaseStart = performance.now();
         });
+
+        /* ================================================================
+           Versteckt: nach ein paar Abstürzen taucht ein Hinweis auf, und
+           wer ihn befolgt, darf den Ball selbst auffangen.
+           ================================================================ */
+        const pad = document.getElementById('pad');
+        const scoreEl = document.getElementById('score');
+        const scoreValue = document.getElementById('scoreValue');
+        const scoreBest = document.getElementById('scoreBest');
+        const hint = document.getElementById('hint');
+
+        const BEST_KEY = 'motionbase.404.best';
+        let best = 0;
+        try { best = parseInt(localStorage.getItem(BEST_KEY) || '0', 10) || 0; } catch { best = 0; }
+
+        let playing = false;
+        let padX = 0;
+        let ballPos = { x: 0, y: 0 };
+        let ballVel = { x: 0, y: 0 };
+        let score = 0;
+        let lastTick = 0;
+
+        const RADIUS = 22;
+        const PAD_HALF = 46;
+        const PAD_TOP = 18;     // Abstand der Pad-Oberkante zum Boden der Bühne
+        const GRAVITY = 1500;   // px/s²
+
+        function stageBox() { return stage.getBoundingClientRect(); }
+
+        function showHint(html) {
+            hint.innerHTML = html;
+            hint.hidden = false;
+            requestAnimationFrame(() => hint.classList.add('is-visible'));
+        }
+
+        function hideHint() {
+            hint.classList.remove('is-visible');
+            setTimeout(() => { if (!hint.classList.contains('is-visible')) hint.hidden = true; }, 400);
+        }
+
+        function startGame() {
+            if (playing) return;
+            playing = true;
+            score = 0;
+            const box = stageBox();
+            padX = box.width / 2;
+            ballPos = { x: box.width * 0.5, y: 20 };
+            ballVel = { x: 90, y: 0 };
+            lastTick = performance.now();
+
+            stage.classList.add('is-playing');
+            pad.hidden = false;
+            scoreEl.hidden = false;
+            scoreValue.textContent = '0';
+            scoreBest.textContent = best ? 'Beste: ' + best : '';
+            hideHint();
+            jokeEl.innerHTML = 'Nicht runterfallen lassen.';
+            againBtn.textContent = 'Aufhören';
+        }
+
+        function endGame() {
+            playing = false;
+            stage.classList.remove('is-playing');
+            pad.hidden = true;
+            againBtn.textContent = 'Nochmal fallen lassen';
+
+            if (score > best) {
+                best = score;
+                try { localStorage.setItem(BEST_KEY, String(best)); } catch { /* Privatmodus */ }
+                jokeEl.innerHTML = 'Bestleistung: ' + score + '. Niemand sonst weiß davon.';
+            } else {
+                jokeEl.innerHTML = score === 0
+                    ? 'Null. Das war schnell.'
+                    : score + ' gefangen. Die Bestleistung liegt bei ' + best + '.';
+            }
+
+            scoreBest.textContent = 'Beste: ' + best;
+            showHint('<kbd>Leertaste</kbd> für nochmal');
+            phase = 'pause';
+            phaseStart = performance.now();
+        }
+
+        function gameFrame(now) {
+            const dt = Math.min(0.032, (now - lastTick) / 1000);
+            lastTick = now;
+
+            const box = stageBox();
+            const floor = box.height - PAD_TOP;
+
+            ballVel.y += GRAVITY * dt;
+            ballPos.x += ballVel.x * dt;
+            ballPos.y += ballVel.y * dt;
+
+            // Wände
+            if (ballPos.x < RADIUS) { ballPos.x = RADIUS; ballVel.x = Math.abs(ballVel.x); }
+            if (ballPos.x > box.width - RADIUS) { ballPos.x = box.width - RADIUS; ballVel.x = -Math.abs(ballVel.x); }
+            if (ballPos.y < RADIUS) { ballPos.y = RADIUS; ballVel.y = Math.abs(ballVel.y); }
+
+            // Pad
+            if (ballVel.y > 0 && ballPos.y + RADIUS >= floor && ballPos.y + RADIUS <= floor + 26) {
+                const offset = (ballPos.x - padX) / PAD_HALF;
+
+                if (Math.abs(offset) <= 1.15) {
+                    ballPos.y = floor - RADIUS;
+                    // Auftreffpunkt bestimmt den Winkel - daher kommt das Können
+                    ballVel.y = -Math.min(1000, 560 + score * 11);
+                    ballVel.x += offset * 240;
+                    ballVel.x = Math.max(-520, Math.min(520, ballVel.x));
+
+                    score += 1;
+                    scoreValue.textContent = score;
+                }
+            }
+
+            if (ballPos.y - RADIUS > box.height) {
+                falls += 1;
+                fallsEl.textContent = falls;
+                endGame();
+                return;
+            }
+
+            pad.style.transform = `translate3d(${padX}px, 0, 0)`;
+            ball.style.transform =
+                `translate3d(${ballPos.x}px, ${ballPos.y - 98}px, 0) rotate(${ballPos.x * 1.6}deg)`;
+        }
+
+        function movePad(clientX) {
+            const box = stageBox();
+            padX = Math.max(PAD_HALF, Math.min(box.width - PAD_HALF, clientX - box.left));
+        }
+
+        stage.addEventListener('pointermove', (e) => { if (playing) movePad(e.clientX); });
+        stage.addEventListener('touchmove', (e) => {
+            if (!playing) return;
+            e.preventDefault();
+            movePad(e.touches[0].clientX);
+        }, { passive: false });
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                playing ? null : startGame();
+                return;
+            }
+            if (playing && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+                e.preventDefault();
+                const box = stageBox();
+                padX = Math.max(PAD_HALF, Math.min(box.width - PAD_HALF,
+                    padX + (e.key === 'ArrowLeft' ? -46 : 46)));
+            }
+            if (playing && e.key === 'Escape') endGame();
+        });
+
+        ball.addEventListener('click', startGame);
+
+        againBtn.addEventListener('click', () => { if (playing) endGame(); });
+
+        // Der Hinweis kommt erst, wenn man lange genug zugesehen hat.
+        const hintWatcher = setInterval(() => {
+            if (playing || hint.classList.contains('is-visible')) return;
+            if (falls >= 3) {
+                showHint('<kbd>Leertaste</kbd>, wenn du ihn auffangen willst');
+                clearInterval(hintWatcher);
+            }
+        }, 1000);
+
     })();
 </script>
 </body>
