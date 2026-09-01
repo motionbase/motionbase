@@ -147,24 +147,30 @@
             clip-path: polygon(0 30%, 60% 0, 100% 55%, 45% 100%);
         }
 
+        /* Wort und Ticklinie werden von der Flexbox auf dieselbe Achse
+           gelegt, die selbst auf dem Streckenende sitzt. Mit auto-Rändern in
+           einem shrink-to-fit-Kasten stand die Linie am linken Wortrand. */
         .sign {
             position: absolute;
             left: 66%;
-            /* Die Ticklinie ist unter dem Wort zentriert, also muss das ganze
-               Schild auf der Kante zentriert sein - sonst steht die Linie um
-               die halbe Textbreite neben dem Streckenende. */
-            transform: translateX(-50%);
             top: 26px;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             font-size: 0.625rem;
             font-weight: 600;
             letter-spacing: 0.12em;
             color: var(--muted);
             transition: opacity 0.3s ease;
         }
+        /* Die Sperrung hängt hinter dem letzten Buchstaben nach und würde das
+           Wort sonst nach links versetzt wirken lassen. */
+        .sign span { margin-right: -0.12em; }
         .sign::after {
             content: '';
-            display: block;
-            width: 1px; height: 22px;
+            width: 1px;
+            height: 22px;
             margin-top: 4px;
             background: var(--line);
         }
@@ -279,7 +285,7 @@
 
         <div class="stage" id="stage">
             <div class="track"></div>
-            <div class="sign">ENDE</div>
+            <div class="sign"><span>ENDE</span></div>
             <div class="ball" id="ball"></div>
             <div class="pad" id="pad" hidden></div>
 
