@@ -6,7 +6,7 @@ import { Head, Link, router } from '@inertiajs/react';
 import type { OutputBlockData } from '@editorjs/editorjs';
 import { createElement, type ReactNode, useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-import { ChevronDown, ChevronRight, Hash, List, CheckCircle2, XCircle, ArrowRight, PanelRightClose, PanelRightOpen } from 'lucide-react';
+import { ChevronDown, ChevronRight, List, CheckCircle2, XCircle, ArrowRight } from 'lucide-react';
 import { TopicChat } from '@/components/topic-chat';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-javascript';
@@ -33,7 +33,7 @@ export default function PublicTopicShow({ topic }: PublicTopicShowProps) {
     const contentRef = useRef<HTMLElement | null>(null);
 
     // Track expanded chapters
-    const [isTocCollapsed, setIsTocCollapsed] = useState(false);
+    const [isTocOpen, setIsTocOpen] = useState(false);
     const [expandedChapters, setExpandedChapters] = useState<Set<number>>(() => {
         // Initially expand all chapters, or at least the one containing the active section
         return new Set(topic.chapters.map((ch) => ch.id));
@@ -109,6 +109,11 @@ export default function PublicTopicShow({ topic }: PublicTopicShowProps) {
             }));
     }, [activeSection]);
 
+    const topHeadingLevel = useMemo(
+        () => Math.min(...tocItems.map(({ block }) => (block.data?.level as number) ?? 2), 6),
+        [tocItems],
+    );
+
     const navigateToSection = (chapterSlug: string, sectionSlug: string) => {
         router.visit(`/themen/${topic.slug}/${chapterSlug}/${sectionSlug}`, {
             preserveScroll: true,
@@ -128,12 +133,7 @@ export default function PublicTopicShow({ topic }: PublicTopicShowProps) {
 
             <div className="relative bg-white lg:min-h-[calc(100vh-128px)] lg:overflow-hidden">
                 <div
-                    className={cn(
-                        'grid transition-[grid-template-columns] duration-200',
-                        isTocCollapsed
-                            ? 'lg:grid-cols-[320px_minmax(0,1fr)_56px]'
-                            : 'lg:grid-cols-[320px_minmax(0,1fr)_320px]'
-                    )}
+                    className="grid lg:grid-cols-[320px_minmax(0,1fr)]"
                 >
                     <aside className="border-b border-zinc-100 px-4 py-6 lg:border-b-0 lg:border-r lg:px-6 lg:py-8 flex flex-col gap-6 lg:sticky lg:top-16 lg:max-h-[calc(100vh-128px)] lg:overflow-y-auto lg:bg-white">
                         <div className="space-y-1.5 border-b border-zinc-100 pb-6 -mx-4 lg:-mx-6 px-4 lg:px-6">
@@ -236,79 +236,84 @@ export default function PublicTopicShow({ topic }: PublicTopicShowProps) {
                             </h1>
                         </header>
 
+                        {tocItems.length > 0 && (
+                            <nav aria-label="Inhaltsverzeichnis" className="mb-8">
+                                <div
+                                    className={cn(
+                                        'overflow-hidden rounded-xl border transition-colors duration-200',
+                                        isTocOpen
+                                            ? 'border-zinc-200 bg-zinc-50'
+                                            : 'border-zinc-200 bg-white hover:border-zinc-300',
+                                    )}
+                                >
+                                    <h2>
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsTocOpen((open) => !open)}
+                                            aria-expanded={isTocOpen}
+                                            aria-controls="inhaltsverzeichnis"
+                                            className="group flex w-full items-center gap-2.5 px-4 py-3 text-left"
+                                        >
+                                            <ChevronRight
+                                                className={cn(
+                                                    'h-4 w-4 shrink-0 text-zinc-400 transition-transform duration-200 group-hover:text-zinc-600',
+                                                    isTocOpen && 'rotate-90',
+                                                )}
+                                            />
+                                            <span className="text-sm font-medium text-zinc-700 transition-colors group-hover:text-zinc-900">
+                                                Inhaltsverzeichnis
+                                            </span>
+                                            <span className="ml-auto text-xs tabular-nums text-zinc-400">
+                                                {tocItems.length}
+                                            </span>
+                                        </button>
+                                    </h2>
+
+                                    {/* Animating grid rows reveals the list without measuring its
+                                        height; inert keeps the links out of the tab order while
+                                        they are collapsed but still in the DOM. */}
+                                    <div
+                                        className={cn(
+                                            'grid transition-[grid-template-rows] duration-200 ease-out',
+                                            isTocOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]',
+                                        )}
+                                        inert={!isTocOpen}
+                                    >
+                                        <div className="overflow-hidden">
+                                            <ul id="inhaltsverzeichnis" className="border-t border-zinc-200 px-4 py-2">
+                                                {tocItems.map(({ block, id }) => {
+                                                    const level = block.data?.level ?? 2;
+                                                    const isTopLevel = level <= topHeadingLevel;
+
+                                                    return (
+                                                        <li key={id}>
+                                                            <a
+                                                                href={`#${id}`}
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    scrollToHeading(id);
+                                                                }}
+                                                                className={cn(
+                                                                    'block rounded-md py-1.5 text-sm transition-colors hover:text-[#ff0055]',
+                                                                    isTopLevel ? 'text-zinc-700' : 'pl-4 text-zinc-600',
+                                                                )}
+                                                                dangerouslySetInnerHTML={{ __html: block.data?.text ?? '' }}
+                                                            />
+                                                        </li>
+                                                    );
+                                                })}
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </nav>
+                        )}
+
                         <div className="prose max-w-none prose-headings:font-bold prose-headings:tracking-tight prose-headings:text-zinc-900 prose-p:text-zinc-600 prose-p:leading-relaxed prose-li:text-zinc-600 prose-strong:text-zinc-900">
                             {renderBlocks(activeSection?.content?.blocks ?? [])}
                         </div>
                     </section>
 
-                    <aside
-                        className={cn(
-                            'hidden lg:flex border-t border-zinc-100 flex-col lg:border-t-0 lg:border-l lg:sticky lg:top-16 lg:max-h-[calc(100vh-128px)] lg:overflow-y-auto lg:bg-white',
-                            isTocCollapsed ? 'items-center gap-0 px-2 py-8' : 'gap-4 px-6 py-8'
-                        )}
-                    >
-                        {isTocCollapsed && (
-                            <button
-                                type="button"
-                                onClick={() => setIsTocCollapsed(false)}
-                                aria-expanded={false}
-                                aria-label="Auf dieser Seite einblenden"
-                                title="Auf dieser Seite einblenden"
-                                className="flex h-9 w-9 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-900"
-                            >
-                                <PanelRightOpen className="h-4 w-4" />
-                            </button>
-                        )}
-
-                        {!isTocCollapsed && (
-                        <>
-                        <div className="flex items-center justify-between gap-2">
-                            <h4 className="text-xs font-bold uppercase tracking-widest text-zinc-400 flex items-center gap-2">
-                                <Hash className="w-3 h-3" /> Auf dieser Seite
-                            </h4>
-                            <button
-                                type="button"
-                                onClick={() => setIsTocCollapsed(true)}
-                                aria-expanded
-                                aria-label="Auf dieser Seite ausblenden"
-                                title="Auf dieser Seite ausblenden"
-                                className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-50 hover:text-zinc-900"
-                            >
-                                <PanelRightClose className="h-4 w-4" />
-                            </button>
-                        </div>
-                        <ul className="space-y-2.5 text-sm">
-                            {tocItems.length > 0 ? (
-                                tocItems.map(({ block, id }) => {
-                                    const level = block.data?.level ?? 2;
-                                    return (
-                                        <li key={id}>
-                                            <a
-                                                href={`#${id}`}
-                                                onClick={(e) => {
-                                                    e.preventDefault();
-                                                    scrollToHeading(id);
-                                                }}
-                                                className={cn(
-                                                    'block transition-colors hover:text-[#ff0055]',
-                                                    level === 2
-                                                        ? 'text-zinc-800 font-medium'
-                                                        : level === 3
-                                                            ? 'text-zinc-600 pl-3 text-xs'
-                                                            : 'text-zinc-500 pl-6 text-xs'
-                                                )}
-                                                dangerouslySetInnerHTML={{ __html: block.data?.text ?? '' }}
-                                            />
-                                        </li>
-                                    );
-                                })
-                            ) : (
-                                <li className="text-sm text-zinc-400">Keine Überschriften vorhanden.</li>
-                            )}
-                        </ul>
-                        </>
-                        )}
-                    </aside>
                 </div>
             </div>
             </PublicLayout>

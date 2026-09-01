@@ -27,7 +27,7 @@ export default function PublicLayout({
         <div className="min-h-screen bg-white text-zinc-950 font-sans antialiased selection:bg-zinc-900 selection:text-white">
             {/* Header */}
             <header className="sticky top-0 z-50 w-full border-b border-zinc-100 bg-white/95 backdrop-blur-sm">
-                <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+                <div className="flex h-16 w-full items-center justify-between px-4 lg:px-6">
                     <Link
                         href="/"
                         className="flex items-center gap-2.5 text-xl font-bold tracking-tight text-zinc-900 hover:opacity-80 transition-opacity"
