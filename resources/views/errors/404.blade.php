@@ -33,7 +33,6 @@
             -webkit-font-smoothing: antialiased;
             background: var(--surface-muted);
             color: var(--ink);
-            overflow-x: hidden;
         }
         ::selection { background: var(--brand); color: #fff; }
 
@@ -43,82 +42,106 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 2rem 1.25rem 0;
+            gap: 1rem;
+            padding: 2rem 1.25rem;
+        }
+
+        /* ---------- Karte ---------- */
+        .card {
+            width: min(38rem, 100%);
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 1rem;
+            overflow: hidden;
+        }
+
+        .card__body {
+            padding: clamp(2rem, 6vw, 3rem) clamp(1.5rem, 5vw, 3rem) clamp(1.75rem, 5vw, 2.5rem);
             text-align: center;
         }
 
         .code {
-            font-size: clamp(4.5rem, 18vw, 9rem);
-            font-weight: 700;
-            letter-spacing: -0.05em;
-            line-height: 0.85;
             margin: 0;
+            font-size: clamp(3.75rem, 13vw, 5.5rem);
+            font-weight: 700;
+            letter-spacing: -0.055em;
+            line-height: 0.9;
         }
         .code span { color: var(--brand); }
 
         h1 {
-            margin: 1.25rem 0 0;
-            font-size: clamp(1.25rem, 4vw, 1.75rem);
+            margin: 1rem 0 0;
+            font-size: clamp(1.125rem, 3.4vw, 1.375rem);
             font-weight: 700;
-            letter-spacing: -0.02em;
+            letter-spacing: -0.015em;
+            line-height: 1.3;
         }
 
         .joke {
-            margin: 0.875rem auto 0;
-            min-height: 3.25em;
-            max-width: 34rem;
-            font-size: 1rem;
-            line-height: 1.6;
+            /* Feste Höhe: der Text wechselt, das Layout darf nicht springen. */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 3.25rem;
+            margin: 0.5rem auto 0;
+            max-width: 26rem;
+            font-size: 0.9375rem;
+            line-height: 1.55;
             color: var(--muted);
             transition: opacity 0.35s ease;
         }
 
-        .actions { margin-top: 1.5rem; display: flex; flex-wrap: wrap; gap: 0.625rem; justify-content: center; }
+        .actions {
+            margin-top: 1.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+        }
 
         .btn {
             display: inline-flex;
             align-items: center;
-            gap: 0.5rem;
-            padding: 0.625rem 1.125rem;
+            padding: 0.5625rem 1rem;
             border-radius: 0.75rem;
+            font-family: inherit;
             font-size: 0.875rem;
             font-weight: 500;
             text-decoration: none;
             border: 1px solid transparent;
             cursor: pointer;
-            font-family: inherit;
-            transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+            transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
         }
         .btn--primary { background: var(--ink); color: #fff; }
-        .btn--primary:hover { background: #000; transform: translateY(-1px); }
+        .btn--primary:hover { background: #000; }
         .btn--ghost { background: var(--surface); border-color: var(--line); color: var(--ink-soft); }
         .btn--ghost:hover { background: var(--line-soft); border-color: #d4d4d8; }
         .btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
 
-        /* ---- Die Bühne: Strecke, Abbruchkante, Ball ---- */
+        /* ---------- Bühne ---------- */
         .stage {
             position: relative;
-            width: 100%;
-            max-width: 46rem;
-            height: 200px;
-            margin: 2.5rem auto 0;
-            flex: none;
+            height: 132px;
+            border-top: 1px solid var(--line);
+            background: var(--surface-muted);
+            /* Der Ball fällt hier heraus und ist weg - kein Loch im Layout. */
+            overflow: hidden;
+            transition: height 0.4s cubic-bezier(0, 0, 0.35, 1), background-color 0.3s ease;
         }
 
         .track {
             position: absolute;
             left: 0;
-            top: 96px;
+            right: 34%;
+            top: 62px;
             height: 4px;
-            width: 62%;
             background: var(--line);
-            border-radius: 999px;
+            transition: opacity 0.3s ease;
         }
-        /* Die Kante franst aus - hier endet das Internet */
         .track::after {
             content: '';
             position: absolute;
-            right: -2px; top: -3px;
+            right: -1px; top: -3px;
             width: 10px; height: 10px;
             background: var(--line);
             clip-path: polygon(0 30%, 60% 0, 100% 55%, 45% 100%);
@@ -126,89 +149,96 @@
 
         .sign {
             position: absolute;
-            left: 62%;
-            top: 44px;
-            transform: translateX(-50%);
+            left: 66%;
+            top: 26px;
             font-size: 0.625rem;
             font-weight: 600;
-            letter-spacing: 0.1em;
+            letter-spacing: 0.12em;
             color: var(--muted);
-            white-space: nowrap;
+            transition: opacity 0.3s ease;
         }
         .sign::after {
             content: '';
             display: block;
-            width: 1px; height: 26px;
-            margin: 4px auto 0;
+            width: 1px; height: 22px;
+            margin-top: 4px;
             background: var(--line);
         }
 
         .ball {
             position: absolute;
-            top: 98px;
+            top: 64px;
             left: 0;
-            width: 44px; height: 44px;
-            margin: -22px 0 0 -22px;
+            width: 40px; height: 40px;
+            margin: -20px 0 0 -20px;
             border-radius: 50%;
             background: var(--brand);
-            box-shadow: 0 8px 20px rgba(255, 0, 85, 0.28);
+            box-shadow: 0 6px 16px rgba(255, 0, 85, 0.25);
             will-change: transform;
         }
         .ball::after {
             content: '';
             position: absolute;
-            inset: 34% 30% auto auto;
-            width: 7px; height: 7px;
+            inset: 32% 28% auto auto;
+            width: 6px; height: 6px;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.85);
         }
 
-        .counter {
-            pointer-events: none;
-            position: absolute;
-            right: 0;
-            top: 138px;
-            font-family: var(--mono);
-            font-size: 0.75rem;
-            color: var(--muted);
-            text-align: right;
-            line-height: 1.7;
-        }
-        .counter b { color: var(--ink); font-weight: 600; }
-
         .pad {
             position: absolute;
-            bottom: 8px;
+            bottom: 10px;
             left: 0;
-            width: 92px;
-            height: 10px;
-            margin-left: -46px;
+            width: 88px; height: 9px;
+            margin-left: -44px;
             border-radius: 999px;
             background: var(--ink);
             will-change: transform;
         }
 
-        .score {
+        /* Zähler und Punktestand teilen sich eine Zeile am unteren Rand */
+        .readout {
             position: absolute;
             left: 0;
-            top: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0 clamp(1.5rem, 5vw, 3rem) 0.875rem;
             font-family: var(--mono);
-            font-size: 0.75rem;
+            font-size: 0.6875rem;
             color: var(--muted);
-            line-height: 1.7;
-            text-align: left;
+            transition: opacity 0.3s ease;
         }
-        .score b { display: block; font-size: 1.75rem; color: var(--ink); line-height: 1.1; }
+        .readout b { color: var(--ink); font-weight: 600; }
+
+        .score {
+            position: absolute;
+            left: clamp(1.5rem, 5vw, 3rem);
+            top: 1rem;
+            font-family: var(--mono);
+            font-size: 0.6875rem;
+            color: var(--muted);
+            line-height: 1.6;
+        }
+        .score b { display: block; font-size: 1.5rem; color: var(--ink); font-weight: 700; line-height: 1.1; }
+
+        /* ---------- Spielmodus ---------- */
+        .stage.is-playing {
+            height: 300px;
+            background: var(--surface);
+            cursor: none;
+        }
+        .stage.is-playing .track,
+        .stage.is-playing .sign,
+        .stage.is-playing .readout { opacity: 0; }
 
         .hint {
-            position: absolute;
-            left: 50%;
-            bottom: -1.75rem;
-            transform: translateX(-50%);
             margin: 0;
             font-size: 0.8125rem;
             color: var(--muted);
-            white-space: nowrap;
             opacity: 0;
             transition: opacity 0.4s ease;
         }
@@ -224,82 +254,59 @@
             color: var(--ink-soft);
         }
 
-        .stage {
-            transition: height 0.35s cubic-bezier(0, 0, 0.58, 1),
-                        background-color 0.35s ease, border-color 0.35s ease;
-            border: 1px solid transparent;
-            border-radius: 0.75rem;
-        }
-        /* Im Spiel wird aus der Strecke ein Feld - die leere Fläche darunter
-           war ohnehin nur da, damit der Ball hinausfallen kann. */
-        .stage.is-playing {
-            height: 380px;
-            cursor: none;
-            background: var(--surface);
-            border-color: var(--line);
-        }
-        .stage.is-playing .track,
-        .stage.is-playing .sign,
-        .stage.is-playing .counter { opacity: 0; }
-
-        .track, .sign, .counter { transition: opacity 0.3s ease; }
-
-        footer {
-            margin-top: auto;
-            padding: 2rem 1rem 1.5rem;
-            font-size: 0.8125rem;
-            color: var(--muted);
-        }
-
         @media (prefers-reduced-motion: reduce) {
-            .ball { transition: none !important; }
-            .joke { transition: none; }
+            .stage, .joke, .hint { transition: none; }
         }
     </style>
 </head>
 <body>
 <div class="page">
 
-    <p class="code">4<span>0</span>4</p>
-    <h1>Du hast das Ende des Internets erreicht.</h1>
-    <p class="joke" id="joke">Einen Moment, wir schauen noch kurz nach.</p>
+    <main class="card">
+        <div class="card__body">
+            <p class="code">4<span>0</span>4</p>
+            <h1>Du hast das Ende des Internets erreicht.</h1>
+            <p class="joke" id="joke">Einen Moment, wir schauen noch kurz nach.</p>
 
-    <div class="actions">
-        <a class="btn btn--primary" href="{{ url('/') }}">Zurück auf festen Boden</a>
-        <button class="btn btn--ghost" type="button" id="again">Nochmal fallen lassen</button>
-    </div>
-
-    <div class="stage" id="stage">
-        <div class="track"></div>
-        <div class="sign">ENDE</div>
-        <div class="ball" id="ball"></div>
-        <div class="pad" id="pad" hidden></div>
-
-        <div class="counter">
-            <div>Abstürze: <b id="falls">0</b></div>
-            <div>Gefundene Seiten: <b>0</b></div>
+            <div class="actions">
+                <a class="btn btn--primary" href="{{ url('/') }}">Zurück auf festen Boden</a>
+                <button class="btn btn--ghost" type="button" id="again">Nochmal fallen lassen</button>
+            </div>
         </div>
 
-        <div class="score" id="score" hidden>
-            <b id="scoreValue">0</b>
-            <span id="scoreBest"></span>
+        <div class="stage" id="stage">
+            <div class="track"></div>
+            <div class="sign">ENDE</div>
+            <div class="ball" id="ball"></div>
+            <div class="pad" id="pad" hidden></div>
+
+            <div class="readout" id="readout">
+                <span>Abstürze: <b id="falls">0</b></span>
+                <span>Gefundene Seiten: <b>0</b></span>
+            </div>
+
+            <div class="score" id="score" hidden>
+                <b id="scoreValue">0</b>
+                <span id="scoreBest"></span>
+            </div>
         </div>
+    </main>
 
-        <p class="hint" id="hint" hidden></p>
-    </div>
-
-    <footer>
-        MotionBase — normalerweise finden wir Dinge.
-    </footer>
+    <p class="hint" id="hint" aria-live="polite"></p>
 </div>
 
 <script>
     (() => {
-        const ball = document.getElementById('ball');
         const stage = document.getElementById('stage');
+        const ball = document.getElementById('ball');
+        const pad = document.getElementById('pad');
         const jokeEl = document.getElementById('joke');
         const fallsEl = document.getElementById('falls');
         const againBtn = document.getElementById('again');
+        const scoreEl = document.getElementById('score');
+        const scoreValue = document.getElementById('scoreValue');
+        const scoreBest = document.getElementById('scoreBest');
+        const hint = document.getElementById('hint');
 
         const JOKES = [
             'Wir haben überall gesucht. Sogar hinter dem Sofa.',
@@ -321,153 +328,108 @@
 
         function nextJoke() {
             jokeIndex = (jokeIndex + 1) % JOKES.length;
-            if (reduced) {
-                jokeEl.innerHTML = JOKES[jokeIndex];
-                return;
-            }
+            if (reduced) { jokeEl.textContent = JOKES[jokeIndex]; return; }
             jokeEl.style.opacity = '0';
             setTimeout(() => {
-                jokeEl.innerHTML = JOKES[jokeIndex];
+                jokeEl.textContent = JOKES[jokeIndex];
                 jokeEl.style.opacity = '1';
             }, 350);
         }
 
-        // Reduced motion: der Ball sitzt an der Kante und denkt darüber nach.
+        const box = () => stage.getBoundingClientRect();
+        const edgeX = () => box().width * 0.66;
+
         if (reduced) {
-            const edge = stage.getBoundingClientRect().width * 0.62;
-            ball.style.transform = `translate3d(${edge}px, 0, 0)`;
+            ball.style.transform = `translate3d(${edgeX()}px, 0, 0)`;
             nextJoke();
             setInterval(nextJoke, 6000);
             againBtn.addEventListener('click', nextJoke);
             return;
         }
 
+        /* ---------------- Leerlauf ---------------- */
         const easeOut = (t) => 1 - Math.pow(1 - t, 3);
         const easeIn = (t) => t * t * t;
+        const ROLL = 2200, TEETER = 900, FALL = 900, PAUSE = 500;
 
-        const ROLL = 2200;   // heranrollen
-        const TEETER = 900;  // kippeln
-        const FALL = 1100;   // fallen und aus dem Bild
-        const PAUSE = 550;
-
-        let phaseStart = performance.now();
         let phase = 'roll';
+        let phaseStart = performance.now();
 
-        function edgeX() {
-            return stage.getBoundingClientRect().width * 0.62;
-        }
-
-        function frame(now) {
-            if (playing) {
-                gameFrame(now);
-                requestAnimationFrame(frame);
-                return;
-            }
-
+        function idleFrame(now) {
             const t = now - phaseStart;
             const edge = edgeX();
 
             if (phase === 'roll') {
                 const p = Math.min(1, t / ROLL);
                 const x = easeOut(p) * edge;
-                ball.style.transform = `translate3d(${x}px, 0, 0) rotate(${(x / 44) * 180}deg)`;
+                ball.style.transform = `translate3d(${x}px, 0, 0) rotate(${(x / 40) * 180}deg)`;
                 if (p === 1) { phase = 'teeter'; phaseStart = now; }
 
             } else if (phase === 'teeter') {
-                // Kurz überlegen, ob das wirklich eine gute Idee ist
                 const p = Math.min(1, t / TEETER);
-                const wobble = Math.sin(p * Math.PI * 5) * (1 - p) * 7;
+                const wobble = Math.sin(p * Math.PI * 5) * (1 - p) * 6;
                 ball.style.transform =
-                    `translate3d(${edge + wobble}px, ${Math.abs(wobble) * 0.18}px, 0) rotate(${(edge / 44) * 180 + wobble}deg)`;
+                    `translate3d(${edge + wobble}px, ${Math.abs(wobble) * 0.2}px, 0) rotate(${(edge / 40) * 180 + wobble}deg)`;
                 if (p === 1) { phase = 'fall'; phaseStart = now; }
 
             } else if (phase === 'fall') {
                 const p = Math.min(1, t / FALL);
-                const drop = easeIn(p) * (window.innerHeight * 0.9);
+                const drop = easeIn(p) * (box().height + 80);
                 ball.style.transform =
-                    `translate3d(${edge + p * 26}px, ${drop}px, 0) rotate(${(edge / 44) * 180 + p * 900}deg)`;
+                    `translate3d(${edge + p * 22}px, ${drop}px, 0) rotate(${(edge / 40) * 180 + p * 720}deg)`;
                 if (p === 1) {
                     falls += 1;
                     fallsEl.textContent = falls;
                     nextJoke();
+                    maybeHint();
                     phase = 'pause';
                     phaseStart = now;
                 }
 
-            } else if (phase === 'pause') {
-                ball.style.transform = 'translate3d(-60px, 0, 0)';
+            } else {
+                ball.style.transform = 'translate3d(-56px, 0, 0)';
                 if (t > PAUSE) { phase = 'roll'; phaseStart = now; }
             }
-
-            requestAnimationFrame(frame);
         }
 
-        nextJoke();
-        requestAnimationFrame(frame);
-
-        // Ungeduldig? Dann eben sofort.
-        againBtn.addEventListener('click', () => {
-            if (playing) return;
-            phase = 'fall';
-            phaseStart = performance.now();
-        });
-
-        /* ================================================================
-           Versteckt: nach ein paar Abstürzen taucht ein Hinweis auf, und
-           wer ihn befolgt, darf den Ball selbst auffangen.
-           ================================================================ */
-        const pad = document.getElementById('pad');
-        const scoreEl = document.getElementById('score');
-        const scoreValue = document.getElementById('scoreValue');
-        const scoreBest = document.getElementById('scoreBest');
-        const hint = document.getElementById('hint');
-
-        const BEST_KEY = 'motionbase.404.best';
-        let best = 0;
-        try { best = parseInt(localStorage.getItem(BEST_KEY) || '0', 10) || 0; } catch { best = 0; }
+        /* ---------------- Spiel ---------------- */
+        const RADIUS = 20, PAD_HALF = 44, PAD_TOP = 19, GRAVITY = 1500;
 
         let playing = false;
-        let padX = 0;
-        let ballPos = { x: 0, y: 0 };
-        let ballVel = { x: 0, y: 0 };
-        let score = 0;
-        let lastTick = 0;
+        let padX = 0, score = 0, lastTick = 0;
+        let pos = { x: 0, y: 0 };
+        let vel = { x: 0, y: 0 };
 
-        const RADIUS = 22;
-        const PAD_HALF = 46;
-        const PAD_TOP = 18;     // Abstand der Pad-Oberkante zum Boden der Bühne
-        const GRAVITY = 1500;   // px/s²
-
-        function stageBox() { return stage.getBoundingClientRect(); }
+        let best = 0;
+        try { best = parseInt(localStorage.getItem('motionbase.404.best') || '0', 10) || 0; } catch { best = 0; }
 
         function showHint(html) {
             hint.innerHTML = html;
-            hint.hidden = false;
-            requestAnimationFrame(() => hint.classList.add('is-visible'));
+            hint.classList.add('is-visible');
         }
 
-        function hideHint() {
-            hint.classList.remove('is-visible');
-            setTimeout(() => { if (!hint.classList.contains('is-visible')) hint.hidden = true; }, 400);
+        function maybeHint() {
+            if (!playing && falls >= 3 && !hint.classList.contains('is-visible')) {
+                showHint('<kbd>Leertaste</kbd>, wenn du ihn auffangen willst');
+            }
         }
 
         function startGame() {
             if (playing) return;
             playing = true;
             score = 0;
-            const box = stageBox();
-            padX = box.width / 2;
-            ballPos = { x: box.width * 0.5, y: 20 };
-            ballVel = { x: 90, y: 0 };
+            padX = box().width / 2;
+            pos = { x: box().width / 2, y: 24 };
+            vel = { x: 90, y: 0 };
             lastTick = performance.now();
 
             stage.classList.add('is-playing');
             pad.hidden = false;
             scoreEl.hidden = false;
             scoreValue.textContent = '0';
-            scoreBest.textContent = best ? 'Beste: ' + best : '';
-            hideHint();
-            jokeEl.innerHTML = 'Nicht runterfallen lassen.';
+            scoreBest.textContent = best ? 'Beste ' + best : '';
+            hint.classList.remove('is-visible');
+            jokeEl.textContent = 'Nicht runterfallen lassen.';
             againBtn.textContent = 'Aufhören';
         }
 
@@ -475,19 +437,19 @@
             playing = false;
             stage.classList.remove('is-playing');
             pad.hidden = true;
+            scoreEl.hidden = true;
             againBtn.textContent = 'Nochmal fallen lassen';
 
             if (score > best) {
                 best = score;
-                try { localStorage.setItem(BEST_KEY, String(best)); } catch { /* Privatmodus */ }
-                jokeEl.innerHTML = 'Bestleistung: ' + score + '. Niemand sonst weiß davon.';
+                try { localStorage.setItem('motionbase.404.best', String(best)); } catch { /* Privatmodus */ }
+                jokeEl.textContent = 'Bestleistung: ' + score + '. Niemand sonst weiß davon.';
             } else {
-                jokeEl.innerHTML = score === 0
+                jokeEl.textContent = score === 0
                     ? 'Null. Das war schnell.'
                     : score + ' gefangen. Die Bestleistung liegt bei ' + best + '.';
             }
 
-            scoreBest.textContent = 'Beste: ' + best;
             showHint('<kbd>Leertaste</kbd> für nochmal');
             phase = 'pause';
             phaseStart = performance.now();
@@ -497,35 +459,31 @@
             const dt = Math.min(0.032, (now - lastTick) / 1000);
             lastTick = now;
 
-            const box = stageBox();
-            const floor = box.height - PAD_TOP;
+            const b = box();
+            const floor = b.height - PAD_TOP;
 
-            ballVel.y += GRAVITY * dt;
-            ballPos.x += ballVel.x * dt;
-            ballPos.y += ballVel.y * dt;
+            vel.y += GRAVITY * dt;
+            pos.x += vel.x * dt;
+            pos.y += vel.y * dt;
 
-            // Wände
-            if (ballPos.x < RADIUS) { ballPos.x = RADIUS; ballVel.x = Math.abs(ballVel.x); }
-            if (ballPos.x > box.width - RADIUS) { ballPos.x = box.width - RADIUS; ballVel.x = -Math.abs(ballVel.x); }
-            if (ballPos.y < RADIUS) { ballPos.y = RADIUS; ballVel.y = Math.abs(ballVel.y); }
+            if (pos.x < RADIUS) { pos.x = RADIUS; vel.x = Math.abs(vel.x); }
+            if (pos.x > b.width - RADIUS) { pos.x = b.width - RADIUS; vel.x = -Math.abs(vel.x); }
+            if (pos.y < RADIUS) { pos.y = RADIUS; vel.y = Math.abs(vel.y); }
 
-            // Pad
-            if (ballVel.y > 0 && ballPos.y + RADIUS >= floor && ballPos.y + RADIUS <= floor + 26) {
-                const offset = (ballPos.x - padX) / PAD_HALF;
+            if (vel.y > 0 && pos.y + RADIUS >= floor && pos.y + RADIUS <= floor + 26) {
+                const offset = (pos.x - padX) / PAD_HALF;
 
                 if (Math.abs(offset) <= 1.15) {
-                    ballPos.y = floor - RADIUS;
-                    // Auftreffpunkt bestimmt den Winkel - daher kommt das Können
-                    ballVel.y = -Math.min(1000, 560 + score * 11);
-                    ballVel.x += offset * 240;
-                    ballVel.x = Math.max(-520, Math.min(520, ballVel.x));
-
+                    pos.y = floor - RADIUS;
+                    // Der Auftreffpunkt bestimmt den Winkel - daher kommt das Können
+                    vel.y = -Math.min(920, 520 + score * 10);
+                    vel.x = Math.max(-500, Math.min(500, vel.x + offset * 230));
                     score += 1;
                     scoreValue.textContent = score;
                 }
             }
 
-            if (ballPos.y - RADIUS > box.height) {
+            if (pos.y - RADIUS > b.height) {
                 falls += 1;
                 fallsEl.textContent = falls;
                 endGame();
@@ -533,13 +491,17 @@
             }
 
             pad.style.transform = `translate3d(${padX}px, 0, 0)`;
-            ball.style.transform =
-                `translate3d(${ballPos.x}px, ${ballPos.y - 98}px, 0) rotate(${ballPos.x * 1.6}deg)`;
+            ball.style.transform = `translate3d(${pos.x}px, ${pos.y - 64}px, 0) rotate(${pos.x * 1.6}deg)`;
+        }
+
+        function frame(now) {
+            playing ? gameFrame(now) : idleFrame(now);
+            requestAnimationFrame(frame);
         }
 
         function movePad(clientX) {
-            const box = stageBox();
-            padX = Math.max(PAD_HALF, Math.min(box.width - PAD_HALF, clientX - box.left));
+            const b = box();
+            padX = Math.max(PAD_HALF, Math.min(b.width - PAD_HALF, clientX - b.left));
         }
 
         stage.addEventListener('pointermove', (e) => { if (playing) movePad(e.clientX); });
@@ -550,33 +512,25 @@
         }, { passive: false });
 
         window.addEventListener('keydown', (e) => {
-            if (e.code === 'Space') {
+            if (e.code === 'Space') { e.preventDefault(); if (!playing) startGame(); return; }
+            if (!playing) return;
+            if (e.key === 'Escape') { endGame(); return; }
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
                 e.preventDefault();
-                playing ? null : startGame();
-                return;
+                const b = box();
+                padX = Math.max(PAD_HALF, Math.min(b.width - PAD_HALF, padX + (e.key === 'ArrowLeft' ? -44 : 44)));
             }
-            if (playing && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
-                e.preventDefault();
-                const box = stageBox();
-                padX = Math.max(PAD_HALF, Math.min(box.width - PAD_HALF,
-                    padX + (e.key === 'ArrowLeft' ? -46 : 46)));
-            }
-            if (playing && e.key === 'Escape') endGame();
         });
 
         ball.addEventListener('click', startGame);
+        againBtn.addEventListener('click', () => {
+            if (playing) { endGame(); return; }
+            phase = 'fall';
+            phaseStart = performance.now();
+        });
 
-        againBtn.addEventListener('click', () => { if (playing) endGame(); });
-
-        // Der Hinweis kommt erst, wenn man lange genug zugesehen hat.
-        const hintWatcher = setInterval(() => {
-            if (playing || hint.classList.contains('is-visible')) return;
-            if (falls >= 3) {
-                showHint('<kbd>Leertaste</kbd>, wenn du ihn auffangen willst');
-                clearInterval(hintWatcher);
-            }
-        }, 1000);
-
+        nextJoke();
+        requestAnimationFrame(frame);
     })();
 </script>
 </body>
