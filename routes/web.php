@@ -45,11 +45,34 @@ Route::get('design', function () {
 
     abort_unless(is_file($path), 404);
 
-    return response(file_get_contents($path), 200, [
+    $contents = file_get_contents($path);
+
+    $response = response($contents, 200, [
         'Content-Type' => 'text/html; charset=UTF-8',
         'X-Content-Type-Options' => 'nosniff',
+        // Say out loud that crawlers and assistants may read and quote this.
+        'X-Robots-Tag' => 'all',
     ]);
-})->name('design');
+
+    // The same reference for everybody, so it may be cached as such. Through
+    // the web group it was answered with a session cookie and
+    // Cache-Control: private, which reads as personalised and uncacheable.
+    $response->setEtag(md5($contents));
+    $response->setPublic();
+    $response->setMaxAge(300);
+
+    return $response;
+})
+    ->withoutMiddleware([
+        \Illuminate\Session\Middleware\StartSession::class,
+        \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+        \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+        \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
+        \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        \App\Http\Middleware\HandleAppearance::class,
+        \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
+    ])
+    ->name('design');
 
 // Interactive graphics (served on an opaque origin, see InteractiveController::show)
 Route::get('interactive/{media}', [InteractiveController::class, 'show'])->name('interactive.show');

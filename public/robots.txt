@@ -1,2 +1,26 @@
+# Alles öffentlich Erreichbare darf gelesen und zitiert werden.
 User-agent: *
-Disallow:
+Allow: /
+
+# Ausdrücklich auch für Assistenten und Crawler, die Wert auf eine
+# benannte Erlaubnis legen statt auf ein leeres Disallow.
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
