@@ -8,332 +8,590 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <script>
-    // Embedded, the surrounding block already draws the card frame.
     if (window.parent !== window) document.documentElement.classList.add('is-embedded');
   </script>
   <style>
+    /* ================================================================
+       TOKENS — identisch mit dem Block unter „Tokens“ weiter unten
+       ================================================================ */
+    /* @tokens:start */
     :root {
-      /* ---- MotionBase Design Tokens ------------------------------------ */
       --brand: #ff0055;
       --brand-soft: rgba(255, 0, 85, 0.14);
       --brand-line: rgba(255, 0, 85, 0.35);
 
-      --ink: #18181b;        /* zinc-900 - Überschriften, aktive Zustände */
-      --ink-soft: #3f3f46;   /* zinc-700 - Fließtext */
-      --muted: #71717a;      /* zinc-500 - Sekundärtext, kleinste sichere Stufe */
-      --faint: #a1a1aa;      /* zinc-400 - NUR dekorativ, siehe Kontrast-Hinweis */
+      --ink: #18181b;
+      --ink-soft: #3f3f46;
+      --muted: #71717a;
+      --faint: #a1a1aa;
 
-      --line: #e4e4e7;       /* zinc-200 - Standardrahmen */
-      --line-soft: #f4f4f5;  /* zinc-100 - Trenner innerhalb einer Fläche */
-      --line-strong: #d4d4d8;/* zinc-300 - Hover-Rahmen */
+      --line: #e4e4e7;
+      --line-soft: #f4f4f5;
+      --line-strong: #d4d4d8;
 
       --surface: #ffffff;
-      --surface-muted: #fafafa; /* zinc-50 - eingelassene Panels */
+      --surface-muted: #fafafa;
 
-      --radius-lg: 1rem;     /* Karten */
-      --radius-md: 0.75rem;  /* Panels, Buttons */
-      --radius-sm: 0.5rem;   /* Eingabefelder */
+      --radius-lg: 1rem;
+      --radius-md: 0.75rem;
+      --radius-sm: 0.5rem;
 
-      --font: 'Inter', 'Inter var', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --font: 'Inter', 'Inter var', ui-sans-serif, system-ui, -apple-system,
+              BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    /* @tokens:end */
+
+    /* ================================================================
+       BAUSTEIN-KIT — die .mb-* Klassen, die dokumentiert werden
+       ================================================================ */
+    /* @kit:start */
+    .mb-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-lg);
+      padding: clamp(1.25rem, 3vw, 2rem);
+    }
+    .mb-panel {
+      background: var(--surface-muted);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-md);
+      padding: 1.25rem;
+    }
+    .mb-label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .mb-btn {
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--ink-soft);
+      padding: 0.5rem 0.75rem;
+      border-radius: var(--radius-md);
+      font: inherit;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+    .mb-btn:hover { background: var(--line-soft); border-color: var(--line-strong); }
+    .mb-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+    .mb-btn[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff; }
+
+    .mb-btn-group { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.5rem; }
+    @media (max-width: 500px) { .mb-btn-group { grid-template-columns: repeat(2, 1fr); } }
+
+    .mb-field {
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      font: inherit;
+      font-size: 0.875rem;
+      color: var(--ink);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .mb-field:focus {
+      outline: none;
+      border-color: var(--brand);
+      box-shadow: 0 0 0 3px rgba(255, 0, 85, 0.1);
     }
 
-    * { box-sizing: border-box; }
+    .mb-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 1rem;
+      align-items: center;
+      border-top: 1px solid var(--line-soft);
+      padding-top: 1rem;
+      font-size: 0.8125rem;
+      color: var(--muted);
+    }
+    .mb-legend__item { display: inline-flex; align-items: center; gap: 0.4rem; }
+    .mb-dot { width: 0.625rem; height: 0.625rem; border-radius: 50%; flex: none; }
 
+    .mb-note {
+      border: 1px solid var(--line);
+      background: var(--surface-muted);
+      border-radius: var(--radius-md);
+      padding: 0.875rem 1rem;
+      font-size: 0.875rem;
+      line-height: 1.6;
+      color: var(--ink-soft);
+    }
+
+    .mb-stage { position: relative; height: 160px; display: flex; align-items: center; }
+    .mb-track {
+      position: absolute; left: 40px; right: 40px; top: 50%; height: 4px;
+      transform: translateY(-50%); background: var(--line); border-radius: 999px;
+    }
+    .mb-ball {
+      position: absolute; top: 50%; left: 40px; width: 56px; height: 56px;
+      border-radius: 50%; transform: translate3d(0, -50%, 0);
+      background: var(--brand); box-shadow: 0 8px 20px rgba(255, 0, 85, 0.25);
+      will-change: transform;
+    }
+    /* @kit:end */
+
+    /* ================================================================
+       SEITE
+       ================================================================ */
+    * { box-sizing: border-box; }
     html, body {
-      margin: 0;
-      padding: 0;
+      margin: 0; padding: 0;
       font-family: var(--font);
       font-feature-settings: 'ss01', 'ss02', 'cv01', 'cv02';
       -webkit-font-smoothing: antialiased;
       background: var(--surface-muted);
       color: var(--ink);
+      scroll-behavior: smooth;
     }
-
-    body { padding: 2rem 1rem; display: flex; justify-content: center; }
     ::selection { background: var(--brand); color: #fff; }
 
     .is-embedded, .is-embedded body { overflow: hidden; }
-    .is-embedded body { padding: 0; background: transparent; }
-    .is-embedded .sheet { width: 100%; border: 0; border-radius: 0; }
+    .is-embedded body { background: transparent; }
 
-    .sheet {
-      width: min(980px, 100%);
-      align-self: flex-start;
-      background: var(--surface);
-      border: 1px solid var(--line);
-      border-radius: var(--radius-lg);
-      padding: clamp(1.5rem, 4vw, 2.5rem);
+    .shell {
+      max-width: 1180px; margin: 0 auto; padding: 2rem 1.25rem 4rem;
+      display: grid; gap: 2.5rem; grid-template-columns: 200px minmax(0, 1fr);
+    }
+    @media (max-width: 860px) { .shell { grid-template-columns: 1fr; gap: 1.5rem; padding-top: 1.25rem; } }
+
+    /* Navigation */
+    .nav { align-self: start; position: sticky; top: 2rem; }
+    @media (max-width: 860px) { .nav { position: static; } }
+    .nav__title { font-size: 0.9375rem; font-weight: 700; letter-spacing: -0.01em; }
+    .nav__sub { margin: 0.125rem 0 1rem; font-size: 0.75rem; color: var(--muted); }
+    .nav ul { list-style: none; margin: 0; padding: 0; }
+    .nav a {
+      display: block; padding: 0.3125rem 0; font-size: 0.8125rem;
+      color: var(--muted); text-decoration: none; transition: color 0.15s ease;
+    }
+    .nav a:hover { color: var(--brand); }
+    .nav .nav__group {
+      margin-top: 1rem; padding-top: 0.625rem; border-top: 1px solid var(--line);
+      font-size: 0.6875rem; font-weight: 600; color: var(--faint);
+      text-transform: uppercase; letter-spacing: 0.08em;
     }
 
-    /* ---- Typografie ---------------------------------------------------- */
-    h1 { margin: 0 0 .375rem; font-size: 1.75rem; font-weight: 700; letter-spacing: -.02em; line-height: 1.2; }
+    /* Inhalt */
+    .content { min-width: 0; display: flex; flex-direction: column; gap: 1rem; }
+    h1 { margin: 0 0 0.5rem; font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1.15; }
+    .intro { margin: 0 0 1rem; font-size: 1rem; line-height: 1.65; color: var(--muted); max-width: 62ch; }
+
+    section { scroll-margin-top: 1.5rem; }
     h2 {
-      margin: 3rem 0 1rem; font-size: 1.125rem; font-weight: 700;
-      letter-spacing: -.01em; padding-bottom: .625rem; border-bottom: 1px solid var(--line);
+      margin: 1.5rem 0 0.75rem; font-size: 1.25rem; font-weight: 700;
+      letter-spacing: -0.015em; padding-bottom: 0.5rem; border-bottom: 1px solid var(--line);
     }
-    h3 { margin: 1.75rem 0 .75rem; font-size: .9375rem; font-weight: 600; color: var(--ink); }
-    p  { margin: 0 0 1rem; font-size: .9375rem; line-height: 1.65; color: var(--ink-soft); max-width: 68ch; }
-    .lead { color: var(--muted); }
-    code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .8125em; }
+    h3 { margin: 1.75rem 0 0.5rem; font-size: 0.9375rem; font-weight: 600; }
+    p { margin: 0 0 0.875rem; font-size: 0.9375rem; line-height: 1.65; color: var(--ink-soft); max-width: 68ch; }
+    p code, li code, td code { font-family: var(--mono); font-size: 0.8125em; color: var(--ink); }
+    b { color: var(--ink); }
 
-    .label {
-      font-size: .75rem; font-weight: 600; color: var(--muted);
-      text-transform: uppercase; letter-spacing: .08em;
+    /* Vorschau + Code */
+    .doc { border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; background: var(--surface); }
+    .doc__preview { padding: 1.5rem; background: var(--surface); }
+    .doc__preview--muted { background: var(--surface-muted); }
+    .doc__bar {
+      display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+      padding: 0.4375rem 0.5rem 0.4375rem 0.875rem;
+      border-top: 1px solid var(--line); background: var(--surface-muted);
+    }
+    .doc__lang { font-family: var(--mono); font-size: 0.6875rem; color: var(--muted); }
+    .doc__code { margin: 0; padding: 0.875rem 1rem; overflow-x: auto; background: var(--ink); }
+    .doc__code code {
+      font-family: var(--mono); font-size: 0.75rem; line-height: 1.65;
+      color: #e4e4e7; white-space: pre;
     }
 
-    /* ---- Farbraster ---------------------------------------------------- */
-    .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: .75rem; }
+    .copy {
+      border: 1px solid var(--line); background: var(--surface); color: var(--muted);
+      padding: 0.25rem 0.5rem; border-radius: 0.375rem;
+      font: inherit; font-size: 0.6875rem; font-weight: 500; cursor: pointer;
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }
+    .copy:hover { background: var(--line-soft); color: var(--ink); }
+    .copy:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+    /* Farbfelder */
+    .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(184px, 1fr)); gap: 0.625rem; }
     .swatch { border: 1px solid var(--line); border-radius: var(--radius-md); overflow: hidden; background: var(--surface); }
-    .swatch__chip { height: 60px; border-bottom: 1px solid var(--line); }
-    .swatch__body { padding: .625rem .75rem; }
-    .swatch__name { font-size: .8125rem; font-weight: 600; }
-    .swatch__hex { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .75rem; color: var(--muted); }
-    .swatch__use { margin-top: .25rem; font-size: .75rem; line-height: 1.45; color: var(--muted); }
+    .swatch__chip { height: 52px; border-bottom: 1px solid var(--line); }
+    .swatch__body { padding: 0.5rem 0.625rem 0.625rem; }
+    .swatch__name { font-family: var(--mono); font-size: 0.75rem; font-weight: 600; }
+    .swatch__meta { margin-top: 0.125rem; font-family: var(--mono); font-size: 0.6875rem; color: var(--muted); }
+    .swatch__use { margin-top: 0.3125rem; font-size: 0.75rem; line-height: 1.45; color: var(--muted); }
+    .swatch__flag { color: var(--brand); font-weight: 600; }
 
-    /* ---- Bausteine ----------------------------------------------------- */
-    .demo {
-      border: 1px solid var(--line); border-radius: var(--radius-md);
-      background: var(--surface-muted); padding: 1.25rem; margin-bottom: .75rem;
-    }
-    .panel {
-      background: var(--surface-muted); border: 1px solid var(--line);
-      border-radius: var(--radius-md); padding: 1.25rem;
-    }
-    .row { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    th, td { text-align: left; padding: 0.4375rem 0.625rem; border-bottom: 1px solid var(--line); }
+    th { font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; }
 
-    .btn {
-      border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft);
-      padding: .5rem .75rem; border-radius: var(--radius-md);
-      font: inherit; font-size: .8125rem; font-weight: 500; cursor: pointer;
-      transition: background-color .15s ease, border-color .15s ease, color .15s ease;
-    }
-    .btn:hover { background: var(--line-soft); border-color: var(--line-strong); }
-    .btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
-    .btn.is-active { background: var(--ink); border-color: var(--ink); color: #fff; }
+    .warn { border-color: #fde68a; background: #fffbeb; color: #78350f; }
+    .warn b { color: #713f12; }
 
-    .field {
-      width: 100%; max-width: 320px; padding: .5rem .75rem;
-      font: inherit; font-size: .875rem; color: var(--ink);
-      background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm);
-      transition: border-color .15s ease, box-shadow .15s ease;
-    }
-    .field:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 3px rgba(255, 0, 85, .1); }
-
-    .hint {
-      display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center;
-      border-top: 1px solid var(--line-soft); padding-top: 1rem;
-      font-size: .8125rem; color: var(--muted);
-    }
-    .dot { width: .625rem; height: .625rem; border-radius: 50%; flex: none; }
-
-    .note {
-      border: 1px solid #fde68a; background: #fffbeb; color: #78350f;
-      border-radius: var(--radius-md); padding: .875rem 1rem;
-      font-size: .875rem; line-height: 1.6;
-    }
-    .note b { color: #713f12; }
-
-    /* ---- Code ---------------------------------------------------------- */
-    .code { position: relative; margin: 0 0 1rem; }
-    .code pre {
-      margin: 0; padding: 1rem 1.125rem; overflow-x: auto;
-      background: var(--ink); color: #f4f4f5; border-radius: var(--radius-md);
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      font-size: .78125rem; line-height: 1.6;
-    }
-    .code__copy {
-      position: absolute; top: .625rem; right: .625rem;
-      border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.08); color: #f4f4f5;
-      padding: .3125rem .625rem; border-radius: .375rem;
-      font: inherit; font-size: .6875rem; font-weight: 500; cursor: pointer;
-      transition: background-color .15s ease;
-    }
-    .code__copy:hover { background: rgba(255,255,255,.16); }
-    .code__copy:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
-
-    table { width: 100%; border-collapse: collapse; font-size: .875rem; }
-    th, td { text-align: left; padding: .5rem .625rem; border-bottom: 1px solid var(--line); }
-    th { font-size: .75rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
-    td code { color: var(--ink); }
+    footer { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--line); font-size: 0.8125rem; color: var(--muted); }
+    footer code { font-family: var(--mono); font-size: 0.8125em; }
   </style>
 </head>
 <body>
-<main class="sheet">
+<div class="shell">
 
-  <h1>MotionBase Design System</h1>
-  <p class="lead">
-    Referenz für eigenständige Grafiken und interaktive Elemente. Alles hier ist
-    reines HTML/CSS ohne Abhängigkeiten — kopierbar in jede Datei, die über den
-    Interaktiv-Block eingebunden wird.
-  </p>
+  <nav class="nav">
+    <div class="nav__title">Design System</div>
+    <p class="nav__sub">MotionBase</p>
+    <div class="nav__group">Grundlagen</div>
+    <ul>
+      <li><a href="#farben">Farben</a></li>
+      <li><a href="#typografie">Typografie</a></li>
+      <li><a href="#flaechen">Flächen &amp; Rahmen</a></li>
+      <li><a href="#tokens">Tokens kopieren</a></li>
+    </ul>
+    <div class="nav__group">Bausteine</div>
+    <ul>
+      <li><a href="#karte">Karte</a></li>
+      <li><a href="#panel">Panel &amp; Label</a></li>
+      <li><a href="#buttons">Buttons</a></li>
+      <li><a href="#feld">Eingabefeld</a></li>
+      <li><a href="#legende">Legende</a></li>
+      <li><a href="#hinweis">Hinweisbox</a></li>
+      <li><a href="#buehne">Bühne &amp; Objekt</a></li>
+    </ul>
+    <div class="nav__group">Grafiken</div>
+    <ul>
+      <li><a href="#canvas">Diagramme</a></li>
+      <li><a href="#einbetten">Einbetten</a></li>
+      <li><a href="#vorlage">Startvorlage</a></li>
+    </ul>
+  </nav>
 
-  <!-- ============================ FARBEN ============================ -->
-  <h2>Farben</h2>
-  <p>
-    Ein Akzent, sonst Graustufen. <b>#ff0055</b> ist reserviert für das, worauf es
-    ankommt: das bewegte Objekt, die Datenkurve, den aktiven Zustand. Wird es zur
-    Dekoration benutzt, verliert es genau die Wirkung, für die es da ist.
-  </p>
-  <div class="swatches" id="swatches"></div>
-
-  <div class="note" style="margin-top:1rem">
-    <b>zinc-400 (#a1a1aa) nicht für Text.</b> Auf Weiß erreicht es 2,6:1 und fällt damit
-    unter die WCAG-AA-Schwelle von 4,5:1. Gemessen in der UX-Prüfung der Kursansicht.
-    Für sekundären Text ist <code>--muted</code> (#71717a, 4,8:1) die hellste sichere Stufe.
-  </div>
-
-  <!-- ========================== TYPOGRAFIE ========================== -->
-  <h2>Typografie</h2>
-  <p>
-    Inter, mit aktivierten Stilsätzen. Ohne <code>font-feature-settings</code> sehen
-    Ziffern und das „a“ anders aus als in der App — daran erkennt man sofort, dass eine
-    Grafik nicht dazugehört.
-  </p>
-  <div class="demo">
-    <div style="font-size:1.75rem;font-weight:700;letter-spacing:-.02em;line-height:1.2">Titel der Grafik</div>
-    <div style="font-size:.9375rem;color:var(--muted);margin-top:.375rem">Erklärender Vorspann, eine bis zwei Zeilen</div>
-    <div class="label" style="margin-top:1.25rem">Bereichslabel</div>
-    <div style="font-size:.9375rem;color:var(--ink-soft);line-height:1.65;margin-top:.5rem">
-      Fließtext in <code>--ink-soft</code>. Zahlen zum Vergleich: 0123456789.
-    </div>
-  </div>
-  <table>
-    <tr><th>Rolle</th><th>Größe</th><th>Gewicht</th><th>Farbe</th></tr>
-    <tr><td>Titel</td><td><code>1.75rem</code>, <code>-.02em</code></td><td>700</td><td><code>--ink</code></td></tr>
-    <tr><td>Vorspann</td><td><code>.9375rem</code></td><td>400</td><td><code>--muted</code></td></tr>
-    <tr><td>Bereichslabel</td><td><code>.75rem</code>, <code>.08em</code>, Versalien</td><td>600</td><td><code>--muted</code></td></tr>
-    <tr><td>Fließtext</td><td><code>.9375rem</code>, <code>1.65</code></td><td>400</td><td><code>--ink-soft</code></td></tr>
-    <tr><td>Button</td><td><code>.8125rem</code></td><td>500</td><td><code>--ink-soft</code></td></tr>
-  </table>
-
-  <!-- ======================= FLÄCHEN & RAHMEN ======================= -->
-  <h2>Flächen und Rahmen</h2>
-  <p>
-    <b>Ränder statt Schatten.</b> Abgegrenzt wird über <code>1px solid var(--line)</code>,
-    nicht über Schlagschatten. Die einzige Ausnahme ist der weiche Schein unter einem
-    bewegten Objekt, wo er die Bewegung lesbar macht.
-  </p>
-  <div class="demo">
-    <div class="panel">
-      <div class="label">Panel</div>
-      <p style="margin:.5rem 0 0;font-size:.875rem">
-        <code>--surface-muted</code> auf <code>--surface</code>, Radius <code>--radius-md</code>.
+  <main class="content">
+    <header>
+      <h1>Design System</h1>
+      <p class="intro">
+        Referenz für eigenständige Grafiken und interaktive Elemente. Jeder Baustein
+        zeigt die Vorschau und den Code, der sie erzeugt — beides aus derselben
+        Quelle gerendert, damit sie nicht auseinanderlaufen können.
       </p>
-    </div>
-  </div>
-  <table>
-    <tr><th>Ebene</th><th>Hintergrund</th><th>Rahmen</th><th>Radius</th></tr>
-    <tr><td>Karte (außen)</td><td><code>--surface</code></td><td><code>--line</code></td><td><code>1rem</code></td></tr>
-    <tr><td>Panel (innen)</td><td><code>--surface-muted</code></td><td><code>--line</code></td><td><code>0.75rem</code></td></tr>
-    <tr><td>Zeichenfläche</td><td><code>--surface</code></td><td><code>--line</code></td><td><code>0.75rem</code></td></tr>
-    <tr><td>Eingabefeld</td><td><code>--surface</code></td><td><code>--line</code></td><td><code>0.5rem</code></td></tr>
-  </table>
+    </header>
 
-  <!-- =========================== BAUSTEINE =========================== -->
-  <h2>Bausteine</h2>
+    <!-- ====================== FARBEN ====================== -->
+    <section id="farben">
+      <h2>Farben</h2>
+      <p>
+        Ein Akzent, sonst Graustufen. <b>#ff0055</b> ist reserviert für das, worauf es
+        ankommt: das bewegte Objekt, die Datenkurve, den aktiven Zustand. Als Dekoration
+        eingesetzt verliert es genau die Wirkung, für die es da ist.
+      </p>
+      <div class="swatches" id="swatches"></div>
+      <div class="mb-note warn" style="margin-top:0.875rem">
+        <b>zinc-400 (#a1a1aa) trägt keinen Text.</b> Auf Weiß erreicht es 2,6:1 und liegt
+        damit unter der WCAG-AA-Schwelle von 4,5:1 — gemessen in der UX-Prüfung der
+        Kursansicht. Hellste sichere Stufe für Text ist <code>--muted</code> (#71717a, 4,8:1).
+      </div>
+    </section>
 
-  <h3>Buttons</h3>
-  <p>Aktiv ist <b>dunkel</b>, nicht pink — dasselbe Muster wie die gewählte Antwort im Quiz.</p>
-  <div class="demo">
-    <div class="row" id="presets">
-      <button class="btn" type="button">Linear</button>
-      <button class="btn" type="button">Ease-In</button>
-      <button class="btn is-active" type="button">Ease-In-Out</button>
-      <button class="btn" type="button">Overshoot</button>
-    </div>
-    <p style="margin:.75rem 0 0;font-size:.8125rem;color:var(--muted)">Anklickbar — der aktive Zustand wandert mit.</p>
-  </div>
+    <!-- ==================== TYPOGRAFIE ==================== -->
+    <section id="typografie">
+      <h2>Typografie</h2>
+      <p>
+        Inter mit aktivierten Stilsätzen. Ohne <code>font-feature-settings</code> sehen
+        Ziffern und das „a“ anders aus als in der App — daran erkennt man sofort, dass
+        eine Grafik nicht dazugehört.
+      </p>
+      <div class="doc" data-example="typo" data-lang="html"></div>
+      <table style="margin-top:0.875rem">
+        <tr><th>Rolle</th><th>Größe</th><th>Gewicht</th><th>Farbe</th></tr>
+        <tr><td>Titel</td><td><code>1.75rem</code> / <code>-.02em</code></td><td>700</td><td><code>--ink</code></td></tr>
+        <tr><td>Vorspann</td><td><code>.9375rem</code></td><td>400</td><td><code>--muted</code></td></tr>
+        <tr><td>Bereichslabel</td><td><code>.75rem</code> / <code>.08em</code></td><td>600</td><td><code>--muted</code></td></tr>
+        <tr><td>Fließtext</td><td><code>.9375rem</code> / <code>1.65</code></td><td>400</td><td><code>--ink-soft</code></td></tr>
+        <tr><td>Button</td><td><code>.8125rem</code></td><td>500</td><td><code>--ink-soft</code></td></tr>
+      </table>
+    </section>
 
-  <h3>Eingabefeld</h3>
-  <div class="demo">
-    <input class="field" type="text" placeholder="Fokussiere mich für den Akzentring" aria-label="Beispiel-Eingabefeld" />
-  </div>
+    <!-- =================== FLÄCHEN ======================== -->
+    <section id="flaechen">
+      <h2>Flächen und Rahmen</h2>
+      <p>
+        <b>Ränder statt Schatten.</b> Abgegrenzt wird über <code>1px solid var(--line)</code>.
+        Die einzige Ausnahme ist der weiche Schein unter einem bewegten Objekt, wo er die
+        Bewegung lesbar macht.
+      </p>
+      <table>
+        <tr><th>Ebene</th><th>Hintergrund</th><th>Radius</th><th>Klasse</th></tr>
+        <tr><td>Karte (außen)</td><td><code>--surface</code></td><td><code>1rem</code></td><td><code>.mb-card</code></td></tr>
+        <tr><td>Panel (innen)</td><td><code>--surface-muted</code></td><td><code>0.75rem</code></td><td><code>.mb-panel</code></td></tr>
+        <tr><td>Zeichenfläche</td><td><code>--surface</code></td><td><code>0.75rem</code></td><td>—</td></tr>
+        <tr><td>Eingabefeld</td><td><code>--surface</code></td><td><code>0.5rem</code></td><td><code>.mb-field</code></td></tr>
+      </table>
+    </section>
 
-  <h3>Legende</h3>
-  <div class="demo">
-    <div class="hint" style="border-top:0;padding-top:0">
-      <span style="display:inline-flex;align-items:center;gap:.4rem"><span class="dot" style="background:var(--ink)"></span> Kontrollpunkt 1</span>
-      <span style="display:inline-flex;align-items:center;gap:.4rem"><span class="dot" style="background:var(--brand)"></span> Kontrollpunkt 2</span>
-      <span>Erklärender Hinweis zur Bedienung</span>
-    </div>
-  </div>
+    <!-- ===================== TOKENS ======================= -->
+    <section id="tokens">
+      <h2>Tokens kopieren</h2>
+      <p>Gehört an den Anfang jeder neuen Grafik, zusammen mit dem Bausteinkit darunter.</p>
+      <div class="doc" data-example="tokens" data-lang="css" data-nopreview></div>
+      <h3>Bausteinkit</h3>
+      <p>
+        Die <code>.mb-*</code> Klassen aus dieser Seite. Wer sie übernimmt, bekommt alle
+        folgenden Bausteine ohne Nacharbeit.
+      </p>
+      <div class="doc" data-example="kit" data-lang="css" data-nopreview></div>
+    </section>
 
-  <!-- ======================= CANVAS / DIAGRAMME ======================= -->
-  <h2>Canvas und Diagramme</h2>
-  <p>
-    Für gezeichnete Grafiken gilt dieselbe Ordnung: Raster tritt zurück, Daten treten hervor.
-    Nur die Datenkurve trägt den Akzent.
+    <!-- ==================== BAUSTEINE ===================== -->
+    <section id="karte">
+      <h2>Karte</h2>
+      <p>Das äußere Gerüst jeder Grafik. Enthält Titel, Vorspann und die Panels.</p>
+      <div class="doc" data-example="card" data-lang="html"></div>
+    </section>
+
+    <section id="panel">
+      <h3>Panel und Bereichslabel</h3>
+      <p>Eingelassene Fläche innerhalb der Karte, überschrieben mit einem Versal-Label.</p>
+      <div class="doc" data-example="panel" data-lang="html"></div>
+    </section>
+
+    <section id="buttons">
+      <h3>Buttons</h3>
+      <p>
+        Der aktive Zustand ist <b>dunkel</b>, nicht pink — dasselbe Muster wie die gewählte
+        Antwort im Quiz. Ausgedrückt über <code>aria-pressed</code>, damit der Zustand nicht
+        nur sichtbar, sondern auch vorlesbar ist.
+      </p>
+      <div class="doc" data-example="buttons" data-lang="html"></div>
+    </section>
+
+    <section id="feld">
+      <h3>Eingabefeld</h3>
+      <p>Der Fokusring ist die einzige Stelle, an der der Akzent als Rahmen auftritt.</p>
+      <div class="doc" data-example="field" data-lang="html"></div>
+    </section>
+
+    <section id="legende">
+      <h3>Legende</h3>
+      <p>Ordnet Farben den Elementen zu. Steht unten, abgetrennt durch eine feine Linie.</p>
+      <div class="doc" data-example="legend" data-lang="html"></div>
+    </section>
+
+    <section id="hinweis">
+      <h3>Hinweisbox</h3>
+      <p>Für Bedienhinweise. Zurückhaltend — kein Akzent, keine Farbe.</p>
+      <div class="doc" data-example="note" data-lang="html"></div>
+    </section>
+
+    <section id="buehne">
+      <h3>Bühne und bewegtes Objekt</h3>
+      <p>
+        Für Animationsvorschauen. Das Objekt trägt den Akzent und den einzigen erlaubten
+        Schatten; bewegt wird ausschließlich über <code>transform</code>, damit die
+        Animation auf dem Compositor läuft.
+      </p>
+      <div class="doc" data-example="stage" data-lang="html"></div>
+    </section>
+
+    <!-- ===================== CANVAS ======================= -->
+    <section id="canvas">
+      <h2>Diagramme</h2>
+      <p>
+        Für gezeichnete Grafiken gilt dieselbe Ordnung: das Raster tritt zurück, die Daten
+        treten hervor. Nur die Datenkurve trägt den Akzent.
+      </p>
+      <div class="doc" data-example="chart" data-lang="js"></div>
+      <table style="margin-top:0.875rem">
+        <tr><th>Rolle</th><th>Wert</th><th>Strichstärke</th></tr>
+        <tr><td>Rasterlinien</td><td><code>#e4e4e7</code></td><td>1</td></tr>
+        <tr><td>Referenzlinie</td><td><code>#d4d4d8</code>, <code>setLineDash([4,4])</code></td><td>1</td></tr>
+        <tr><td>Datenkurve</td><td><code>#ff0055</code>, <code>lineCap: 'round'</code></td><td>3</td></tr>
+        <tr><td>Hilfslinie zum Griff</td><td><code>rgba(255,0,85,.35)</code></td><td>2</td></tr>
+        <tr><td>Griff 1 / Griff 2</td><td><code>#18181b</code> / <code>#ff0055</code>, weißer Rand</td><td>2.5</td></tr>
+        <tr><td>Ankerpunkt</td><td><code>#a1a1aa</code></td><td>—</td></tr>
+      </table>
+    </section>
+
+    <!-- ==================== EINBETTEN ===================== -->
+    <section id="einbetten">
+      <h2>Einbetten</h2>
+      <p>
+        Zwei Dinge, ohne die jede Grafik im Kurs falsch aussieht: die eigene Rahmung muss
+        weg, sonst steht eine Karte in einer Karte. Und die Höhe muss gemeldet werden,
+        sonst bekommt der Iframe einen eigenen Scrollbalken.
+      </p>
+      <div class="doc" data-example="embed" data-lang="html" data-nopreview></div>
+      <div class="mb-note" style="margin-top:0.875rem">
+        <b>Sandbox.</b> Grafiken laufen unter
+        <code>Content-Security-Policy: sandbox allow-scripts</code> auf einer Opaque Origin:
+        kein <code>localStorage</code>, keine Cookies, keine Requests an die App. Canvas, SVG,
+        CSS-Animationen und Inline-JS funktionieren uneingeschränkt. Externe Dateien werden
+        nicht ausgeliefert — alles muss inline sein.
+      </div>
+    </section>
+
+    <!-- ===================== VORLAGE ====================== -->
+    <section id="vorlage">
+      <h2>Startvorlage</h2>
+      <p>Vollständige, lauffähige Datei. Kopieren, umbenennen, Inhalt ersetzen.</p>
+      <div class="doc" data-example="template" data-lang="html" data-nopreview></div>
+    </section>
+
+    <footer>
+      Werte gespiegelt aus <code>resources/css/app.css</code> ·
+      Regeln und Fallstricke: <code>resources/interactives/README.md</code>
+    </footer>
+  </main>
+</div>
+
+<script>
+  (() => {
+    /* ---------------------------------------------------------------
+       Jedes Beispiel steht genau einmal hier. Die Vorschau wird daraus
+       gerendert UND der Code daraus angezeigt - sie können deshalb nicht
+       auseinanderlaufen.
+       --------------------------------------------------------------- */
+    const EX = {};
+
+    EX.typo = `<div style="font-size:1.75rem;font-weight:700;letter-spacing:-.02em;line-height:1.2">
+  Titel der Grafik
+</div>
+<div style="font-size:.9375rem;color:var(--muted);margin-top:.375rem">
+  Erklärender Vorspann, eine bis zwei Zeilen
+</div>
+<div class="mb-label" style="margin-top:1.25rem">Bereichslabel</div>
+<div style="font-size:.9375rem;color:var(--ink-soft);line-height:1.65;margin-top:.5rem">
+  Fließtext. Ziffern zum Vergleich: 0123456789
+</div>`;
+
+    EX.card = `<main class="mb-card">
+  <header>
+    <h1 style="margin:0;font-size:1.75rem;font-weight:700;letter-spacing:-.02em">
+      Titel der Grafik
+    </h1>
+    <p style="margin:.375rem 0 0;font-size:.9375rem;color:var(--muted);max-width:62ch">
+      Ein Satz, der sagt, was man hier tun kann.
+    </p>
+  </header>
+
+  <!-- Panels, Bühne, Canvas … -->
+</main>`;
+
+    EX.panel = `<section class="mb-panel">
+  <div class="mb-label">Vorschau</div>
+  <p style="margin:.5rem 0 0;font-size:.875rem;color:var(--ink-soft)">
+    Inhalt des Panels.
   </p>
-  <div class="demo">
-    <canvas id="chart" width="880" height="200" style="width:100%;height:200px;display:block"></canvas>
+</section>`;
+
+    EX.buttons = `<div class="mb-btn-group">
+  <button class="mb-btn" type="button" aria-pressed="false">Linear</button>
+  <button class="mb-btn" type="button" aria-pressed="false">Ease-In</button>
+  <button class="mb-btn" type="button" aria-pressed="true">Ease-In-Out</button>
+</div>`;
+
+    EX.field = `<label class="mb-label" for="beispiel">Dauer in ms</label>
+<input class="mb-field" id="beispiel" type="text"
+       placeholder="Fokussiere mich für den Akzentring"
+       style="margin-top:.375rem;max-width:320px" />`;
+
+    EX.legend = `<div class="mb-legend">
+  <span class="mb-legend__item">
+    <span class="mb-dot" style="background:var(--ink)"></span> Kontrollpunkt 1
+  </span>
+  <span class="mb-legend__item">
+    <span class="mb-dot" style="background:var(--brand)"></span> Kontrollpunkt 2
+  </span>
+  <span>Doppelklick setzt einen Punkt zurück</span>
+</div>`;
+
+    EX.note = `<div class="mb-note">
+  Ziehe die Kontrollpunkte oder wähle ein Preset — die Vorschau folgt sofort.
+</div>`;
+
+    EX.stage = `<section class="mb-panel">
+  <div class="mb-label">Vorschau</div>
+  <div class="mb-stage">
+    <div class="mb-track"></div>
+    <div class="mb-ball" id="ball"></div>
   </div>
-  <table>
-    <tr><th>Rolle</th><th>Wert</th><th>Strichstärke</th></tr>
-    <tr><td>Rasterlinien</td><td><code>#e4e4e7</code></td><td>1</td></tr>
-    <tr><td>Referenzlinie (gestrichelt)</td><td><code>#d4d4d8</code>, <code>[4,4]</code></td><td>1</td></tr>
-    <tr><td>Datenkurve</td><td><code>#ff0055</code>, <code>lineCap: round</code></td><td>3</td></tr>
-    <tr><td>Hilfslinien zum Griff</td><td><code>rgba(255,0,85,.35)</code></td><td>2</td></tr>
-    <tr><td>Griff 1 / Griff 2</td><td><code>#18181b</code> / <code>#ff0055</code>, weißer Rand</td><td>2.5</td></tr>
-    <tr><td>Ankerpunkte</td><td><code>#a1a1aa</code></td><td>—</td></tr>
-  </table>
+</section>
 
-  <!-- ============================ TOKENS ============================ -->
-  <h2>Zum Kopieren</h2>
-  <p>Der komplette Token-Block. Gehört an den Anfang jeder neuen Grafik.</p>
-  <div class="code">
-    <button class="code__copy" type="button" data-copy="tokens">Kopieren</button>
-    <pre id="tokens">:root {
-  --brand: #ff0055;
-  --brand-soft: rgba(255, 0, 85, 0.14);
-  --brand-line: rgba(255, 0, 85, 0.35);
+<script>
+  // Nur transform animieren - Position/Breite würden Layout auslösen
+  const ball = document.getElementById('ball');
+  const start = performance.now();
 
-  --ink: #18181b;
-  --ink-soft: #3f3f46;
-  --muted: #71717a;
-  --faint: #a1a1aa;        /* nur dekorativ, nicht für Text */
+  function frame(now) {
+    const cycle = ((now - start) % 3000) / 3000;
+    const t = cycle < 0.5 ? cycle * 2 : 2 - cycle * 2;
+    const travel = ball.parentElement.getBoundingClientRect().width - 136;
+    ball.style.transform = \`translate3d(\${t * travel}px, -50%, 0)\`;
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+<\/script>`;
 
-  --line: #e4e4e7;
-  --line-soft: #f4f4f5;
-  --line-strong: #d4d4d8;
+    EX.chart = `const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height, pad = 24;
 
-  --surface: #ffffff;
-  --surface-muted: #fafafa;
-
-  --radius-lg: 1rem;
-  --radius-md: 0.75rem;
-  --radius-sm: 0.5rem;
-
-  --font: 'Inter', 'Inter var', ui-sans-serif, system-ui, -apple-system,
-          BlinkMacSystemFont, 'Segoe UI', sans-serif;
+// 1. Raster - tritt zurück
+ctx.strokeStyle = '#e4e4e7';
+ctx.lineWidth = 1;
+for (let i = 0; i <= 4; i++) {
+  const y = pad + ((H - 2 * pad) / 4) * i;
+  ctx.beginPath();
+  ctx.moveTo(pad, y);
+  ctx.lineTo(W - pad, y);
+  ctx.stroke();
 }
 
-html, body {
-  margin: 0;
-  font-family: var(--font);
-  font-feature-settings: 'ss01', 'ss02', 'cv01', 'cv02';
-  -webkit-font-smoothing: antialiased;
-  background: var(--surface-muted);
-  color: var(--ink);
-}</pre>
-  </div>
+// 2. Referenzlinie - gestrichelt, noch zurückhaltender
+ctx.strokeStyle = '#d4d4d8';
+ctx.setLineDash([4, 4]);
+ctx.beginPath();
+ctx.moveTo(pad, H - pad);
+ctx.lineTo(W - pad, pad);
+ctx.stroke();
+ctx.setLineDash([]);
 
-  <h3>Einbettung</h3>
-  <p>
-    Zwei Dinge, ohne die jede Grafik im Kurs falsch aussieht: die eigene Rahmung muss
-    weg (sonst Karte in Karte), und die Höhe muss gemeldet werden (sonst Scrollbalken).
-    Details in <code>README.md</code> im selben Ordner.
-  </p>
-  <div class="code">
-    <button class="code__copy" type="button" data-copy="embed">Kopieren</button>
-    <pre id="embed">&lt;!-- im &lt;head&gt;, VOR dem &lt;style&gt; --&gt;
-&lt;script&gt;
-  if (window.parent !== window) document.documentElement.classList.add('is-embedded');
-&lt;/script&gt;
+// 3. Datenkurve - das Einzige mit Akzent
+ctx.strokeStyle = '#ff0055';
+ctx.lineWidth = 3;
+ctx.lineCap = 'round';
+ctx.beginPath();
+for (let i = 0; i <= 100; i++) {
+  const t = i / 100;
+  const eased = t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2;
+  const x = pad + t * (W - 2 * pad);
+  const y = (H - pad) - eased * (H - 2 * pad);
+  i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+}
+ctx.stroke();
+
+// 4. Ankerpunkte
+ctx.fillStyle = '#a1a1aa';
+for (const [x, y] of [[pad, H - pad], [W - pad, pad]]) {
+  ctx.beginPath();
+  ctx.arc(x, y, 4, 0, Math.PI * 2);
+  ctx.fill();
+}`;
+
+    EX.embed = `<!-- im <head>, VOR dem <style> -->
+<script>
+  if (window.parent !== window) {
+    document.documentElement.classList.add('is-embedded');
+  }
+<\/script>
 
 /* im CSS */
 .is-embedded, .is-embedded body { overflow: hidden; }
 .is-embedded body { padding: 0; background: transparent; }
-.is-embedded .app-card { width: 100%; border: 0; border-radius: 0; }
+.is-embedded .mb-card { width: 100%; border: 0; border-radius: 0; }
 
 /* am Ende des Scripts */
 let lastReportedHeight = 0;
@@ -341,8 +599,10 @@ let lastReportedHeight = 0;
 function reportHeight() {
   if (window.parent === window) return;
 
-  // Body-Box, NICHT documentElement.scrollHeight: letzteres unterschreitet nie
-  // den Viewport des Iframes, die Höhe könnte dann nur wachsen, nie zurück.
+  // Body-Box, NICHT documentElement.scrollHeight: letzteres unterschreitet
+  // nie den Viewport des Iframes. Sobald das Parent den Rahmen vergrößert
+  // hat, könnte die Höhe dann nur noch wachsen und nie zurück - die Grafik
+  // bliebe beim Verbreitern zu hoch stehen.
   const height = Math.ceil(document.body.getBoundingClientRect().height);
   if (height === lastReportedHeight) return;
 
@@ -351,115 +611,186 @@ function reportHeight() {
 }
 
 window.addEventListener('resize', reportHeight);
-if (typeof ResizeObserver !== 'undefined') new ResizeObserver(reportHeight).observe(document.body);
-reportHeight();</pre>
-  </div>
+if (typeof ResizeObserver !== 'undefined') {
+  new ResizeObserver(reportHeight).observe(document.body);
+}
+reportHeight();`;
 
-  <div class="note">
-    <b>Sandbox beachten.</b> Grafiken laufen unter
-    <code>Content-Security-Policy: sandbox allow-scripts</code> auf einer Opaque Origin.
-    Kein <code>localStorage</code>, keine Cookies, keine Requests an die App. Canvas, SVG,
-    CSS-Animationen und Inline-JS funktionieren uneingeschränkt. Externe Dateien werden
-    nicht ausgeliefert — alles muss inline sein.
-  </div>
-
-  <div class="hint" style="margin-top:2.5rem">
-    <span>Werte gespiegelt aus <code>resources/css/app.css</code></span>
-    <span>·</span>
-    <span>Vorlage und Regeln: <code>resources/interactives/README.md</code></span>
-  </div>
-
-</main>
-
-<script>
-  (() => {
-    const TOKENS = [
-      ['--brand',        '#ff0055', 'Akzent: bewegtes Objekt, Datenkurve, Fokusring'],
-      ['--ink',          '#18181b', 'Überschriften, aktive Buttons'],
-      ['--ink-soft',     '#3f3f46', 'Fließtext'],
-      ['--muted',        '#71717a', 'Sekundärtext, Labels'],
-      ['--faint',        '#a1a1aa', 'Nur dekorativ — für Text zu hell'],
-      ['--line',         '#e4e4e7', 'Standardrahmen'],
-      ['--line-strong',  '#d4d4d8', 'Rahmen bei Hover'],
-      ['--line-soft',    '#f4f4f5', 'Trenner innerhalb einer Fläche'],
-      ['--surface',      '#ffffff', 'Karten, Zeichenflächen'],
-      ['--surface-muted','#fafafa', 'Eingelassene Panels, Seitengrund'],
-    ];
-
-    // Contrast against white, so the swatch can state what a value is safe for.
-    const lum = (hex) => {
-      const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
-        .map((v) => (v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4)));
-      return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+    /* Tokens und Kit direkt aus dem <style> der Seite lesen, damit die
+       Dokumentation nicht von ihrer eigenen Umsetzung abweichen kann. */
+    const sheet = document.querySelector('style').textContent;
+    const between = (name) => {
+      const from = sheet.indexOf(`/* @${name}:start */`) + `/* @${name}:start */`.length;
+      const to = sheet.indexOf(`/* @${name}:end */`);
+      return sheet.slice(from, to).replace(/^\n/, '').replace(/^ {4}/gm, '').trimEnd();
     };
-    const ratio = (hex) => ((1.05) / (lum(hex) + 0.05)).toFixed(1);
 
-    document.getElementById('swatches').innerHTML = TOKENS.map(([name, hex, use]) => `
-      <div class="swatch">
-        <div class="swatch__chip" style="background:${hex}"></div>
-        <div class="swatch__body">
-          <div class="swatch__name">${name}</div>
-          <div class="swatch__hex">${hex} · ${ratio(hex)}:1 auf Weiß</div>
-          <div class="swatch__use">${use}</div>
-        </div>
-      </div>`).join('');
+    EX.tokens = between('tokens') + '\n\n' + `html, body {
+  margin: 0;
+  font-family: var(--font);
+  font-feature-settings: 'ss01', 'ss02', 'cv01', 'cv02';
+  -webkit-font-smoothing: antialiased;
+  background: var(--surface-muted);
+  color: var(--ink);
+}`;
 
-    // Buttons: the active state moves with the click
-    const presets = document.getElementById('presets');
-    presets.addEventListener('click', (e) => {
-      const btn = e.target.closest('.btn');
-      if (!btn) return;
-      presets.querySelectorAll('.btn').forEach((b) => b.classList.remove('is-active'));
-      btn.classList.add('is-active');
-    });
+    EX.kit = between('kit');
 
-    // Sample chart in the canvas palette
-    const canvas = document.getElementById('chart');
-    const ctx = canvas.getContext('2d');
-    const W = canvas.width, H = canvas.height, pad = 24;
-    ctx.strokeStyle = '#e4e4e7'; ctx.lineWidth = 1;
-    for (let i = 0; i <= 4; i++) {
-      const y = pad + ((H - 2 * pad) / 4) * i;
-      ctx.beginPath(); ctx.moveTo(pad, y); ctx.lineTo(W - pad, y); ctx.stroke();
-    }
-    ctx.strokeStyle = '#d4d4d8'; ctx.setLineDash([4, 4]);
-    ctx.beginPath(); ctx.moveTo(pad, H - pad); ctx.lineTo(W - pad, pad); ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.strokeStyle = '#ff0055'; ctx.lineWidth = 3; ctx.lineCap = 'round';
-    ctx.beginPath();
-    for (let i = 0; i <= 100; i++) {
-      const t = i / 100;
-      const x = pad + t * (W - 2 * pad);
-      const eased = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-      const y = (H - pad) - eased * (H - 2 * pad);
-      i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
-    }
-    ctx.stroke();
-    [[pad, H - pad], [W - pad, pad]].forEach(([x, y]) => {
-      ctx.beginPath(); ctx.arc(x, y, 4, 0, Math.PI * 2); ctx.fillStyle = '#a1a1aa'; ctx.fill();
-    });
+    EX.template = `<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Titel der Grafik</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    if (window.parent !== window) document.documentElement.classList.add('is-embedded');
+  <\/script>
+  <style>
+    /* → Tokens und Bausteinkit von /design hier einfügen */
 
-    // Copy buttons, with a fallback for contexts where the async API is blocked
-    document.querySelectorAll('[data-copy]').forEach((btn) => {
-      btn.addEventListener('click', async () => {
-        const text = document.getElementById(btn.dataset.copy).textContent;
+    body { margin: 0; padding: 1.5rem 1rem; display: flex; justify-content: center; }
+    .is-embedded, .is-embedded body { overflow: hidden; }
+    .is-embedded body { padding: 0; background: transparent; }
+    .is-embedded .mb-card { width: 100%; border: 0; border-radius: 0; }
+    .mb-card { width: min(1100px, 100%); align-self: flex-start; }
+  </style>
+</head>
+<body>
+  <main class="mb-card">
+    <h1 style="margin:0;font-size:1.75rem;font-weight:700;letter-spacing:-.02em">
+      Titel der Grafik
+    </h1>
+    <!-- Inhalt -->
+  </main>
+
+  <script>
+    (() => {
+      // → Logik der Grafik
+
+      // → reportHeight() von /design hier einfügen
+    })();
+  <\/script>
+</body>
+</html>`;
+
+    /* ---------------------------------------------------------------
+       Vorschau + Code aus derselben Quelle aufbauen
+       --------------------------------------------------------------- */
+    document.querySelectorAll('.doc[data-example]').forEach((doc) => {
+      const src = EX[doc.dataset.example];
+      const lang = doc.dataset.lang || 'html';
+      const showPreview = !doc.hasAttribute('data-nopreview');
+
+      if (showPreview) {
+        const preview = document.createElement('div');
+        preview.className = 'doc__preview' + (lang === 'html' ? ' doc__preview--muted' : '');
+        if (lang === 'js') {
+          preview.innerHTML = '<canvas width="880" height="180" style="width:100%;height:180px;display:block"></canvas>';
+        } else {
+          // Beispiele mit <script> werden als Markup gezeigt, nicht ausgeführt
+          preview.innerHTML = src.replace(/<script[\s\S]*?<\/script>/g, '');
+        }
+        doc.appendChild(preview);
+      }
+
+      const bar = document.createElement('div');
+      bar.className = 'doc__bar';
+      bar.innerHTML = `<span class="doc__lang">${lang.toUpperCase()}</span>`;
+      const copy = document.createElement('button');
+      copy.className = 'copy';
+      copy.type = 'button';
+      copy.textContent = 'Kopieren';
+      bar.appendChild(copy);
+      doc.appendChild(bar);
+
+      const pre = document.createElement('pre');
+      pre.className = 'doc__code';
+      const code = document.createElement('code');
+      code.textContent = src;      // textContent escapt, kein XSS-Pfad
+      pre.appendChild(code);
+      doc.appendChild(pre);
+
+      copy.addEventListener('click', async () => {
         let ok = false;
         try {
-          await navigator.clipboard.writeText(text);
+          await navigator.clipboard.writeText(src);
           ok = true;
         } catch {
           const ta = document.createElement('textarea');
-          ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
-          document.body.appendChild(ta); ta.select();
+          ta.value = src;
+          ta.style.cssText = 'position:fixed;opacity:0';
+          document.body.appendChild(ta);
+          ta.select();
           try { ok = document.execCommand('copy'); } catch { ok = false; }
           ta.remove();
         }
-        btn.textContent = ok ? 'Kopiert' : 'Fehlgeschlagen';
-        setTimeout(() => { btn.textContent = 'Kopieren'; }, 1600);
+        copy.textContent = ok ? 'Kopiert' : 'Fehlgeschlagen';
+        setTimeout(() => { copy.textContent = 'Kopieren'; }, 1600);
       });
     });
 
-    // Height reporting, so this page can itself be embedded as a graphic
+    /* Buttons im Beispiel schaltbar machen */
+    document.querySelectorAll('.mb-btn-group').forEach((group) => {
+      group.addEventListener('click', (e) => {
+        const btn = e.target.closest('.mb-btn');
+        if (!btn) return;
+        group.querySelectorAll('.mb-btn').forEach((b) => b.setAttribute('aria-pressed', 'false'));
+        btn.setAttribute('aria-pressed', 'true');
+      });
+    });
+
+    /* Bühne im Beispiel animieren */
+    const ball = document.querySelector('.mb-ball');
+    if (ball) {
+      const start = performance.now();
+      const frame = (now) => {
+        const cycle = ((now - start) % 3000) / 3000;
+        const t = cycle < 0.5 ? cycle * 2 : 2 - cycle * 2;
+        const eased = t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2;
+        const travel = Math.max(0, ball.parentElement.getBoundingClientRect().width - 136);
+        ball.style.transform = `translate3d(${eased * travel}px, -50%, 0)`;
+        requestAnimationFrame(frame);
+      };
+      requestAnimationFrame(frame);
+    }
+
+    /* Diagramm-Vorschau mit exakt dem gezeigten Code zeichnen */
+    const canvas = document.querySelector('.doc[data-example="chart"] canvas');
+    if (canvas) new Function('canvas', EX.chart)(canvas);
+
+    /* Farbfelder */
+    const TOKENS = [
+      ['--brand',         '#ff0055', 'Akzent: bewegtes Objekt, Datenkurve, Fokusring'],
+      ['--ink',           '#18181b', 'Überschriften, aktive Buttons'],
+      ['--ink-soft',      '#3f3f46', 'Fließtext'],
+      ['--muted',         '#71717a', 'Sekundärtext, Labels'],
+      ['--faint',         '#a1a1aa', 'Nur dekorativ'],
+      ['--line',          '#e4e4e7', 'Standardrahmen'],
+      ['--line-strong',   '#d4d4d8', 'Rahmen bei Hover'],
+      ['--line-soft',     '#f4f4f5', 'Trenner innerhalb einer Fläche'],
+      ['--surface',       '#ffffff', 'Karten, Zeichenflächen'],
+      ['--surface-muted', '#fafafa', 'Panels, Seitengrund'],
+    ];
+    const lum = (hex) => {
+      const c = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
+        .map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+      return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+    };
+    document.getElementById('swatches').innerHTML = TOKENS.map(([name, hex, use]) => {
+      const ratio = 1.05 / (lum(hex) + 0.05);
+      const unsafe = ratio < 4.5 && ratio > 1.2;
+      return `<div class="swatch">
+        <div class="swatch__chip" style="background:${hex}"></div>
+        <div class="swatch__body">
+          <div class="swatch__name">${name}</div>
+          <div class="swatch__meta">${hex} · ${ratio.toFixed(1)}:1${unsafe ? ' <span class="swatch__flag">kein Text</span>' : ''}</div>
+          <div class="swatch__use">${use}</div>
+        </div>
+      </div>`;
+    }).join('');
+
+    /* Höhenmeldung, damit diese Seite selbst einbettbar ist */
     let last = 0;
     function reportHeight() {
       if (window.parent === window) return;
