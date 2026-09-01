@@ -504,6 +504,52 @@ function renderBlocks(blocks: OutputBlockData[], theme?: RenderTheme) {
                 );
             }
 
+            case 'table': {
+                const rows = (block.data?.content as string[][] | undefined) ?? [];
+                const withHeadings = block.data?.withHeadings !== false;
+
+                if (rows.length === 0) {
+                    return null;
+                }
+
+                const head = withHeadings ? rows[0] : null;
+                const body = withHeadings ? rows.slice(1) : rows;
+
+                return (
+                    <div key={key} className="my-8 overflow-x-auto rounded-xl border border-zinc-200">
+                        <table className="w-full border-collapse text-left text-sm">
+                            {head && (
+                                <thead>
+                                    <tr className="bg-zinc-50">
+                                        {head.map((cell, i) => (
+                                            <th
+                                                key={i}
+                                                scope="col"
+                                                className="border-b border-zinc-200 px-4 py-2.5 font-semibold text-zinc-900"
+                                                dangerouslySetInnerHTML={{ __html: cell ?? '' }}
+                                            />
+                                        ))}
+                                    </tr>
+                                </thead>
+                            )}
+                            <tbody>
+                                {body.map((row, r) => (
+                                    <tr key={r} className="border-b border-zinc-100 last:border-b-0">
+                                        {row.map((cell, c) => (
+                                            <td
+                                                key={c}
+                                                className="px-4 py-2.5 align-top text-zinc-600"
+                                                dangerouslySetInnerHTML={{ __html: cell ?? '' }}
+                                            />
+                                        ))}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                );
+            }
+
             case 'interactive': {
                 const interactiveUrl = block.data?.url as string | undefined;
                 const interactiveCaption = (block.data?.caption as string | undefined)?.trim();

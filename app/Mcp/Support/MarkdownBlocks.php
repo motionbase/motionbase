@@ -57,6 +57,27 @@ class MarkdownBlocks
             $line = $lines[$i];
             $trimmed = trim($line);
 
+            // Pipe table: a header row, a dashed separator, then body rows
+            if (str_starts_with($trimmed, '|') && isset($lines[$i + 1])
+                && preg_match('/^\|[\s:|-]+\|$/', trim($lines[$i + 1]))) {
+                $flushParagraph();
+                $flushList();
+
+                $content = [self::tableCells($trimmed)];
+                $i++; // skip the separator
+
+                while (isset($lines[$i + 1]) && str_starts_with(trim($lines[$i + 1]), '|')) {
+                    $content[] = self::tableCells(trim($lines[++$i]));
+                }
+
+                $blocks[] = ['type' => 'table', 'data' => [
+                    'withHeadings' => true,
+                    'content' => $content,
+                ]];
+
+                continue;
+            }
+
             // Fenced code block
             if (preg_match('/^```(\w*)\s*$/', $trimmed, $m)) {
                 $flushParagraph();
@@ -151,6 +172,7 @@ class MarkdownBlocks
                 'paragraph' => self::htmlToInline($data['text'] ?? ''),
                 'list' => self::listToMarkdown($data),
                 'code' => "```".($data['language'] ?? '')."\n".($data['code'] ?? '')."\n```",
+                'table' => self::tableToMarkdown($data),
                 'alert' => self::alertToMarkdown($data),
                 'interactive' => '> [interaktive Grafik: '.($data['url'] ?? '?')
                     .($data['caption'] ?? '' ? ' - '.$data['caption'] : '').']',
@@ -179,6 +201,55 @@ class MarkdownBlocks
         }
 
         return implode("\n", $lines);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private static function tableCells(string $line): array
+    {
+        $line = trim($line);
+        $line = preg_replace('/^\||\|$/', '', $line) ?? $line;
+
+        return array_map(
+            fn (string $cell) => self::inlineToHtml(trim($cell)),
+            explode('|', $line)
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private static function tableToMarkdown(array $data): string
+    {
+        $rows = $data['content'] ?? [];
+
+        if ($rows === []) {
+            return '';
+        }
+
+        $withHeadings = ($data['withHeadings'] ?? true) !== false;
+        $columns = max(array_map(fn ($row) => count((array) $row), $rows));
+
+        $line = function (array $row) use ($columns): string {
+            $cells = array_map(
+                fn ($cell) => str_replace('|', '\\|', self::htmlToInline(is_string($cell) ? $cell : '')),
+                array_pad((array) $row, $columns, '')
+            );
+
+            return '| '.implode(' | ', $cells).' |';
+        };
+
+        // Markdown has no table without a header row, so a headless table gets an
+        // empty one rather than being flattened into paragraphs on the way back.
+        $head = $withHeadings ? array_shift($rows) : array_fill(0, $columns, '');
+        $out = [$line((array) $head), '|'.str_repeat(' --- |', $columns)];
+
+        foreach ($rows as $row) {
+            $out[] = $line((array) $row);
+        }
+
+        return implode("\n", $out);
     }
 
     /**

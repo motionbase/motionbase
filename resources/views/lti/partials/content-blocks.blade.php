@@ -117,6 +117,37 @@
                 $html .= "</figure>";
                 return $html;
 
+            case 'table':
+                $rows = $data['content'] ?? [];
+                if (empty($rows)) return '';
+
+                $withHeadings = ($data['withHeadings'] ?? true) !== false;
+                $cell = fn ($value) => is_string($value) ? $value : '';
+
+                $html = "<div class=\"mb-6 overflow-x-auto rounded-xl border border-zinc-200\">";
+                $html .= "<table class=\"w-full border-collapse text-left text-sm\">";
+
+                if ($withHeadings) {
+                    $head = array_shift($rows);
+                    $html .= "<thead><tr class=\"bg-zinc-50\">";
+                    foreach ((array) $head as $value) {
+                        $html .= "<th scope=\"col\" class=\"border-b border-zinc-200 px-4 py-2.5 font-semibold text-zinc-900\">".$cell($value)."</th>";
+                    }
+                    $html .= "</tr></thead>";
+                }
+
+                $html .= "<tbody>";
+                foreach ($rows as $row) {
+                    $html .= "<tr class=\"border-b border-zinc-100 last:border-b-0\">";
+                    foreach ((array) $row as $value) {
+                        $html .= "<td class=\"px-4 py-2.5 align-top text-zinc-600\">".$cell($value)."</td>";
+                    }
+                    $html .= "</tr>";
+                }
+                $html .= "</tbody></table></div>";
+
+                return $html;
+
             case 'interactive':
                 $url = trim($data['url'] ?? '');
                 $caption = $data['caption'] ?? '';

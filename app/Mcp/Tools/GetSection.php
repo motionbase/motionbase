@@ -29,7 +29,7 @@ class GetSection extends Tool
         }
 
         $blocks = $section->content['blocks'] ?? [];
-        $editable = ['header', 'paragraph', 'list', 'code'];
+        $editable = ['header', 'paragraph', 'list', 'code', 'table'];
 
         return Response::json([
             'id' => $section->id,

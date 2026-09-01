@@ -11,7 +11,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Update a section\'s title, publish state or body. Passing markdown REPLACES the whole body, which drops any interactive, quiz or image blocks it contained - read the section first and re-add rich blocks with their own tools afterwards. Omit markdown to leave the body untouched.')]
+#[Description('Update a section\'s title, publish state or body. Passing markdown REPLACES the whole body. Headings, paragraphs, lists, code and tables survive; interactive, alert, quiz, image, youtube and lottie blocks are dropped - read the section first and re-add rich blocks with their own tools afterwards. Omit markdown to leave the body untouched.')]
 class UpdateSection extends Tool
 {
     use ResolvesOwnedContent;
@@ -42,7 +42,7 @@ class UpdateSection extends Tool
         }
 
         if (array_key_exists('markdown', $validated)) {
-            $editable = ['header', 'paragraph', 'list', 'code'];
+            $editable = ['header', 'paragraph', 'list', 'code', 'table'];
 
             $droppedRichBlocks = collect($section->content['blocks'] ?? [])
                 ->reject(fn (array $block) => in_array($block['type'] ?? '', $editable, true))

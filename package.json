@@ -35,6 +35,7 @@
         "@editorjs/image": "^2.10.3",
         "@editorjs/list": "^2.0.9",
         "@editorjs/paragraph": "^2.11.7",
+        "@editorjs/table": "^2.4.6",
         "@headlessui/react": "^2.2.0",
         "@inertiajs/react": "^2.1.4",
         "@lottiefiles/dotlottie-web": "^0.57.0",

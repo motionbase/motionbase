@@ -211,6 +211,19 @@ class EasingCourseSeeder extends Seeder
         return ['type' => 'code', 'data' => ['code' => $code, 'language' => $language]];
     }
 
+    /**
+     * @param  array<int, string>  $head
+     * @param  array<int, array<int, string>>  $rows
+     * @return array<string, mixed>
+     */
+    private function table(array $head, array $rows): array
+    {
+        return ['type' => 'table', 'data' => [
+            'withHeadings' => true,
+            'content' => array_merge([$head], $rows),
+        ]];
+    }
+
     /** @return array<string, mixed> */
     private function interactive(string $url, string $caption, int $height = 640): array
     {
@@ -269,12 +282,15 @@ class EasingCourseSeeder extends Seeder
         return [
             $this->paragraph('Fast alles, was du im Alltag brauchst, sind vier Grundformen. Es lohnt sich, sie am Verhalten zu erkennen statt an ihren Zahlen.'),
             $this->header('Die vier Grundformen', 3),
-            $this->list([
-                '<b>Linear</b> – konstante Geschwindigkeit. Richtig für Endlosschleifen wie Spinner oder Fortschrittsbalken, falsch für alles, was Masse haben soll.',
-                '<b>Ease-Out</b> – schneller Start, sanftes Ausklingen. Die Standardwahl für alles, was <i>erscheint</i>: Menüs, Dialoge, Tooltips. Reagiert sofort auf den Klick.',
-                '<b>Ease-In</b> – träger Start, schnelles Ende. Für alles, was <i>verschwindet</i>. Als Einstieg wirkt sie zäh, weil die Reaktion auf die Eingabe hinterherhinkt.',
-                '<b>Ease-In-Out</b> – sanft an beiden Enden. Für Bewegungen, die vollständig im Blick bleiben, etwa ein Element, das von A nach B wandert.',
-            ]),
+            $this->table(
+                ['Kurve', 'Verhalten', 'Wofür'],
+                [
+                    ['<b>Linear</b>', 'konstante Geschwindigkeit', 'Endlosschleifen: Spinner, Fortschrittsbalken. Falsch für alles, was Masse haben soll.'],
+                    ['<b>Ease-Out</b>', 'schneller Start, sanftes Ausklingen', 'Alles was <i>erscheint</i>: Menüs, Dialoge, Tooltips. Reagiert sofort auf den Klick.'],
+                    ['<b>Ease-In</b>', 'träger Start, schnelles Ende', 'Alles was <i>verschwindet</i>. Als Einstieg zäh, weil die Reaktion hinterherhinkt.'],
+                    ['<b>Ease-In-Out</b>', 'sanft an beiden Enden', 'Bewegungen, die vollständig im Blick bleiben, etwa von A nach B.'],
+                ],
+            ),
             $this->header('In CSS notiert', 3),
             $this->paragraph('In CSS schreibst du sie als <code class="inline-code">cubic-bezier()</code> mit den beiden Kontrollpunkten aus dem Simulator:'),
             $this->code(<<<'CSS'

@@ -12,7 +12,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Create a new section (page) at the end of a chapter. Content is written as Markdown: ##/###/#### headings, paragraphs, - and 1. lists, ``` code fences, **bold**, *italic*, `code`. Do not repeat the section title as a heading - it is already rendered above the content.')]
+#[Description('Create a new section (page) at the end of a chapter. Content is written as Markdown: ##/###/#### headings, paragraphs, - and 1. lists, ``` code fences, | pipe | tables | with a header row, **bold**, *italic*, `code`. Do not repeat the section title as a heading - it is already rendered above the content.')]
 class CreateSection extends Tool
 {
     use ResolvesOwnedContent;

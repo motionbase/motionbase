@@ -25,17 +25,43 @@ Every tool acts as the authenticated user and only ever sees that user's own
 courses. Start with list_topics, then get_topic for the outline, then
 get_section to read a page.
 
-Writing content:
-- Section bodies are written as Markdown: ## / ### / #### headings, paragraphs,
-  "-" and "1." lists, ``` fenced code, **bold**, *italic*, `code`, [links](url).
-- Do NOT open a section with a heading repeating its own title - the title is
-  already rendered above the body. Use ### for subheadings inside a page; those
-  also fill the "on this page" navigation, so give every section at least one.
-- update_section with markdown replaces the entire body and drops interactive,
-  quiz and image blocks. Read the section first if it has any.
+# Block types
 
-Interactive graphics are self-contained HTML documents: create_interactive
-stores one, add_interactive_block places it in a section.
+A section is a list of Editor.js blocks. Five of them are written as Markdown
+through create_section and update_section:
+
+  header      ## / ### / ####   Only levels 2-4 exist. Do NOT open a section
+                                with a heading repeating its own title - the
+                                title is already rendered above the body. Use
+                                ### for subheadings; they also fill the page's
+                                table of contents, so give every section one.
+  paragraph   plain text        **bold**, *italic*, `code`, [links](url).
+  list        - item / 1. item  Unordered and ordered.
+  code        ``` fences        Put the language after the fence: ```css
+  table       | a | b |         GFM pipe table. The first row is the header and
+              | - | - |         the separator row is required. Cells may
+              | 1 | 2 |         contain **bold**, *italic* and `code`.
+
+The remaining blocks cannot be produced from Markdown:
+
+  interactive   Self-contained HTML graphic. create_interactive stores one,
+                add_interactive_block places it in a section.
+  alert         Coloured callout (info / warning / danger / neutral).
+  quiz          Multiple choice questions with an answer key.
+  image         Uploaded picture with a caption.
+  youtube       Embedded video.
+  lottie        Lottie animation, optionally with a state machine.
+
+get_section renders those six as "> [...]" placeholders and lists them under
+rich_blocks. They can be read but not written, with interactive as the one
+exception. Creating or editing the other five is done in the web editor.
+
+# Overwriting
+
+update_section with markdown replaces the ENTIRE body. Anything that is not one
+of the five Markdown-backed types is lost, and the tool reports what it removed
+in dropped_rich_blocks. Read the section first if rich_blocks is not empty, and
+re-add interactive graphics afterwards with add_interactive_block.
 TXT)]
 class MotionBaseServer extends Server
 {

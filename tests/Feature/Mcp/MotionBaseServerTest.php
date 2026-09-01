@@ -208,3 +208,57 @@ it('renders the consent screen instead of dying on an unbound view', function ()
         ->assertOk()
         ->assertSee('Consent Test');
 });
+
+it('round-trips markdown tables', function () {
+    $markdown = <<<'MD'
+    | Kurve | Wirkung | Einsatz |
+    | --- | --- | --- |
+    | **Ease-Out** | schneller Start | Menüs, Dialoge |
+    | *Ease-In* | träger Start | alles was `verschwindet` |
+    MD;
+
+    $blocks = MarkdownBlocks::toBlocks($markdown);
+
+    expect($blocks)->toHaveCount(1)
+        ->and($blocks[0]['type'])->toBe('table')
+        ->and($blocks[0]['data']['withHeadings'])->toBeTrue()
+        ->and($blocks[0]['data']['content'][0])->toBe(['Kurve', 'Wirkung', 'Einsatz'])
+        ->and($blocks[0]['data']['content'][1][0])->toBe('<b>Ease-Out</b>');
+
+    expect(MarkdownBlocks::toMarkdown($blocks))->toBe($markdown);
+});
+
+it('gives a headless table a header row so it survives the round trip', function () {
+    // Markdown has no table without a header, so one is invented rather than
+    // letting the rows collapse into paragraphs on the way back in.
+    $blocks = [['type' => 'table', 'data' => [
+        'withHeadings' => false,
+        'content' => [['a', 'b'], ['c', 'd']],
+    ]]];
+
+    $back = MarkdownBlocks::toBlocks(MarkdownBlocks::toMarkdown($blocks));
+
+    expect($back[0]['type'])->toBe('table')
+        ->and($back[0]['data']['content'])->toBe([['', ''], ['a', 'b'], ['c', 'd']]);
+});
+
+it('treats tables as editable rather than as a rich block', function () {
+    $owner = User::factory()->create();
+    [, , $section] = course($owner);
+
+    $section->update(['content' => ['blocks' => [
+        ['type' => 'table', 'data' => ['withHeadings' => true, 'content' => [['a'], ['b']]]],
+    ]]]);
+
+    // A table reported as rich would tell the model it cannot be edited, and
+    // update_section would claim to have destroyed it.
+    MotionBaseServer::actingAs($owner)
+        ->tool(GetSection::class, ['section_id' => $section->id])
+        ->assertOk()
+        ->assertDontSee('rich_blocks":[{');
+
+    MotionBaseServer::actingAs($owner)
+        ->tool(UpdateSection::class, ['section_id' => $section->id, 'markdown' => "| x |\n| --- |\n| y |"])
+        ->assertOk()
+        ->assertSee('"dropped_rich_blocks":[]', false);
+});

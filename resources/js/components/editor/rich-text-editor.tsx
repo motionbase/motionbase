@@ -120,6 +120,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
                 { default: YouTubeBlock },
                 { default: LottieBlock },
                 { default: InteractiveBlock },
+                { default: TableBlock },
             ] =
                 await Promise.all([
                     import('@editorjs/editorjs'),
@@ -133,6 +134,7 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
                     import('@/components/editor/tools/youtube-block'),
                     import('@/components/editor/tools/lottie-block'),
                     import('@/components/editor/tools/interactive-block'),
+                    import('@editorjs/table'),
                 ]);
 
             if (!isActive || !holderRef.current) {
@@ -210,6 +212,15 @@ export const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorPro
                         class: InteractiveBlock as unknown as ToolConstructable,
                         config: {
                             placeholder: 'URL der interaktiven Grafik einfügen…',
+                        },
+                    },
+                    table: {
+                        class: TableBlock as unknown as ToolConstructable,
+                        inlineToolbar: true,
+                        config: {
+                            withHeadings: true,
+                            rows: 3,
+                            cols: 3,
                         },
                     },
                 },

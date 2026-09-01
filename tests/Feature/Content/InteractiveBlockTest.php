@@ -151,3 +151,26 @@ it('clamps absurd heights and drops non-http urls', function () {
         expect($render(['url' => $url]))->not->toContain('<iframe');
     }
 });
+
+it('renders tables in embed and lti views', function () {
+    $html = view('lti.partials.content-blocks', ['blocks' => [
+        ['type' => 'table', 'data' => [
+            'withHeadings' => true,
+            'content' => [['Kurve', 'Einsatz'], ['Ease-Out', 'Menüs']],
+        ]],
+    ]])->render();
+
+    expect($html)
+        ->toContain('<th scope="col"')
+        ->toContain('Kurve')
+        ->toContain('<td class="px-4 py-2.5 align-top text-zinc-600">Menüs</td>')
+        ->toContain('overflow-x-auto');
+});
+
+it('renders a headless table without inventing a header row', function () {
+    $html = view('lti.partials.content-blocks', ['blocks' => [
+        ['type' => 'table', 'data' => ['withHeadings' => false, 'content' => [['a', 'b']]]],
+    ]])->render();
+
+    expect($html)->not->toContain('<thead>')->toContain('<td');
+});
