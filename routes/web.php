@@ -37,6 +37,20 @@ Route::prefix('embed')->name('embed.')->group(function () {
     Route::get('section/{section}', [PublicEmbedController::class, 'section'])->name('section');
 });
 
+// Design system reference, public so it can be linked to and fetched by name.
+// Served as-is rather than sandboxed: unlike uploaded graphics this is our own
+// file from the repo, not attacker-controlled markup.
+Route::get('design', function () {
+    $path = resource_path('interactives/design-system.html');
+
+    abort_unless(is_file($path), 404);
+
+    return response(file_get_contents($path), 200, [
+        'Content-Type' => 'text/html; charset=UTF-8',
+        'X-Content-Type-Options' => 'nosniff',
+    ]);
+})->name('design');
+
 // Interactive graphics (served on an opaque origin, see InteractiveController::show)
 Route::get('interactive/{media}', [InteractiveController::class, 'show'])->name('interactive.show');
 

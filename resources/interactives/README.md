@@ -85,6 +85,10 @@ Meldung gilt der im Block eingestellte Wert (Default 480 px).
 
 ## Stil
 
+Die vollständige Referenz mit Farbfeldern, Bausteinen und kopierbaren Blöcken
+liegt unter **`/design`** (`resources/interactives/design-system.html`).
+
+
 Design-Tokens aus `resources/css/app.css` übernehmen, damit die Grafik nicht
 aus dem Kurs herausfällt:
 
