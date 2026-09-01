@@ -42,7 +42,7 @@ class UpdateSection extends Tool
         }
 
         if (array_key_exists('markdown', $validated)) {
-            $editable = ['header', 'paragraph', 'list', 'code', 'table'];
+            $editable = MarkdownBlocks::MARKDOWN_TYPES;
 
             $droppedRichBlocks = collect($section->content['blocks'] ?? [])
                 ->reject(fn (array $block) => in_array($block['type'] ?? '', $editable, true))

@@ -4,6 +4,7 @@ namespace App\Mcp\Tools;
 
 use App\Mcp\Concerns\ResolvesOwnedContent;
 use App\Mcp\Support\MarkdownBlocks;
+use App\Mcp\Annotations\IsReadOnly;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
 use Laravel\Mcp\Request;
@@ -11,6 +12,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
+#[IsReadOnly]
 #[Description('Read one section as Markdown. Rich blocks (interactive graphics, quizzes, images) appear as "> [...]" placeholders and are listed separately under rich_blocks; they cannot be edited through Markdown.')]
 class GetSection extends Tool
 {
@@ -29,7 +31,7 @@ class GetSection extends Tool
         }
 
         $blocks = $section->content['blocks'] ?? [];
-        $editable = ['header', 'paragraph', 'list', 'code', 'table'];
+        $editable = MarkdownBlocks::MARKDOWN_TYPES;
 
         return Response::json([
             'id' => $section->id,

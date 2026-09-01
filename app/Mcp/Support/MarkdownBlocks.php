@@ -14,6 +14,17 @@ namespace App\Mcp\Support;
 class MarkdownBlocks
 {
     /**
+     * Block types this converter can both read and write.
+     *
+     * Anything outside this list survives a read as a placeholder but is lost
+     * when a section body is replaced, so the tools have to agree on it - which
+     * is why it lives here rather than being spelled out at each call site.
+     *
+     * @var list<string>
+     */
+    public const MARKDOWN_TYPES = ['header', 'paragraph', 'list', 'code', 'table'];
+
+    /**
      * @return array<int, array<string, mixed>>
      */
     public static function toBlocks(string $markdown): array

@@ -7,6 +7,7 @@ use App\Mcp\Tools\CreateInteractive;
 use App\Mcp\Tools\CreateSection;
 use App\Mcp\Tools\GetSection;
 use App\Mcp\Tools\GetTopic;
+use App\Mcp\Tools\ListBlockTypes;
 use App\Mcp\Tools\ListTopics;
 use App\Mcp\Tools\UpdateSection;
 use App\Models\Chapter;
@@ -261,4 +262,39 @@ it('treats tables as editable rather than as a rich block', function () {
         ->tool(UpdateSection::class, ['section_id' => $section->id, 'markdown' => "| x |\n| --- |\n| y |"])
         ->assertOk()
         ->assertSee('"dropped_rich_blocks":[]', false);
+});
+
+it('exposes the block vocabulary as a callable tool', function () {
+    // The inventory also lives in the server instructions, but most clients
+    // never surface those - a tool is the only discoverable form.
+    MotionBaseServer::actingAs(User::factory()->create())
+        ->tool(ListBlockTypes::class)
+        ->assertOk()
+        ->assertSee('table')
+        ->assertSee('interactive')
+        ->assertSee('quiz')
+        ->assertSee('dropped_rich_blocks');
+});
+
+it('keeps the block list in step with what the converter can write', function () {
+    // Asserted against the tool's own output rather than a copy of the list,
+    // so a type advertised as writable that cannot survive a round trip fails
+    // here instead of losing someone's content later.
+    $content = (new ListBlockTypes)->handle(new Laravel\Mcp\Request([]))->content()->toArray();
+    $payload = json_decode($content['text'] ?? '{}', true);
+
+    $writable = collect($payload['blocks'] ?? [])
+        ->where('writable', true)
+        ->pluck('type')->sort()->values()->all();
+
+    $expected = collect(MarkdownBlocks::MARKDOWN_TYPES)->push('interactive')->sort()->values()->all();
+
+    expect($writable)->toBe($expected);
+});
+
+it('marks read-only tools so clients do not lump them in with writes', function () {
+    $annotations = (new ListTopics)->toArray()['annotations'];
+
+    expect($annotations)->toMatchArray(['readOnlyHint' => true])
+        ->and((array) (new UpdateSection)->toArray()['annotations'])->toBe([]);
 });

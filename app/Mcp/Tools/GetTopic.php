@@ -5,6 +5,7 @@ namespace App\Mcp\Tools;
 use App\Mcp\Concerns\ResolvesOwnedContent;
 use App\Models\Chapter;
 use App\Models\Section;
+use App\Mcp\Annotations\IsReadOnly;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
 use Laravel\Mcp\Request;
@@ -12,6 +13,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
+#[IsReadOnly]
 #[Description('Get the full outline of one course: its chapters and, per chapter, the sections with their ids, publish state and order. Use get_section to read a section\'s actual content.')]
 class GetTopic extends Tool
 {

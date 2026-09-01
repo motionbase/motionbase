@@ -8,6 +8,7 @@ use App\Mcp\Tools\CreateInteractive;
 use App\Mcp\Tools\CreateSection;
 use App\Mcp\Tools\GetSection;
 use App\Mcp\Tools\GetTopic;
+use App\Mcp\Tools\ListBlockTypes;
 use App\Mcp\Tools\ListTopics;
 use App\Mcp\Tools\UpdateSection;
 use Laravel\Mcp\Server;
@@ -67,6 +68,7 @@ class MotionBaseServer extends Server
 {
     protected array $tools = [
         ListTopics::class,
+        ListBlockTypes::class,
         GetTopic::class,
         GetSection::class,
         CreateChapter::class,

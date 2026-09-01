@@ -3,6 +3,7 @@
 namespace App\Mcp\Tools;
 
 use App\Models\Topic;
+use App\Mcp\Annotations\IsReadOnly;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
 use Laravel\Mcp\Request;
@@ -10,6 +11,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
+#[IsReadOnly]
 #[Description('List all courses (topics) owned by the authenticated user, with their chapter and section counts.')]
 class ListTopics extends Tool
 {
