@@ -150,6 +150,10 @@
         .sign {
             position: absolute;
             left: 66%;
+            /* Die Ticklinie ist unter dem Wort zentriert, also muss das ganze
+               Schild auf der Kante zentriert sein - sonst steht die Linie um
+               die halbe Textbreite neben dem Streckenende. */
+            transform: translateX(-50%);
             top: 26px;
             font-size: 0.625rem;
             font-weight: 600;
@@ -270,7 +274,6 @@
 
             <div class="actions">
                 <a class="btn btn--primary" href="{{ url('/') }}">Zurück auf festen Boden</a>
-                <button class="btn btn--ghost" type="button" id="again">Nochmal fallen lassen</button>
             </div>
         </div>
 
@@ -302,7 +305,6 @@
         const pad = document.getElementById('pad');
         const jokeEl = document.getElementById('joke');
         const fallsEl = document.getElementById('falls');
-        const againBtn = document.getElementById('again');
         const scoreEl = document.getElementById('score');
         const scoreValue = document.getElementById('scoreValue');
         const scoreBest = document.getElementById('scoreBest');
@@ -343,7 +345,6 @@
             ball.style.transform = `translate3d(${edgeX()}px, 0, 0)`;
             nextJoke();
             setInterval(nextJoke, 6000);
-            againBtn.addEventListener('click', nextJoke);
             return;
         }
 
@@ -396,12 +397,19 @@
         const RADIUS = 20, PAD_HALF = 44, PAD_TOP = 19, GRAVITY = 1500;
 
         let playing = false;
-        let padX = 0, score = 0, lastTick = 0;
+        let padX = 0, score = 0, lastTick = 0, spin = 0;
         let pos = { x: 0, y: 0 };
         let vel = { x: 0, y: 0 };
 
         let best = 0;
         try { best = parseInt(localStorage.getItem('motionbase.404.best') || '0', 10) || 0; } catch { best = 0; }
+
+        // Drehwinkel aus dem aktuellen transform lesen, damit der Übergang in
+        // das Spiel keinen Sprung in der Rotation macht.
+        function currentSpin() {
+            const m = /rotate\(([-\d.]+)deg\)/.exec(ball.style.transform || '');
+            return m ? parseFloat(m[1]) : 0;
+        }
 
         function showHint(html) {
             hint.innerHTML = html;
@@ -418,9 +426,18 @@
             if (playing) return;
             playing = true;
             score = 0;
-            padX = box().width / 2;
-            pos = { x: box().width / 2, y: 24 };
-            vel = { x: 90, y: 0 };
+            // Dort weitermachen, wo der Ball gerade ist. Ihn an den oberen Rand
+            // zu setzen war ein Sprung von rund 100px - genau das, was sich
+            // beim Starten unrund angefühlt hat.
+            const b = box();
+            const r = ball.getBoundingClientRect();
+            pos = { x: r.left + r.width / 2 - b.left, y: r.top + r.height / 2 - b.top };
+            pos.x = Math.max(RADIUS, Math.min(b.width - RADIUS, pos.x));
+            pos.y = Math.max(RADIUS, pos.y);
+
+            padX = pos.x;
+            vel = { x: 70, y: 40 };
+            spin = currentSpin();
             lastTick = performance.now();
 
             stage.classList.add('is-playing');
@@ -430,7 +447,7 @@
             scoreBest.textContent = best ? 'Beste ' + best : '';
             hint.classList.remove('is-visible');
             jokeEl.textContent = 'Nicht runterfallen lassen.';
-            againBtn.textContent = 'Aufhören';
+            showHint('<kbd>Esc</kbd> beendet');
         }
 
         function endGame() {
@@ -438,7 +455,6 @@
             stage.classList.remove('is-playing');
             pad.hidden = true;
             scoreEl.hidden = true;
-            againBtn.textContent = 'Nochmal fallen lassen';
 
             if (score > best) {
                 best = score;
@@ -490,8 +506,13 @@
                 return;
             }
 
+            // Abrollen: Winkel folgt der zurückgelegten Strecke, nicht der
+            // absoluten Position - sonst kehrt sich die Drehung bei jedem
+            // Richtungswechsel schlagartig um und wirkt wie ein Flackern.
+            spin += (vel.x * dt) * (180 / (Math.PI * RADIUS));
+
             pad.style.transform = `translate3d(${padX}px, 0, 0)`;
-            ball.style.transform = `translate3d(${pos.x}px, ${pos.y - 64}px, 0) rotate(${pos.x * 1.6}deg)`;
+            ball.style.transform = `translate3d(${pos.x}px, ${pos.y - 64}px, 0) rotate(${spin}deg)`;
         }
 
         function frame(now) {
@@ -523,11 +544,6 @@
         });
 
         ball.addEventListener('click', startGame);
-        againBtn.addEventListener('click', () => {
-            if (playing) { endGame(); return; }
-            phase = 'fall';
-            phaseStart = performance.now();
-        });
 
         nextJoke();
         requestAnimationFrame(frame);
