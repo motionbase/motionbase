@@ -3,7 +3,15 @@
 use App\Mcp\Servers\MotionBaseServer;
 use App\Mcp\Support\MarkdownBlocks;
 use App\Mcp\Tools\AddInteractiveBlock;
+use App\Mcp\Tools\AddAlertBlock;
+use App\Mcp\Tools\AddImageBlock;
+use App\Mcp\Tools\AddLottieBlock;
 use App\Mcp\Tools\AddQuizBlock;
+use App\Mcp\Tools\AddYoutubeBlock;
+use App\Mcp\Tools\DeleteContent;
+use App\Mcp\Tools\ListMedia;
+use App\Mcp\Tools\MoveBlock;
+use App\Mcp\Tools\RemoveBlock;
 use App\Mcp\Tools\CreateInteractive;
 use App\Mcp\Tools\CreateSection;
 use App\Mcp\Tools\GetSection;
@@ -16,6 +24,7 @@ use App\Models\Media;
 use App\Models\Section;
 use App\Models\Topic;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 
@@ -319,7 +328,8 @@ it('never advertises a block it cannot actually write', function () {
         }
     }
 
-    expect(collect($blocks)->where('writable', true))->toHaveCount(7);
+    // Every one of the eleven types is now writable through this server.
+    expect(collect($blocks)->where('writable', true))->toHaveCount(count($blocks));
 });
 
 it('marks read-only tools so clients do not lump them in with writes', function () {
@@ -416,4 +426,174 @@ it('hands back rich block data so an overwrite can be undone', function () {
         ->assertOk()
         ->assertSee('Bleibt das lesbar?')
         ->assertSee('isCorrect');
+});
+
+it('places alerts and youtube videos', function () {
+    $owner = User::factory()->create();
+    [, , $section] = course($owner);
+
+    MotionBaseServer::actingAs($owner)->tool(AddAlertBlock::class, [
+        'section_id' => $section->id,
+        'type' => 'warning',
+        'paragraphs' => ['Erster Absatz.', 'Zweiter Absatz.'],
+    ])->assertOk();
+
+    MotionBaseServer::actingAs($owner)->tool(AddYoutubeBlock::class, [
+        'section_id' => $section->id,
+        'url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=42',
+    ])->assertOk();
+
+    $blocks = collect($section->fresh()->content['blocks']);
+    $alert = $blocks->firstWhere('type', 'alert')['data'];
+    $video = $blocks->firstWhere('type', 'youtube')['data'];
+
+    // Renderers read contentBlocks, the LTI fallback reads content: a block
+    // carrying only one of them renders blank in the other half.
+    expect($alert['type'])->toBe('warning')
+        ->and($alert['contentBlocks']['blocks'])->toHaveCount(2)
+        ->and($alert['content'])->toContain('Erster Absatz.')
+        ->and($video['videoId'])->toBe('dQw4w9WgXcQ');
+});
+
+it('refuses a youtube url it cannot read an id from', function () {
+    $owner = User::factory()->create();
+    [, , $section] = course($owner);
+
+    // The renderers key on videoId and draw nothing without it, so a bad URL
+    // has to fail loudly instead of leaving a blank figure in the page.
+    MotionBaseServer::actingAs($owner)->tool(AddYoutubeBlock::class, [
+        'section_id' => $section->id,
+        'url' => 'https://vimeo.com/12345',
+    ])->assertHasErrors();
+
+    expect($section->fresh()->content['blocks'])->toHaveCount(2);
+});
+
+it('places media from the library and refuses the wrong type', function () {
+    $owner = User::factory()->create();
+    [, , $section] = course($owner);
+
+    $image = Media::create(['filename' => 'a.png', 'original_filename' => 'diagramm.png',
+        'path' => 'editor-images/a.png', 'url' => '/storage/editor-images/a.png',
+        'mime_type' => 'image/png', 'type' => 'image', 'size' => 10, 'alt' => 'Ein Diagramm']);
+
+    MotionBaseServer::actingAs($owner)->tool(ListMedia::class, ['type' => 'image'])
+        ->assertOk()->assertSee('diagramm.png');
+
+    MotionBaseServer::actingAs($owner)->tool(AddImageBlock::class, [
+        'section_id' => $section->id, 'media_id' => $image->id,
+    ])->assertOk();
+
+    // A lottie tool pointed at an image would write a block the player cannot
+    // load, so the type is checked rather than trusted.
+    MotionBaseServer::actingAs($owner)->tool(AddLottieBlock::class, [
+        'section_id' => $section->id, 'media_id' => $image->id,
+    ])->assertHasErrors();
+
+    $block = collect($section->fresh()->content['blocks'])->firstWhere('type', 'image');
+
+    expect($block['data']['url'])->toBe('/storage/editor-images/a.png')
+        ->and($block['data']['caption'])->toBe('Ein Diagramm');
+});
+
+it('removes and reorders single blocks of any type', function () {
+    $owner = User::factory()->create();
+    [, , $section] = course($owner);
+
+    // Starts as [paragraph, interactive]. Removing the interactive one used to
+    // be impossible without overwriting the whole body.
+    MotionBaseServer::actingAs($owner)
+        ->tool(RemoveBlock::class, ['section_id' => $section->id, 'index' => 1])
+        ->assertOk()->assertSee('interactive');
+
+    expect(collect($section->fresh()->content['blocks'])->pluck('type')->all())->toBe(['paragraph']);
+
+    MotionBaseServer::actingAs($owner)->tool(AddAlertBlock::class, [
+        'section_id' => $section->id, 'type' => 'info', 'paragraphs' => ['Hinweis'],
+    ])->assertOk();
+
+    MotionBaseServer::actingAs($owner)
+        ->tool(MoveBlock::class, ['section_id' => $section->id, 'from' => 1, 'to' => 0])
+        ->assertOk();
+
+    expect(collect($section->fresh()->content['blocks'])->pluck('type')->all())->toBe(['alert', 'paragraph']);
+});
+
+it('refuses a block index that does not exist', function () {
+    $owner = User::factory()->create();
+    [, , $section] = course($owner);
+
+    // Indexes come from a get_section that may be stale; removing the wrong
+    // block silently would be worse than refusing.
+    MotionBaseServer::actingAs($owner)
+        ->tool(RemoveBlock::class, ['section_id' => $section->id, 'index' => 99])
+        ->assertHasErrors();
+
+    expect($section->fresh()->content['blocks'])->toHaveCount(2);
+});
+
+it('deletes only what the confirmed title names', function () {
+    $owner = User::factory()->create();
+    [$topic, $chapter, $section] = course($owner);
+
+    // An id is easy to get wrong; the title is not something you hold by
+    // accident. A mismatch must leave everything standing.
+    MotionBaseServer::actingAs($owner)->tool(DeleteContent::class, [
+        'kind' => 'section', 'id' => $section->id, 'confirm_title' => 'Falscher Titel',
+    ])->assertHasErrors();
+
+    expect(Section::find($section->id))->not->toBeNull();
+
+    MotionBaseServer::actingAs($owner)->tool(DeleteContent::class, [
+        'kind' => 'section', 'id' => $section->id, 'confirm_title' => $section->title,
+    ])->assertOk();
+
+    expect(Section::find($section->id))->toBeNull()
+        ->and(Chapter::find($chapter->id))->not->toBeNull()
+        ->and(Topic::find($topic->id))->not->toBeNull();
+});
+
+it('writes a revision for every section a cascade would have swallowed', function () {
+    $owner = User::factory()->create();
+    [$topic, $chapter] = course($owner);
+    Section::factory()->count(2)->create(['chapter_id' => $chapter->id]);
+
+    $before = DB::table('revisions')->count();
+
+    MotionBaseServer::actingAs($owner)->tool(DeleteContent::class, [
+        'kind' => 'topic', 'id' => $topic->id, 'confirm_title' => $topic->title,
+    ])->assertOk();
+
+    expect(Topic::find($topic->id))->toBeNull()
+        ->and(Chapter::where('topic_id', $topic->id)->count())->toBe(0)
+        ->and(Section::where('chapter_id', $chapter->id)->count())->toBe(0);
+
+    // The foreign keys cascade in the database, which bypasses Eloquent - the
+    // sections would vanish without ever firing the event that records them.
+    // Deleting child by child is what keeps that history.
+    expect(DB::table('revisions')->count())->toBeGreaterThan($before + 2);
+});
+
+it('will not delete another user\'s course', function () {
+    $owner = User::factory()->create();
+    $stranger = User::factory()->create();
+    [$topic] = course($owner);
+
+    MotionBaseServer::actingAs($stranger)->tool(DeleteContent::class, [
+        'kind' => 'topic', 'id' => $topic->id, 'confirm_title' => $topic->title,
+    ])->assertHasErrors();
+
+    expect(Topic::find($topic->id))->not->toBeNull();
+});
+
+it('fits every tool on one page of tools/list', function () {
+    $server = (new ReflectionClass(MotionBaseServer::class))->newInstanceWithoutConstructor();
+
+    $tools = (new ReflectionClass(MotionBaseServer::class))->getProperty('tools');
+    $tools->setAccessible(true);
+
+    // The package paginates at 15 by default. Anything past that sits behind a
+    // nextCursor and is invisible to a client that does not follow it - and it
+    // is always the newest tools that end up on page two.
+    expect(count($tools->getValue($server)))->toBeLessThanOrEqual($server->defaultPaginationLength);
 });

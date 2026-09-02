@@ -35,13 +35,16 @@ class ListBlockTypes extends Tool
         ['type' => 'interactive', 'created_by' => 'tool', 'syntax' => 'create_interactive, then add_interactive_block',
          'notes' => 'Self-contained HTML graphic, sandboxed on an opaque origin. See /design for the house style.'],
 
-        ['type' => 'alert', 'created_by' => 'editor', 'syntax' => null,
-         'notes' => 'Coloured callout: info, warning, danger or neutral.'],
+        ['type' => 'alert', 'created_by' => 'tool', 'syntax' => 'add_alert_block',
+         'notes' => 'Coloured callout: info, warning, danger or neutral. For something a reader must not miss, not for emphasis.'],
         ['type' => 'quiz', 'created_by' => 'tool', 'syntax' => 'add_quiz_block',
          'notes' => 'Multiple choice, single answer. Exactly one option per question must be correct; answers are shuffled per learner, so never refer to their position.'],
-        ['type' => 'image', 'created_by' => 'editor', 'syntax' => null, 'notes' => 'Uploaded picture with a caption.'],
-        ['type' => 'youtube', 'created_by' => 'editor', 'syntax' => null, 'notes' => 'Embedded video.'],
-        ['type' => 'lottie', 'created_by' => 'editor', 'syntax' => null, 'notes' => 'Lottie animation, optionally with a state machine.'],
+        ['type' => 'image', 'created_by' => 'tool', 'syntax' => 'list_media, then add_image_block',
+         'notes' => 'A picture already in the media library. Uploading happens in the web editor.'],
+        ['type' => 'youtube', 'created_by' => 'tool', 'syntax' => 'add_youtube_block',
+         'notes' => 'Takes a watch, share, embed or shorts URL, or a bare video id.'],
+        ['type' => 'lottie', 'created_by' => 'tool', 'syntax' => 'list_media, then add_lottie_block',
+         'notes' => 'A Lottie file already in the media library. Uploading happens in the web editor.'],
     ];
 
     public function handle(Request $request): Response
@@ -56,7 +59,8 @@ class ListBlockTypes extends Tool
         return Response::json([
             'blocks' => $blocks,
             'markdown_types' => MarkdownBlocks::MARKDOWN_TYPES,
-            'warning' => 'update_section with markdown replaces the whole body. Block types not in markdown_types are lost and reported in dropped_rich_blocks. Read the section first when rich_blocks is not empty.',
+            'editing' => 'Markdown blocks are edited by rewriting the body with update_section. The rest are replaced: remove_block then add it again. remove_block and move_block work on every type.',
+            'warning' => 'update_section with markdown replaces the whole body. Block types not in markdown_types are lost and reported in dropped_rich_blocks. Prefer remove_block when you only want one gone.',
         ]);
     }
 

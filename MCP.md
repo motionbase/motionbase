@@ -25,13 +25,32 @@ Discovery-Dokumente nicht; notfalls `MCP_AUTHORIZATION_SERVER` setzen.
 | Tool | Zweck |
 |---|---|
 | `list-topics` | Eigene Kurse mit Kapitel-/Sektionszahl |
-| `get-topic` | Gliederung eines Kurses (Kapitel, Sektionen, IDs, Publish-Status) |
-| `get-section` | Eine Seite als Markdown lesen |
+| `get-topic` | Gliederung eines Kurses |
+| `get-section` | Eine Seite als Markdown, Rich-Blöcke mit vollen Daten |
+| `list-block-types` | Welche Blöcke es gibt und wie sie entstehen |
+| `list-media` | Bilder, Lottie- und HTML-Dateien der Medienbibliothek |
 | `create-chapter` | Kapitel anlegen |
 | `create-section` | Seite anlegen (Inhalt als Markdown) |
-| `update-section` | Titel, Publish-Status oder Inhalt ändern |
-| `create-interactive` | Interaktive HTML-Grafik ablegen, liefert die URL |
-| `add-interactive-block` | Grafik in eine Seite einsetzen |
+| `update-section` | Titel, Publish-Status oder **ganzen** Body ersetzen |
+| `create-interactive` | Interaktive HTML-Grafik ablegen |
+| `add-interactive-block` | Grafik einsetzen |
+| `add-quiz-block` | Quiz einsetzen (eine richtige Antwort je Frage) |
+| `add-alert-block` | Hinweiskasten einsetzen |
+| `add-youtube-block` | Video einsetzen |
+| `add-image-block` | Bild aus der Bibliothek einsetzen |
+| `add-lottie-block` | Lottie aus der Bibliothek einsetzen |
+| `remove-block` | Einzelnen Block entfernen — **jeden** Typ |
+| `move-block` | Block verschieben |
+| `delete-content` | Sektion, Kapitel oder Thema löschen (Titel als Bestätigung) |
+
+Alle elf Blocktypen sind schreibbar: fünf über Markdown, sechs über eigene
+Tools. Dateien werden weiterhin im Web-Editor hochgeladen — der Server platziert
+sie, nimmt aber keine Uploads entgegen.
+
+**Bearbeiten:** Markdown-Blöcke ändert man, indem man den Body mit
+`update-section` neu schreibt. Die übrigen sechs ersetzt man: `remove-block`,
+dann neu einsetzen. Einen einzelnen Block loszuwerden geht ausschließlich über
+`remove-block` — `update-section` würde alle Rich-Blöcke mitreißen.
 
 ### Markdown statt Editor.js-JSON
 

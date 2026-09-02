@@ -2,6 +2,14 @@
 
 namespace App\Mcp\Servers;
 
+use App\Mcp\Tools\AddAlertBlock;
+use App\Mcp\Tools\AddImageBlock;
+use App\Mcp\Tools\AddLottieBlock;
+use App\Mcp\Tools\AddYoutubeBlock;
+use App\Mcp\Tools\DeleteContent;
+use App\Mcp\Tools\ListMedia;
+use App\Mcp\Tools\MoveBlock;
+use App\Mcp\Tools\RemoveBlock;
 use App\Mcp\Tools\AddInteractiveBlock;
 use App\Mcp\Tools\AddQuizBlock;
 use App\Mcp\Tools\CreateChapter;
@@ -50,36 +58,54 @@ through create_section and update_section:
               | - | - |         the separator row is required. Cells may
               | 1 | 2 |         contain **bold**, *italic* and `code`.
 
-The remaining blocks cannot be produced from Markdown:
+The other six are placed by their own tool:
 
-  interactive   Self-contained HTML graphic. create_interactive stores one,
-                add_interactive_block places it in a section.
-  quiz          Multiple choice, single answer. add_quiz_block writes one.
-                Answers are shuffled per learner, so never write an option
-                that refers to its own position.
+  interactive   create_interactive stores the HTML, add_interactive_block
+                places it. See /design for the house style.
+  quiz          add_quiz_block. Multiple choice, single answer, exactly one
+                option correct. Answers are shuffled per learner, so never
+                write one that refers to its own position.
+  alert         add_alert_block. info / warning / danger / neutral.
+  youtube       add_youtube_block. Any YouTube URL or a bare video id.
+  image         list_media to find the id, then add_image_block.
+  lottie        list_media to find the id, then add_lottie_block.
 
-The rest can be read but only authored in the web editor:
+Files are uploaded in the web editor; this server places them but does not
+accept uploads.
 
-  alert         Coloured callout (info / warning / danger / neutral).
-  image         Uploaded picture with a caption.
-  youtube       Embedded video.
-  lottie        Lottie animation, optionally with a state machine.
+get_section renders those six as "> [...]" placeholders in the body and lists
+them under rich_blocks with their full data, so anything removed can be put
+back.
 
-get_section renders all six as "> [...]" placeholders in the body and lists
-them under rich_blocks with their full data, so a block that an overwrite
-removes can be written back afterwards.
+# Editing and removing
+
+remove_block and move_block address a block by its index and work on every
+type - that is how a single alert or graphic is deleted or reordered without
+touching the rest. A Markdown block is edited by rewriting the body; the other
+six are replaced by removing and adding them again.
 
 # Overwriting
 
-update_section with markdown replaces the ENTIRE body. Anything that is not one
-of the five Markdown-backed types is lost, and the tool reports what it removed
-in dropped_rich_blocks. Read the section first if rich_blocks is not empty, then
-put the interactive graphics and quizzes back with add_interactive_block and
-add_quiz_block. Alert, image, youtube and lottie blocks cannot be restored, so
-do not overwrite a section that contains them.
+update_section with markdown replaces the ENTIRE body. Everything that is not
+one of the five Markdown-backed types is lost, and the tool reports what it
+removed in dropped_rich_blocks. If you only want one block gone, use
+remove_block instead. When you do overwrite, read the section first and put the
+rich blocks back from the data in rich_blocks.
+
+delete_content removes a section, a chapter with its sections, or a topic with
+everything under it, and wants the exact title as confirmation. It is not
+reversible in one call - unpublishing is usually what is actually wanted.
 TXT)]
 class MotionBaseServer extends Server
 {
+    /**
+     * tools/list paginates, and the package defaults to 15 per page. With more
+     * tools than that the rest land behind a nextCursor, invisible to any
+     * client that does not follow it - and the newest tools are exactly the
+     * ones that end up on page two.
+     */
+    public int $defaultPaginationLength = 50;
+
     protected array $tools = [
         ListTopics::class,
         ListBlockTypes::class,
@@ -91,6 +117,14 @@ class MotionBaseServer extends Server
         CreateInteractive::class,
         AddInteractiveBlock::class,
         AddQuizBlock::class,
+        AddAlertBlock::class,
+        AddYoutubeBlock::class,
+        AddImageBlock::class,
+        AddLottieBlock::class,
+        ListMedia::class,
+        RemoveBlock::class,
+        MoveBlock::class,
+        DeleteContent::class,
     ];
 
     protected array $resources = [

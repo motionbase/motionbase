@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\Concerns\InsertsBlocks;
 use App\Mcp\Concerns\ResolvesOwnedContent;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
@@ -14,7 +15,7 @@ use Laravel\Mcp\Server\Tool;
 #[Description('Append a multiple choice quiz to a section, or insert it at a given block position. Each question is answered by picking exactly one option, so exactly one answer per question must be marked correct. Answers are shuffled for every learner, so do not write options that refer to their position.')]
 class AddQuizBlock extends Tool
 {
-    use ResolvesOwnedContent;
+    use InsertsBlocks, ResolvesOwnedContent;
 
     public function handle(Request $request): Response
     {
@@ -59,25 +60,7 @@ class AddQuizBlock extends Tool
             ], $question['answers']),
         ], fn ($value) => $value !== null), $validated['questions']);
 
-        $content = $section->content ?? [];
-        $blocks = $content['blocks'] ?? [];
-
-        $position = min($validated['position'] ?? count($blocks), count($blocks));
-        array_splice($blocks, $position, 0, [['type' => 'quiz', 'data' => ['questions' => $questions]]]);
-
-        $section->content = [
-            'time' => now()->getTimestampMs(),
-            'blocks' => $blocks,
-            'version' => $content['version'] ?? '2.31.0',
-        ];
-        $section->save();
-
-        return Response::json([
-            'section_id' => $section->id,
-            'inserted_at' => $position,
-            'questions' => count($questions),
-            'blocks' => count($blocks),
-        ]);
+        return $this->insertBlock($section, ['type' => 'quiz', 'data' => ['questions' => $questions]], $validated['position'] ?? null);
     }
 
     /**
@@ -101,7 +84,7 @@ class AddQuizBlock extends Tool
                         ->required(),
                 ]))
                 ->required(),
-            'position' => $schema->integer()->description('Block index to insert at. Omit to append at the end.'),
+            'position' => $this->positionSchema($schema),
         ];
     }
 }

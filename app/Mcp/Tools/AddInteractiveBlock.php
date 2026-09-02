@@ -2,6 +2,7 @@
 
 namespace App\Mcp\Tools;
 
+use App\Mcp\Concerns\InsertsBlocks;
 use App\Mcp\Concerns\ResolvesOwnedContent;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\JsonSchema\Types\Type;
@@ -13,7 +14,7 @@ use Laravel\Mcp\Server\Tool;
 #[Description('Append an interactive graphic to a section, or insert it at a given block position. Use the url returned by create_interactive, or any https URL.')]
 class AddInteractiveBlock extends Tool
 {
-    use ResolvesOwnedContent;
+    use InsertsBlocks, ResolvesOwnedContent;
 
     public function handle(Request $request): Response
     {
@@ -36,30 +37,11 @@ class AddInteractiveBlock extends Tool
             return Response::error("No section with id {$validated['section_id']} owned by you.");
         }
 
-        $content = $section->content ?? [];
-        $blocks = $content['blocks'] ?? [];
-
-        $block = ['type' => 'interactive', 'data' => [
+        return $this->insertBlock($section, ['type' => 'interactive', 'data' => [
             'url' => $validated['url'],
             'caption' => $validated['caption'] ?? '',
             'height' => $validated['height'] ?? 480,
-        ]];
-
-        $position = min($validated['position'] ?? count($blocks), count($blocks));
-        array_splice($blocks, $position, 0, [$block]);
-
-        $section->content = [
-            'time' => now()->getTimestampMs(),
-            'blocks' => $blocks,
-            'version' => $content['version'] ?? '2.31.0',
-        ];
-        $section->save();
-
-        return Response::json([
-            'section_id' => $section->id,
-            'inserted_at' => $position,
-            'blocks' => count($blocks),
-        ]);
+        ]], $validated['position'] ?? null);
     }
 
     /**
@@ -72,7 +54,7 @@ class AddInteractiveBlock extends Tool
             'url' => $schema->string()->description('Graphic URL, e.g. /interactive/7 from create_interactive.')->required(),
             'caption' => $schema->string()->description('Optional caption below the graphic. Leave empty if the graphic has its own heading.'),
             'height' => $schema->integer()->description('Fallback height in px (120-5000, default 480). Overridden once the graphic reports its own height.'),
-            'position' => $schema->integer()->description('Block index to insert at. Omit to append at the end.'),
+            'position' => $this->positionSchema($schema),
         ];
     }
 }
