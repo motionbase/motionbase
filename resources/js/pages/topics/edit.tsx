@@ -218,10 +218,16 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
     const [isSectionDirty, setIsSectionDirty] = useState(false);
     const [sectionSaveError, setSectionSaveError] = useState<string | null>(null);
 
+    // Counts edits rather than describing them. isDirty stays true while
+    // someone keeps typing, so the autosave needs something that actually
+    // changes to know it should push its timer back.
+    const [changeCount, setChangeCount] = useState(0);
+
     const recomputeSectionDirty = useCallback(() => {
         setIsSectionDirty(
             snapshot(sectionTitleRef.current, sectionContentRef.current) !== savedSnapshotRef.current,
         );
+        setChangeCount((count) => count + 1);
     }, []);
 
     const updateSectionTitle = useCallback((value: string) => {
@@ -353,6 +359,7 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
         isDirty: isSectionDirty,
         save: saveSection,
         enabled: Boolean(activeSection),
+        changeKey: changeCount,
     });
 
     // Cmd/Ctrl+S saves immediately instead of triggering the browser dialog.

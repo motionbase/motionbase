@@ -11,6 +11,14 @@ interface UseAutosaveOptions {
     enabled?: boolean;
     /** Idle time in ms before an automatic save fires. */
     delay?: number;
+    /**
+     * Anything that changes when the content changes - a counter is enough.
+     *
+     * Without it the timer is only ever scheduled when isDirty flips, so
+     * continuous typing never restarts it and the save turns from a debounce
+     * into a fixed interval.
+     */
+    changeKey?: unknown;
 }
 
 interface UseAutosaveResult {
@@ -30,6 +38,7 @@ export function useAutosave({
     save,
     enabled = true,
     delay = 1500,
+    changeKey,
 }: UseAutosaveOptions): UseAutosaveResult {
     const [status, setStatus] = useState<AutosaveStatus>('idle');
     const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
@@ -91,11 +100,16 @@ export function useAutosave({
         return chain;
     }, [clearTimer]);
 
-    // `status` is a dependency on purpose. Editing during a save leaves isDirty
-    // at true, and setting a boolean to the value it already has does not
-    // re-render - without this the effect would never run again and autosaving
-    // would quietly stop until the next Cmd+S or section change. Reacting to the
-    // save finishing gives those edits their own timer.
+    // Two dependencies here are less obvious than they look.
+    //
+    // `changeKey` restarts the timer on every edit. isDirty stays true while
+    // someone keeps typing, so on its own the effect never runs again and the
+    // first keystroke's timer fires mid-sentence - a save every delay rather
+    // than one after the typing stops.
+    //
+    // `status` covers the other direction: editing *during* a save also leaves
+    // isDirty at true, and without a re-run the queued edits would never get a
+    // timer of their own.
     useEffect(() => {
         if (!enabled || !isDirty || status === 'saving') {
             return;
@@ -108,7 +122,7 @@ export function useAutosave({
         }, delay);
 
         return clearTimer;
-    }, [isDirty, enabled, delay, status, runSave, clearTimer]);
+    }, [isDirty, enabled, delay, status, changeKey, runSave, clearTimer]);
 
     return {
         status,
