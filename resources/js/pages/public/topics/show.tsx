@@ -704,6 +704,7 @@ interface QuizQuestion {
         id: string;
         text: string;
         isCorrect: boolean;
+        explanation?: string;
     }[];
 }
 
@@ -874,9 +875,16 @@ function QuizRenderer({ data }: { data: QuizData }) {
                         const showCorrect = hasAnswered && answer.isCorrect;
                         const showIncorrect = hasAnswered && isSelected && !answer.isCorrect;
 
+                        // Only the picked option and the right one explain
+                        // themselves - revealing every rationale at once would
+                        // give away the answer on the next attempt.
+                        const explanation = hasAnswered && (isSelected || answer.isCorrect)
+                            ? answer.explanation?.trim()
+                            : undefined;
+
                         return (
+                            <div key={answer.id} className="space-y-1.5">
                             <button
-                                key={answer.id}
                                 type="button"
                                 onClick={() => handleAnswerSelect(answer.id)}
                                 disabled={hasAnswered}
@@ -919,6 +927,20 @@ function QuizRenderer({ data }: { data: QuizData }) {
                                     {answer.text}
                                 </span>
                             </button>
+
+                            {explanation && (
+                                <p
+                                    className={cn(
+                                        'ml-4 border-l-2 pl-3 text-sm leading-relaxed',
+                                        answer.isCorrect
+                                            ? 'border-emerald-300 text-emerald-800'
+                                            : 'border-rose-300 text-rose-800',
+                                    )}
+                                >
+                                    {explanation}
+                                </p>
+                            )}
+                            </div>
                         );
                     })}
                 </div>

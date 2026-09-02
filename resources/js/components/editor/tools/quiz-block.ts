@@ -14,6 +14,8 @@ interface QuizQuestion {
         id: string;
         text: string;
         isCorrect: boolean;
+        /** Wird nach dem Antworten unter dieser Option gezeigt. Optional. */
+        explanation?: string;
     }[];
 }
 
@@ -79,7 +81,7 @@ export default class QuizBlock implements BlockTool {
         };
     }
 
-    private createEmptyAnswer(isCorrect = false): { id: string; text: string; isCorrect: boolean } {
+    private createEmptyAnswer(isCorrect = false): { id: string; text: string; isCorrect: boolean; explanation?: string } {
         return {
             id: this.generateId(),
             text: '',
@@ -291,7 +293,7 @@ export default class QuizBlock implements BlockTool {
     }
 
     private renderAnswer(
-        answer: { id: string; text: string; isCorrect: boolean },
+        answer: { id: string; text: string; isCorrect: boolean; explanation?: string },
         aIndex: number,
         question: QuizQuestion
     ): HTMLElement {
@@ -351,6 +353,22 @@ export default class QuizBlock implements BlockTool {
 
         answerWrapper.appendChild(answerInput);
 
+        // Explanation, shown to the learner once this option has been picked.
+        const explanationInput = document.createElement('input');
+        explanationInput.type = 'text';
+        explanationInput.className = 'quiz-block__explanation-input';
+        explanationInput.placeholder = answer.isCorrect
+            ? 'Warum das richtig ist (optional)…'
+            : 'Warum das falsch ist (optional)…';
+        explanationInput.value = answer.explanation ?? '';
+        explanationInput.disabled = this.readOnly;
+        explanationInput.addEventListener('input', (e) => {
+            answer.explanation = (e.target as HTMLInputElement).value;
+        });
+        explanationInput.addEventListener('blur', () => {
+            this.block?.dispatchChange();
+        });
+
         // Delete answer button (only if more than 2 answers)
         if (!this.readOnly && question.answers.length > 2) {
             const deleteAnswerBtn = document.createElement('button');
@@ -378,7 +396,14 @@ export default class QuizBlock implements BlockTool {
             answerWrapper.appendChild(deleteAnswerBtn);
         }
 
-        return answerWrapper;
+        // Row and explanation share a wrapper so the explanation sits under
+        // its answer rather than beside it in the same flex line.
+        const group = document.createElement('div');
+        group.className = 'quiz-block__answer-group';
+        group.appendChild(answerWrapper);
+        group.appendChild(explanationInput);
+
+        return group;
     }
 
     private async uploadImage(file: File, question: QuizQuestion): Promise<void> {

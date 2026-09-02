@@ -597,3 +597,26 @@ it('fits every tool on one page of tools/list', function () {
     // is always the newest tools that end up on page two.
     expect(count($tools->getValue($server)))->toBeLessThanOrEqual($server->defaultPaginationLength);
 });
+
+it('carries per-answer explanations through to the block', function () {
+    $owner = User::factory()->create();
+    [, , $section] = course($owner);
+
+    MotionBaseServer::actingAs($owner)->tool(AddQuizBlock::class, [
+        'section_id' => $section->id,
+        'questions' => [['question' => 'Welche Kurve für ein Menü?', 'answers' => [
+            ['text' => 'Ease-Out', 'correct' => true, 'explanation' => 'Reagiert sofort auf den Klick.'],
+            ['text' => 'Ease-In', 'correct' => false, 'explanation' => 'Der träge Start wirkt wie Verzögerung.'],
+            ['text' => 'Linear', 'correct' => false],
+        ]]],
+    ])->assertOk();
+
+    $answers = collect($section->fresh()->content['blocks'])
+        ->firstWhere('type', 'quiz')['data']['questions'][0]['answers'];
+
+    expect($answers[0]['explanation'])->toBe('Reagiert sofort auf den Klick.')
+        ->and($answers[1]['explanation'])->toBe('Der träge Start wirkt wie Verzögerung.')
+        // Omitted rather than stored empty, so the renderers can test for
+        // presence instead of for a blank string.
+        ->and($answers[2])->not->toHaveKey('explanation');
+});

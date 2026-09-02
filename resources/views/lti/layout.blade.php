@@ -210,6 +210,16 @@
             border-color: #ef4444;
             background: #ef4444;
         }
+        .quiz-explanation {
+            margin: 0 0 0.5rem 1rem;
+            padding-left: 0.75rem;
+            border-left: 2px solid #e4e4e7;
+            font-size: 0.875rem;
+            line-height: 1.6;
+        }
+        .quiz-explanation--correct { border-left-color: #6ee7b7; color: #065f46; }
+        .quiz-explanation--incorrect { border-left-color: #fda4af; color: #9f1239; }
+
         .quiz-answer-text {
             flex: 1;
             color: #3f3f46;
@@ -455,6 +465,18 @@
             };
 
             // Quiz Renderer
+            // Quiz content comes from the database and is written into innerHTML.
+            // Authors are trusted, but an LTI embed runs inside somebody else's
+            // page, so it gets escaped rather than assumed safe.
+            function escapeHtml(value) {
+                return String(value == null ? '' : value)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+
             function initQuizzes() {
                 document.querySelectorAll('.quiz-container').forEach(function(container) {
                     if (container.dataset.initialized) return;
@@ -505,10 +527,10 @@
                         html += '</div></div>';
 
                         html += '<div class="quiz-body">';
-                        html += '<div class="quiz-question">' + q.question + '</div>';
+                        html += '<div class="quiz-question">' + escapeHtml(q.question) + '</div>';
 
                         if (q.imageUrl) {
-                            html += '<img src="' + q.imageUrl + '" class="quiz-question-image" alt="Frage Bild">';
+                            html += '<img src="' + escapeHtml(q.imageUrl) + '" class="quiz-question-image" alt="Frage Bild">';
                         }
 
                         html += '<div class="quiz-answers">';
@@ -536,8 +558,16 @@
                                 html += '</svg>';
                             }
                             html += '</div>';
-                            html += '<span class="quiz-answer-text">' + answer.text + '</span>';
+                            html += '<span class="quiz-answer-text">' + escapeHtml(answer.text) + '</span>';
                             html += '</div>';
+
+                            // Only the picked option and the right one explain
+                            // themselves, so a retry is not given away.
+                            var explanation = (answer.explanation || '').trim();
+                            if (state.answered && explanation && (answer.isCorrect || state.selectedAnswer === idx)) {
+                                html += '<p class="quiz-explanation' + (answer.isCorrect ? ' quiz-explanation--correct' : ' quiz-explanation--incorrect') + '">'
+                                     + escapeHtml(explanation) + '</p>';
+                            }
                         });
                         html += '</div></div>';
 

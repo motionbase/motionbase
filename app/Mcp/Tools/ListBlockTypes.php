@@ -38,7 +38,7 @@ class ListBlockTypes extends Tool
         ['type' => 'alert', 'created_by' => 'tool', 'syntax' => 'add_alert_block',
          'notes' => 'Coloured callout: info, warning, danger or neutral. For something a reader must not miss, not for emphasis.'],
         ['type' => 'quiz', 'created_by' => 'tool', 'syntax' => 'add_quiz_block',
-         'notes' => 'Multiple choice, single answer. Exactly one option per question must be correct; answers are shuffled per learner, so never refer to their position.'],
+         'notes' => 'Multiple choice, single answer. Exactly one option per question must be correct; answers are shuffled per learner, so never refer to their position. Each answer can carry an explanation shown when a learner picks it.'],
         ['type' => 'image', 'created_by' => 'tool', 'syntax' => 'list_media, then add_image_block',
          'notes' => 'A picture already in the media library. Uploading happens in the web editor.'],
         ['type' => 'youtube', 'created_by' => 'tool', 'syntax' => 'add_youtube_block',
