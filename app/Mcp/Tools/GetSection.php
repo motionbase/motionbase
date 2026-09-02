@@ -13,7 +13,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
 #[IsReadOnly]
-#[Description('Read one section as Markdown. Rich blocks (interactive graphics, quizzes, images) appear as "> [...]" placeholders and are listed separately under rich_blocks; they cannot be edited through Markdown.')]
+#[Description('Read one section as Markdown. Blocks that Markdown cannot express - interactive, quiz, alert, image, youtube, lottie - appear in the body as "> [...]" placeholders and are listed in full under rich_blocks, data included, so they can be recreated after an overwrite.')]
 class GetSection extends Tool
 {
     use ResolvesOwnedContent;
@@ -40,9 +40,12 @@ class GetSection extends Tool
             'is_published' => $section->is_published,
             'chapter' => ['id' => $section->chapter->id, 'title' => $section->chapter->title],
             'markdown' => MarkdownBlocks::toMarkdown($blocks),
+            // The data comes along on purpose: these blocks are destroyed by an
+            // update_section that passes markdown, and without their content
+            // here there would be no way to put them back.
             'rich_blocks' => collect($blocks)
+                ->map(fn (array $block, int $index) => ['index' => $index] + $block)
                 ->reject(fn (array $block) => in_array($block['type'] ?? '', $editable, true))
-                ->map(fn (array $block, int $index) => ['index' => $index, 'type' => $block['type'] ?? '?'])
                 ->values(),
         ]);
     }

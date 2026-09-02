@@ -37,8 +37,8 @@ class ListBlockTypes extends Tool
 
         ['type' => 'alert', 'created_by' => 'editor', 'syntax' => null,
          'notes' => 'Coloured callout: info, warning, danger or neutral.'],
-        ['type' => 'quiz', 'created_by' => 'editor', 'syntax' => null,
-         'notes' => 'Multiple choice questions with an answer key.'],
+        ['type' => 'quiz', 'created_by' => 'tool', 'syntax' => 'add_quiz_block',
+         'notes' => 'Multiple choice, single answer. Exactly one option per question must be correct; answers are shuffled per learner, so never refer to their position.'],
         ['type' => 'image', 'created_by' => 'editor', 'syntax' => null, 'notes' => 'Uploaded picture with a caption.'],
         ['type' => 'youtube', 'created_by' => 'editor', 'syntax' => null, 'notes' => 'Embedded video.'],
         ['type' => 'lottie', 'created_by' => 'editor', 'syntax' => null, 'notes' => 'Lottie animation, optionally with a state machine.'],

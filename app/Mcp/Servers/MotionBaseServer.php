@@ -3,6 +3,7 @@
 namespace App\Mcp\Servers;
 
 use App\Mcp\Tools\AddInteractiveBlock;
+use App\Mcp\Tools\AddQuizBlock;
 use App\Mcp\Tools\CreateChapter;
 use App\Mcp\Tools\CreateInteractive;
 use App\Mcp\Tools\CreateSection;
@@ -53,22 +54,29 @@ The remaining blocks cannot be produced from Markdown:
 
   interactive   Self-contained HTML graphic. create_interactive stores one,
                 add_interactive_block places it in a section.
+  quiz          Multiple choice, single answer. add_quiz_block writes one.
+                Answers are shuffled per learner, so never write an option
+                that refers to its own position.
+
+The rest can be read but only authored in the web editor:
+
   alert         Coloured callout (info / warning / danger / neutral).
-  quiz          Multiple choice questions with an answer key.
   image         Uploaded picture with a caption.
   youtube       Embedded video.
   lottie        Lottie animation, optionally with a state machine.
 
-get_section renders those six as "> [...]" placeholders and lists them under
-rich_blocks. They can be read but not written, with interactive as the one
-exception. Creating or editing the other five is done in the web editor.
+get_section renders all six as "> [...]" placeholders in the body and lists
+them under rich_blocks with their full data, so a block that an overwrite
+removes can be written back afterwards.
 
 # Overwriting
 
 update_section with markdown replaces the ENTIRE body. Anything that is not one
 of the five Markdown-backed types is lost, and the tool reports what it removed
-in dropped_rich_blocks. Read the section first if rich_blocks is not empty, and
-re-add interactive graphics afterwards with add_interactive_block.
+in dropped_rich_blocks. Read the section first if rich_blocks is not empty, then
+put the interactive graphics and quizzes back with add_interactive_block and
+add_quiz_block. Alert, image, youtube and lottie blocks cannot be restored, so
+do not overwrite a section that contains them.
 TXT)]
 class MotionBaseServer extends Server
 {
@@ -82,6 +90,7 @@ class MotionBaseServer extends Server
         UpdateSection::class,
         CreateInteractive::class,
         AddInteractiveBlock::class,
+        AddQuizBlock::class,
     ];
 
     protected array $resources = [

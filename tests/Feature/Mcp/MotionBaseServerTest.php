@@ -3,6 +3,7 @@
 use App\Mcp\Servers\MotionBaseServer;
 use App\Mcp\Support\MarkdownBlocks;
 use App\Mcp\Tools\AddInteractiveBlock;
+use App\Mcp\Tools\AddQuizBlock;
 use App\Mcp\Tools\CreateInteractive;
 use App\Mcp\Tools\CreateSection;
 use App\Mcp\Tools\GetSection;
@@ -15,6 +16,7 @@ use App\Models\Media;
 use App\Models\Section;
 use App\Models\Topic;
 use App\Models\User;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 
 use function Pest\Laravel\actingAs;
@@ -276,20 +278,48 @@ it('exposes the block vocabulary as a callable tool', function () {
         ->assertSee('dropped_rich_blocks');
 });
 
-it('keeps the block list in step with what the converter can write', function () {
-    // Asserted against the tool's own output rather than a copy of the list,
-    // so a type advertised as writable that cannot survive a round trip fails
-    // here instead of losing someone's content later.
+it('never advertises a block it cannot actually write', function () {
     $content = (new ListBlockTypes)->handle(new Laravel\Mcp\Request([]))->content()->toArray();
-    $payload = json_decode($content['text'] ?? '{}', true);
+    $blocks = json_decode($content['text'] ?? '{}', true)['blocks'] ?? [];
 
-    $writable = collect($payload['blocks'] ?? [])
-        ->where('writable', true)
-        ->pluck('type')->sort()->values()->all();
+    $registered = (new ReflectionClass(MotionBaseServer::class))->newInstanceWithoutConstructor();
+    $property = (new ReflectionClass(MotionBaseServer::class))->getProperty('tools');
+    $property->setAccessible(true);
 
-    $expected = collect(MarkdownBlocks::MARKDOWN_TYPES)->push('interactive')->sort()->values()->all();
+    $toolNames = collect($property->getValue($registered))
+        ->map(fn (string $class) => Str::snake(class_basename($class)))
+        ->all();
 
-    expect($writable)->toBe($expected);
+    foreach ($blocks as $block) {
+        if ($block['created_by'] === 'markdown') {
+            // Must survive a round trip, or an update_section destroys it.
+            expect(MarkdownBlocks::MARKDOWN_TYPES)->toContain($block['type']);
+            expect($block['writable'])->toBeTrue();
+        }
+
+        if ($block['created_by'] === 'tool') {
+            // A capability documented without an endpoint behind it is worse
+            // than no capability: it sends a model looking for a tool that
+            // does not exist.
+            // The field may name more than one tool in a sentence, so check
+            // every snake_case token it mentions.
+            preg_match_all('/\b[a-z]+(?:_[a-z]+)+\b/', $block['syntax'], $mentioned);
+
+            expect($mentioned[0])->not->toBeEmpty();
+
+            foreach ($mentioned[0] as $tool) {
+                expect($toolNames)->toContain($tool);
+            }
+
+            expect($block['writable'])->toBeTrue();
+        }
+
+        if ($block['created_by'] === 'editor') {
+            expect($block['writable'])->toBeFalse();
+        }
+    }
+
+    expect(collect($blocks)->where('writable', true))->toHaveCount(7);
 });
 
 it('marks read-only tools so clients do not lump them in with writes', function () {
@@ -316,4 +346,74 @@ it('tells the client which icon to use', function () {
     foreach ($icons as $icon) {
         expect(is_file(public_path($icon->src)))->toBeTrue("Icon fehlt: {$icon->src}");
     }
+});
+
+it('writes a quiz into a section', function () {
+    $owner = User::factory()->create();
+    [, , $section] = course($owner);
+
+    MotionBaseServer::actingAs($owner)
+        ->tool(AddQuizBlock::class, [
+            'section_id' => $section->id,
+            'position' => 0,
+            'questions' => [
+                ['question' => 'Was verändert Easing?', 'answers' => [
+                    ['text' => 'Die Verteilung der Bewegung', 'correct' => true],
+                    ['text' => 'Die Dauer', 'correct' => false],
+                ]],
+            ],
+        ])->assertOk();
+
+    $block = $section->fresh()->content['blocks'][0];
+    $question = $block['data']['questions'][0];
+
+    expect($block['type'])->toBe('quiz')
+        ->and($question['question'])->toBe('Was verändert Easing?')
+        // The renderer keys on these ids and shuffles by them, so they have to
+        // exist and be distinct even though the caller never supplies them.
+        ->and($question['id'])->toBeString()->not->toBeEmpty()
+        ->and(collect($question['answers'])->pluck('id')->unique())->toHaveCount(2)
+        ->and(collect($question['answers'])->where('isCorrect', true))->toHaveCount(1);
+});
+
+it('refuses a quiz question that has no single right answer', function () {
+    $owner = User::factory()->create();
+    [, , $section] = course($owner);
+
+    $withCorrect = fn (array $flags) => [
+        'section_id' => $section->id,
+        'questions' => [['question' => 'Frage', 'answers' => array_map(
+            fn (bool $c, int $i) => ['text' => 'Antwort '.$i, 'correct' => $c],
+            $flags, array_keys($flags),
+        )]],
+    ];
+
+    // The renderer resolves a pick with find(isCorrect): none means the
+    // question can never be answered right, several means only the first
+    // counts. Both look fine in the editor, so they have to fail here.
+    MotionBaseServer::actingAs($owner)->tool(AddQuizBlock::class, $withCorrect([false, false]))->assertHasErrors();
+    MotionBaseServer::actingAs($owner)->tool(AddQuizBlock::class, $withCorrect([true, true]))->assertHasErrors();
+
+    expect($section->fresh()->content['blocks'])->toHaveCount(2);
+});
+
+it('hands back rich block data so an overwrite can be undone', function () {
+    $owner = User::factory()->create();
+    [, , $section] = course($owner);
+
+    MotionBaseServer::actingAs($owner)->tool(AddQuizBlock::class, [
+        'section_id' => $section->id,
+        'questions' => [['question' => 'Bleibt das lesbar?', 'answers' => [
+            ['text' => 'Ja', 'correct' => true],
+            ['text' => 'Nein', 'correct' => false],
+        ]]],
+    ])->assertOk();
+
+    // Without the questions in the response, a model that overwrites the body
+    // has no way to put the quiz back - it never saw what was in it.
+    MotionBaseServer::actingAs($owner)
+        ->tool(GetSection::class, ['section_id' => $section->id])
+        ->assertOk()
+        ->assertSee('Bleibt das lesbar?')
+        ->assertSee('isCorrect');
 });
