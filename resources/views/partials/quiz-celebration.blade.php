@@ -85,56 +85,45 @@
     }
     .mb-celebrate__hint--in { opacity: 1; }
 
-    /* Easter egg: the "six seven" gesture, two palms held out and turned up,
-       weighing nothing against nothing. The right hand is the same glyph
-       mirrored. */
-    .mb-celebrate__hands {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: clamp(1.25rem, 5.5vw, 3.75rem);
-        font-size: clamp(3.5rem, 14vw, 7rem);
-        line-height: 1;
+    /* Easter egg. The GIF fills the screen as a blurred ground and stands
+       sharp in the middle on top of it: scaled up to full screen a small GIF
+       goes blocky, and left at its own size it sits marooned in a dark field.
+       Both <img> share one request. */
+    .mb-celebrate__stage {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
     }
+    .mb-celebrate__stage,
+    .mb-celebrate__gif {
+        opacity: 0;
+        transition: opacity 520ms cubic-bezier(0, 0, 0.58, 1);
+    }
+    .mb-celebrate--gif-ready .mb-celebrate__stage,
+    .mb-celebrate--gif-ready .mb-celebrate__gif { opacity: 1; }
 
-    /* The pair tips up and down in opposite phase - the weighing motion the
-       meme is built on. Mirroring lives inside the keyframes because the bob
-       animates the same transform property and would otherwise drop it, and
-       the pivot stays centred so the flip does not shift the glyph sideways.
-       The font stack is spelled out because a page font without the codepoint
-       would otherwise decide what the gesture looks like. */
-    .mb-celebrate__hand {
-        display: inline-block;
-        transform-origin: 50% 50%;
-        font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
-        filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.4));
-        animation: mb-celebrate-bob-left 620ms cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+    .mb-celebrate__gif-back {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        filter: blur(34px) saturate(1.25) brightness(0.5);
+        /* Etwas grösser als der Schirm, sonst steht der weichgezeichnete
+           Rand als heller Saum im Bild. */
+        transform: scale(1.15);
     }
-    .mb-celebrate__hand--right {
-        animation-name: mb-celebrate-bob-right;
-        animation-delay: 310ms;
-    }
-
-    .mb-celebrate__digit {
-        font-size: clamp(3rem, 12vw, 6rem);
-        font-weight: 700;
-        letter-spacing: -0.04em;
-        color: #ff0055;
-        animation: mb-celebrate-beat 620ms cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
-    }
-    .mb-celebrate__digit--seven { animation-delay: 310ms; }
-
-    @keyframes mb-celebrate-bob-left {
-        from { transform: translateY(-15%) rotate(-6deg); }
-        to   { transform: translateY(15%) rotate(5deg); }
-    }
-    @keyframes mb-celebrate-bob-right {
-        from { transform: scaleX(-1) translateY(15%) rotate(5deg); }
-        to   { transform: scaleX(-1) translateY(-15%) rotate(-6deg); }
-    }
-    @keyframes mb-celebrate-beat {
-        from { opacity: 0.45; transform: scale(0.94); }
-        to   { opacity: 1; transform: scale(1.06); }
+    .mb-celebrate__gif {
+        display: block;
+        margin: 0 auto;
+        /* Eine Zielhöhe statt nur einer Obergrenze: die GIFs sind teils nur
+           ein paar hundert Pixel gross und stünden sonst verloren in der
+           Mitte eines grossen Schirms. */
+        height: min(56vh, 520px);
+        width: auto;
+        max-width: 88vw;
+        object-fit: contain;
+        border-radius: 20px;
+        box-shadow: 0 28px 70px rgba(0, 0, 0, 0.65);
     }
 
     @keyframes mb-celebrate-pop {
@@ -149,12 +138,7 @@
         .mb-celebrate__score,
         .mb-celebrate__title,
         .mb-celebrate__sub,
-        .mb-celebrate__hint,
-        .mb-celebrate__hand,
-        .mb-celebrate__digit { transition: none; animation: none; }
-        .mb-celebrate__digit { opacity: 1; transform: none; }
-        .mb-celebrate__hand { transform: none; }
-        .mb-celebrate__hand--right { transform: scaleX(-1); }
+        .mb-celebrate__hint { transition: none; animation: none; }
         .mb-celebrate__score,
         .mb-celebrate__title,
         .mb-celebrate__sub { transform: none; opacity: 1; }
@@ -164,7 +148,25 @@
     (function () {
         var TOTAL = 6500;      // Gesamtdauer
         var FADE_AT = 5600;    // ab hier ausblenden
-        var SIX_SEVEN_TOTAL = 5200;
+        // Die GIFs liegen bei Giphy und werden von dort eingebunden statt ins
+        // Repo kopiert - das CDN ist der dafür vorgesehene Weg. Steht mehr als
+        // eines in der Liste, entscheidet der Zufall, damit dieselbe Niederlage
+        // nicht jedes Mal gleich aussieht.
+        var GIFS = {
+            'zero': [
+                'https://media.giphy.com/media/atFQviNRdKVxqAYyRK/giphy.gif',
+                'https://media.giphy.com/media/sLkIthus9lEwoe7PRx/giphy.gif'
+            ],
+            'six-seven': [
+                'https://media.giphy.com/media/TKa7fQzChHylCQ89to/giphy.gif'
+            ]
+        };
+
+        function pickGif(variant) {
+            if (!variant || !Object.prototype.hasOwnProperty.call(GIFS, variant)) return null;
+            var list = GIFS[variant];
+            return list.length ? list[Math.floor(Math.random() * list.length)] : null;
+        }
         var running = false;
 
         var COLORS = ['#ff0055', '#ff4d84', '#ffffff', '#e4e4e7', '#a1a1aa'];
@@ -211,21 +213,49 @@
             var center = document.createElement('div');
             center.className = 'mb-celebrate__center';
 
-            var sixSeven = opts.variant === 'six-seven';
+            // Bei reduzierter Bewegung gar kein GIF: ein bildfüllendes
+            // Endlosbild ist genau das, wogegen die Einstellung sich richtet.
+            var gif = reduced ? null : pickGif(opts.variant);
 
             var score = document.createElement('p');
             score.className = 'mb-celebrate__score';
             score.textContent = opts.score || '100%';
 
-            // Zwei Handflächen mit den Ziffern dazwischen
-            var hands = document.createElement('div');
-            hands.className = 'mb-celebrate__hands';
-            hands.setAttribute('aria-hidden', 'true');
-            hands.innerHTML =
-                '<span class="mb-celebrate__hand">\uD83E\uDEF4</span>' +
-                '<span class="mb-celebrate__digit">6</span>' +
-                '<span class="mb-celebrate__digit mb-celebrate__digit--seven">7</span>' +
-                '<span class="mb-celebrate__hand mb-celebrate__hand--right">\uD83E\uDEF4</span>';
+            var stage = null;
+            var front = null;
+
+            if (gif) {
+                stage = document.createElement('div');
+                stage.className = 'mb-celebrate__stage';
+                stage.setAttribute('aria-hidden', 'true');
+
+                var back = document.createElement('img');
+                back.className = 'mb-celebrate__gif-back';
+                back.alt = '';
+
+                front = document.createElement('img');
+                front.className = 'mb-celebrate__gif';
+                front.alt = '';
+
+                // Kein Referrer: Giphy soll nicht erfahren, auf welcher
+                // Kursseite jemand gerade sitzt.
+                back.referrerPolicy = 'no-referrer';
+                front.referrerPolicy = 'no-referrer';
+
+                // Erst einblenden, wenn das Bild wirklich da ist, sonst blitzt
+                // ein leerer Rahmen auf. Scheitert es, bleiben Titel und Zeile
+                // trotzdem stehen.
+                front.addEventListener('load', function () {
+                    overlay.classList.add('mb-celebrate--gif-ready');
+                });
+
+                // src zuletzt, damit der Handler steht, bevor ein Treffer aus
+                // dem Cache das load-Ereignis auslöst.
+                back.src = gif;
+                front.src = gif;
+
+                stage.appendChild(back);
+            }
 
             var title = document.createElement('p');
             title.className = 'mb-celebrate__title';
@@ -239,10 +269,11 @@
             hint.className = 'mb-celebrate__hint';
             hint.textContent = 'Klicken zum Schließen';
 
-            center.appendChild(sixSeven ? hands : score);
+            center.appendChild(front || score);
             center.appendChild(title);
             if (sub.textContent) center.appendChild(sub);
             overlay.appendChild(canvas);
+            if (stage) overlay.appendChild(stage);
             overlay.appendChild(center);
             overlay.appendChild(hint);
             document.body.appendChild(overlay);
@@ -307,18 +338,18 @@
                 return;
             }
 
-            var total = sixSeven ? SIX_SEVEN_TOTAL : TOTAL;
+            // Ein GIF läuft in einer Schleife - es gibt keinen Moment, an dem
+            // es von selbst vorbei wäre. Also bleibt das Overlay stehen, bis
+            // jemand wegklickt oder eine Taste drückt.
+            var total = TOTAL;
             var fadeAt = total - 900;
 
-            later(function () { title.classList.add('mb-celebrate__title--in'); }, sixSeven ? 700 : 900);
-            later(function () { sub.classList.add('mb-celebrate__sub--in'); }, sixSeven ? 880 : 1080);
-            later(function () { hint.classList.add('mb-celebrate__hint--in'); }, sixSeven ? 1600 : 2200);
+            later(function () { title.classList.add('mb-celebrate__title--in'); }, gif ? 700 : 900);
+            later(function () { sub.classList.add('mb-celebrate__sub--in'); }, gif ? 880 : 1080);
+            later(function () { hint.classList.add('mb-celebrate__hint--in'); }, gif ? 1600 : 2200);
 
-            if (sixSeven) {
-                // Die Hände tragen die Bewegung, Konfetti wäre hier zu viel -
-                // und der Witz lebt davon, dass gerade NICHTS gefeiert wird.
-                hands.style.opacity = '1';
-            } else {
+            if (!gif) {
+                // Konfetti nur da, wo es auch etwas zu feiern gibt.
                 later(function () { score.classList.add('mb-celebrate__score--in'); }, 220);
                 later(function () { burst(particles, width, height, 90, 1.5, 15); }, 160);
                 later(function () { burst(particles, width, height, 60, 2.6, 12); }, 700);
@@ -326,12 +357,14 @@
                 later(function () { burst(particles, width, height, 45, 3.0, 10); }, 2700);
             }
 
-            later(function () {
-                overlay.style.transition = 'opacity 900ms cubic-bezier(0.42, 0, 1, 1)';
-                overlay.classList.remove('mb-celebrate--in');
-            }, fadeAt);
+            if (!gif) {
+                later(function () {
+                    overlay.style.transition = 'opacity 900ms cubic-bezier(0.42, 0, 1, 1)';
+                    overlay.classList.remove('mb-celebrate--in');
+                }, fadeAt);
 
-            later(close, total);
+                later(close, total);
+            }
 
             var last = performance.now();
 
@@ -379,7 +412,9 @@
                 requestAnimationFrame(frame);
             }
 
-            requestAnimationFrame(frame);
+            // Ohne Konfetti gibt es nichts zu zeichnen, und die Schleife liefe
+            // sonst endlos weiter, weil das Overlay nicht mehr von selbst zugeht.
+            if (!gif) requestAnimationFrame(frame);
         };
     })();
 </script>

@@ -782,6 +782,16 @@ function QuizRenderer({ data }: { data: QuizData }) {
             return;
         }
 
+        if (correctCount === 0) {
+            celebrate?.({
+                variant: 'zero',
+                title: 'Null Punkte.',
+                subtitle: `0 / ${totalQuestions} · 0 %`,
+            });
+
+            return;
+        }
+
         // Easter egg. 67 % is what two right out of three rounds to, so it
         // turns up on its own rather than having to be aimed for.
         if (Math.round((correctCount / totalQuestions) * 100) === 67) {
