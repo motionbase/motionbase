@@ -787,8 +787,8 @@ function QuizRenderer({ data }: { data: QuizData }) {
         if (Math.round((correctCount / totalQuestions) * 100) === 67) {
             celebrate?.({
                 variant: 'six-seven',
-                title: 'Sechs… sieben.',
-                subtitle: `${correctCount} von ${totalQuestions}. Ausgerechnet 67 %.`,
+                title: 'six-seven',
+                subtitle: `${correctCount} / ${totalQuestions} · 67 %`,
             });
         }
     }, [isCompleted, correctCount, totalQuestions]);

@@ -85,25 +85,37 @@
     }
     .mb-celebrate__hint--in { opacity: 1; }
 
-    /* Easter egg: the "six seven" gesture, two palms weighing nothing against
-       nothing. Emoji rather than drawn hands - it reads instantly and needs no
-       asset. The right palm is mirrored so the pair faces each other. */
+    /* Easter egg: the "six seven" gesture, two open palms held out towards the
+       viewer, weighing nothing against nothing. The right palm is mirrored so
+       the pair is symmetrical. */
     .mb-celebrate__hands {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: clamp(0.5rem, 4vw, 2.5rem);
+        gap: clamp(1.25rem, 5.5vw, 3.75rem);
         font-size: clamp(3.5rem, 14vw, 7rem);
         line-height: 1;
     }
 
+    /* The palms are held out in front, not raised, so the emoji is the palm-up
+       hand and the pair tips up and down in opposite phase - the weighing
+       motion the meme is built on. Mirroring lives inside the keyframes
+       because the bob animates the same transform property. */
+    .mb-celebrate__hand-svg {
+        display: block;
+        width: 1.15em;
+        height: 1.15em;
+        overflow: visible;
+    }
     .mb-celebrate__hand {
         display: inline-block;
-        animation: mb-celebrate-bob 620ms cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+        transform-origin: 70% 50%;
+        filter: drop-shadow(0 12px 18px rgba(0, 0, 0, 0.45));
+        animation: mb-celebrate-bob-left 620ms cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
     }
     .mb-celebrate__hand--right {
-        transform: scaleX(-1);
-        animation-name: mb-celebrate-bob-mirrored;
+        transform-origin: 30% 50%;
+        animation-name: mb-celebrate-bob-right;
         animation-delay: 310ms;
     }
 
@@ -116,13 +128,13 @@
     }
     .mb-celebrate__digit--seven { animation-delay: 310ms; }
 
-    @keyframes mb-celebrate-bob {
-        from { transform: translateY(-14%); }
-        to   { transform: translateY(14%); }
+    @keyframes mb-celebrate-bob-left {
+        from { transform: scaleX(-1) translateY(-16%) rotate(10deg); }
+        to   { transform: scaleX(-1) translateY(16%) rotate(-8deg); }
     }
-    @keyframes mb-celebrate-bob-mirrored {
-        from { transform: scaleX(-1) translateY(14%); }
-        to   { transform: scaleX(-1) translateY(-14%); }
+    @keyframes mb-celebrate-bob-right {
+        from { transform: translateY(16%) rotate(8deg); }
+        to   { transform: translateY(-16%) rotate(-10deg); }
     }
     @keyframes mb-celebrate-beat {
         from { opacity: 0.45; transform: scale(0.94); }
@@ -145,6 +157,8 @@
         .mb-celebrate__hand,
         .mb-celebrate__digit { transition: none; animation: none; }
         .mb-celebrate__digit { opacity: 1; transform: none; }
+        .mb-celebrate__hand { transform: scaleX(-1); }
+        .mb-celebrate__hand--right { transform: none; }
         .mb-celebrate__score,
         .mb-celebrate__title,
         .mb-celebrate__sub { transform: none; opacity: 1; }
@@ -156,6 +170,30 @@
         var FADE_AT = 5600;    // ab hier ausblenden
         var SIX_SEVEN_TOTAL = 5200;
         var running = false;
+
+        // Eine offene Hand, die Fläche zur Betrachterin. Der Daumen sitzt auf
+        // der Fläche und zeigt nach innen - bei nach aussen gedrehtem Daumen
+        // sähe man den Handrücken. Die Finger liegen dahinter und sind kurz,
+        // weil sie perspektivisch verkürzt sind. Gezeichnet statt als Emoji,
+        // weil jede Plattform ein anderes liefert und keines die Hand nach
+        // vorne streckt.
+        var HAND_SVG =
+            '<svg class="mb-celebrate__hand-svg" viewBox="0 0 120 120" aria-hidden="true" focusable="false">' +
+                '<g fill="#f2b62f">' +
+                    '<rect x="30" y="25" width="15" height="46" rx="7.5" transform="rotate(-9 37.5 48)"/>' +
+                    '<rect x="46" y="20" width="15" height="51" rx="7.5"/>' +
+                    '<rect x="62" y="24" width="15" height="47" rx="7.5" transform="rotate(8 69.5 48)"/>' +
+                    '<rect x="77" y="33" width="14" height="38" rx="7" transform="rotate(16 84 52)"/>' +
+                '</g>' +
+                '<rect x="27" y="52" width="68" height="50" rx="23" fill="#ffcf55"/>' +
+                '<path d="M35 88 L16 67" fill="none" stroke="#ffd66b" stroke-width="22" stroke-linecap="round"/>' +
+                '<ellipse cx="41" cy="83" rx="13" ry="16" fill="#ffd66b" transform="rotate(-10 41 83)"/>' +
+                '<ellipse cx="66" cy="82" rx="16" ry="12" fill="#ffdc84" opacity="0.45"/>' +
+                '<g fill="none" stroke="#e0a428" stroke-width="3" stroke-linecap="round" opacity="0.4">' +
+                    '<path d="M43 65 q-4 15 2 26"/>' +
+                    '<path d="M52 69 q13 5 25 2"/>' +
+                '</g>' +
+            '</svg>';
 
         var COLORS = ['#ff0055', '#ff4d84', '#ffffff', '#e4e4e7', '#a1a1aa'];
 
@@ -212,10 +250,10 @@
             hands.className = 'mb-celebrate__hands';
             hands.setAttribute('aria-hidden', 'true');
             hands.innerHTML =
-                '<span class="mb-celebrate__hand">\u270B</span>' +
+                '<span class="mb-celebrate__hand">' + HAND_SVG + '</span>' +
                 '<span class="mb-celebrate__digit">6</span>' +
                 '<span class="mb-celebrate__digit mb-celebrate__digit--seven">7</span>' +
-                '<span class="mb-celebrate__hand mb-celebrate__hand--right">\u270B</span>';
+                '<span class="mb-celebrate__hand mb-celebrate__hand--right">' + HAND_SVG + '</span>';
 
             var title = document.createElement('p');
             title.className = 'mb-celebrate__title';

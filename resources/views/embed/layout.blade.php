@@ -601,8 +601,8 @@
                             } else if (percentage === 67) {
                                 window.motionbaseCelebrate({
                                     variant: 'six-seven',
-                                    title: 'Sechs… sieben.',
-                                    subtitle: state.score + ' von ' + questions.length + '. Ausgerechnet 67 %.',
+                                    title: 'six-seven',
+                                    subtitle: state.score + ' / ' + questions.length + ' · 67 %',
                                 });
                             }
                         }
