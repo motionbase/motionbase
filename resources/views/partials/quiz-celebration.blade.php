@@ -86,7 +86,7 @@
     .mb-celebrate__hint--in { opacity: 1; }
 
     /* Easter egg: the "six seven" gesture, two palms held out and turned up,
-       weighing nothing against nothing. The right hand is the same drawing
+       weighing nothing against nothing. The right hand is the same glyph
        mirrored. */
     .mb-celebrate__hands {
         display: flex;
@@ -98,17 +98,15 @@
     }
 
     /* The pair tips up and down in opposite phase - the weighing motion the
-       meme is built on. It pivots near the wrist, at the top, so the fingers
-       carry the swing. Mirroring lives inside the keyframes because the bob
-       animates the same transform property and would otherwise drop it. */
-    .mb-celebrate__hand-svg {
-        display: block;
-        width: 1.5em;
-        height: auto;
-    }
+       meme is built on. Mirroring lives inside the keyframes because the bob
+       animates the same transform property and would otherwise drop it, and
+       the pivot stays centred so the flip does not shift the glyph sideways.
+       The font stack is spelled out because a page font without the codepoint
+       would otherwise decide what the gesture looks like. */
     .mb-celebrate__hand {
         display: inline-block;
-        transform-origin: 50% 14%;
+        transform-origin: 50% 50%;
+        font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
         filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.4));
         animation: mb-celebrate-bob-left 620ms cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
     }
@@ -169,81 +167,6 @@
         var SIX_SEVEN_TOTAL = 5200;
         var running = false;
 
-        // Eine offene Hand nach der Vorlage: Fläche nach oben, nach vorne
-        // gestreckt, Finger gefächert nach unten, Daumen nach aussen - bei
-        // einer Fläche nach oben liegt der Daumen aussen, nicht innen. Die
-        // Proportionen stammen aus der Vorlage: die Fläche etwas breiter als
-        // hoch, Finger gut ein Fünftel davon dick, sodass sie sich an der
-        // Wurzel berühren, und von innen nach aussen kürzer. Fläche und Daumen
-        // sind ein einziger Pfad, damit der Daumen aus der Fläche herauswächst
-        // statt danebenzukleben. Gezeichnet statt als Emoji, weil jede
-        // Plattform ein anderes liefert und keines diese Haltung hat. Die
-        // Verläufe brauchen je Hand eigene IDs, sonst greifen beide auf
-        // dieselbe Definition zu.
-        function handSvg(id) {
-            var ref = function (name) { return 'url(#mb-' + name + '-' + id + ')'; };
-            // Fläche und Daumen in einem Zug, damit der Daumen aus der Fläche
-            // herauswächst statt danebenzukleben. Derselbe Pfad beschneidet
-            // die Schattierung - sonst malen die Glanzlichter über die
-            // Silhouette hinaus und werden auf dem dunklen Grund zu Schleiern.
-            var palm = 'M8 34 C18 26 42 23 66 24 C80 25 84 26 90 25' +
-                ' C112 13 158 12 192 30 C212 41 216 62 214 82' +
-                ' C212 104 200 118 172 124 C140 131 108 128 92 120' +
-                ' C78 113 70 100 64 84 C58 70 50 60 36 56' +
-                ' C20 51 0 48 8 34 Z';
-            return '<svg class="mb-celebrate__hand-svg" viewBox="0 8 220 206" aria-hidden="true" focusable="false">' +
-                '<defs>' +
-                    '<linearGradient id="mb-palm-' + id + '" x1="0.25" y1="0" x2="0.7" y2="1">' +
-                        '<stop offset="0" stop-color="#f8c5a6"/>' +
-                        '<stop offset="0.45" stop-color="#e2a37f"/>' +
-                        '<stop offset="1" stop-color="#bb7a59"/>' +
-                    '</linearGradient>' +
-                    '<linearGradient id="mb-finger-' + id + '" x1="0.35" y1="0" x2="0.65" y2="1">' +
-                        '<stop offset="0" stop-color="#935c40"/>' +
-                        '<stop offset="0.3" stop-color="#e0a37f"/>' +
-                        '<stop offset="1" stop-color="#c58764"/>' +
-                    '</linearGradient>' +
-                    '<radialGradient id="mb-dip-' + id + '">' +
-                        '<stop offset="0" stop-color="#9c5e42" stop-opacity="0.4"/>' +
-                        '<stop offset="1" stop-color="#9c5e42" stop-opacity="0"/>' +
-                    '</radialGradient>' +
-                    '<radialGradient id="mb-mound-' + id + '">' +
-                        '<stop offset="0" stop-color="#ffdfc6" stop-opacity="0.7"/>' +
-                        '<stop offset="1" stop-color="#ffdfc6" stop-opacity="0"/>' +
-                    '</radialGradient>' +
-                    '<clipPath id="mb-clip-' + id + '"><path d="' + palm + '"/></clipPath>' +
-                '</defs>' +
-                // Finger, hinter der Fläche, damit die Ansätze verdeckt sind
-                '<g fill="none" stroke="' + ref('finger') + '" stroke-linecap="round">' +
-                    '<path d="M96 106 C84 128 66 156 52 182" stroke-width="30"/>' +
-                    '<path d="M126 114 C122 142 114 170 104 196" stroke-width="31"/>' +
-                    '<path d="M156 114 C156 140 152 168 146 192" stroke-width="29"/>' +
-                    '<path d="M184 106 C192 128 194 152 190 172" stroke-width="25"/>' +
-                '</g>' +
-                '<path d="' + palm + '" fill="' + ref('palm') + '"/>' +
-                // Mulde, Daumenballen, Fingerwurzeln, Glanzkanten
-                '<g clip-path="url(#mb-clip-' + id + ')">' +
-                    '<ellipse cx="150" cy="72" rx="44" ry="30" fill="' + ref('dip') + '"/>' +
-                    '<ellipse cx="88" cy="88" rx="24" ry="30" fill="' + ref('mound') + '" transform="rotate(-25 88 88)"/>' +
-                    '<g fill="#ffdcc0" opacity="0.26">' +
-                        '<ellipse cx="98" cy="104" rx="15" ry="8"/>' +
-                        '<ellipse cx="127" cy="112" rx="15" ry="8"/>' +
-                        '<ellipse cx="157" cy="112" rx="15" ry="8"/>' +
-                        '<ellipse cx="183" cy="102" rx="12" ry="7"/>' +
-                    '</g>' +
-                    '<ellipse cx="150" cy="26" rx="44" ry="11" fill="#ffffff" opacity="0.22"/>' +
-                    '<ellipse cx="42" cy="33" rx="30" ry="8" fill="#ffffff" opacity="0.2" transform="rotate(-4 42 33)"/>' +
-                '</g>' +
-                // Fingerglieder, kurz genug um im Finger zu bleiben
-                '<g fill="none" stroke="#95593d" stroke-width="3" stroke-linecap="round" opacity="0.25">' +
-                    '<path d="M67 135 L85 145"/><path d="M55 156 L73 166"/>' +
-                    '<path d="M106 148 L126 154"/><path d="M100 170 L120 176"/>' +
-                    '<path d="M142 148 L162 150"/><path d="M139 169 L159 171"/>' +
-                    '<path d="M178 137 L196 135"/><path d="M179 155 L197 153"/>' +
-                '</g>' +
-            '</svg>';
-        }
-
         var COLORS = ['#ff0055', '#ff4d84', '#ffffff', '#e4e4e7', '#a1a1aa'];
 
         function burst(particles, width, height, count, spread, speed) {
@@ -299,10 +222,10 @@
             hands.className = 'mb-celebrate__hands';
             hands.setAttribute('aria-hidden', 'true');
             hands.innerHTML =
-                '<span class="mb-celebrate__hand">' + handSvg('a') + '</span>' +
+                '<span class="mb-celebrate__hand">\uD83E\uDEF4</span>' +
                 '<span class="mb-celebrate__digit">6</span>' +
                 '<span class="mb-celebrate__digit mb-celebrate__digit--seven">7</span>' +
-                '<span class="mb-celebrate__hand mb-celebrate__hand--right">' + handSvg('b') + '</span>';
+                '<span class="mb-celebrate__hand mb-celebrate__hand--right">\uD83E\uDEF4</span>';
 
             var title = document.createElement('p');
             title.className = 'mb-celebrate__title';
