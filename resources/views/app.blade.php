@@ -46,5 +46,6 @@
     </head>
     <body class="font-sans antialiased">
         @inertia
+        @include('partials.quiz-celebration')
     </body>
 </html>

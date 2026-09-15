@@ -605,6 +605,21 @@
 
                         container.innerHTML = html;
                         attachEventListeners();
+
+                        if (typeof window.motionbaseCelebrate === 'function') {
+                            if (percentage === 100) {
+                                window.motionbaseCelebrate({
+                                    title: 'Alles richtig.',
+                                    subtitle: questions.length + ' von ' + questions.length + ' Fragen.',
+                                });
+                            } else if (percentage === 67) {
+                                window.motionbaseCelebrate({
+                                    variant: 'six-seven',
+                                    title: 'Sechs… sieben.',
+                                    subtitle: state.score + ' von ' + questions.length + '. Ausgerechnet 67 %.',
+                                });
+                            }
+                        }
                     }
 
                     function attachEventListeners() {
@@ -684,5 +699,6 @@
         })();
     </script>
     @include('partials.interactive-resize')
+    @include('partials.quiz-celebration')
 </body>
 </html>

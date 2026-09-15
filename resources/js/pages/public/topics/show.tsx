@@ -757,6 +757,42 @@ function QuizRenderer({ data }: { data: QuizData }) {
         }
     }, [hasAnswered, currentAnswers]);
 
+    // Fires once the quiz ends with nothing wrong. The overlay itself lives in
+    // a Blade partial so the course view, the public embed and the LTI embed
+    // all run the same animation instead of three lookalikes.
+    useEffect(() => {
+        if (!isCompleted || totalQuestions === 0) {
+            return;
+        }
+
+        const celebrate = (window as unknown as {
+            motionbaseCelebrate?: (options: {
+                variant?: string;
+                title?: string;
+                subtitle?: string;
+            }) => void;
+        }).motionbaseCelebrate;
+
+        if (correctCount === totalQuestions) {
+            celebrate?.({
+                title: 'Alles richtig.',
+                subtitle: `${totalQuestions} von ${totalQuestions} Fragen.`,
+            });
+
+            return;
+        }
+
+        // Easter egg. 67 % is what two right out of three rounds to, so it
+        // turns up on its own rather than having to be aimed for.
+        if (Math.round((correctCount / totalQuestions) * 100) === 67) {
+            celebrate?.({
+                variant: 'six-seven',
+                title: 'Sechs… sieben.',
+                subtitle: `${correctCount} von ${totalQuestions}. Ausgerechnet 67 %.`,
+            });
+        }
+    }, [isCompleted, correctCount, totalQuestions]);
+
     const handleNextQuestion = useCallback(() => {
         if (currentQuestionIndex < totalQuestions - 1) {
             setCurrentQuestionIndex((prev) => prev + 1);
