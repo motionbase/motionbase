@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Media;
 use App\Services\InteractiveAssets;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -166,10 +167,22 @@ class InteractiveController extends Controller
      * same-origin requests. The iframe sandbox attribute alone would only
      * cover the embedded case.
      */
-    public function show(Request $request, Media $media): Response
+    public function show(Request $request, Media $media): Response|RedirectResponse
     {
         abort_unless($media->type === 'interactive', 404);
 
+        // A graphic with files finds them only from one level down. Reached at
+        // the short address - a block placed by hand or through the MCP server
+        // with the id pieced together - its model would 404 without a trace.
+        if ($media->assets()->exists()) {
+            return redirect()->route('interactive.file', ['media' => $media, 'file' => 'index.html']);
+        }
+
+        return $this->document($request, $media);
+    }
+
+    private function document(Request $request, Media $media): Response
+    {
         $disk = Storage::disk('local');
 
         abort_unless($disk->exists($media->path), 404);
@@ -200,8 +213,10 @@ class InteractiveController extends Controller
      */
     public function file(Request $request, Media $media, string $file): Response|BinaryFileResponse
     {
+        abort_unless($media->type === 'interactive', 404);
+
         return $file === 'index.html'
-            ? $this->show($request, $media)
+            ? $this->document($request, $media)
             : $this->asset($request, $media, $file);
     }
 

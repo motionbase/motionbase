@@ -61,7 +61,13 @@ through create_section and update_section:
 The other six are placed by their own tool:
 
   interactive   create_interactive stores the HTML, add_interactive_block
-                places it. See /design for the house style.
+                places it. See /design for the house style. A graphic can
+                bring 3D models and textures (glb, gltf, bin, png, jpg, webp),
+                but not through this server: write it to load them by
+                relative path, e.g. loader.load('model.glb'), give the user
+                the HTML, and have them upload it together with those files
+                in the web editor's interactive block. list_media shows a
+                graphic's files and its url - place it with that url as given.
   quiz          add_quiz_block. Multiple choice, single answer, exactly one
                 option correct. Answers are shuffled per learner, so never
                 write one that refers to its own position.

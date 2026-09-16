@@ -12,7 +12,7 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
 #[IsReadOnly]
-#[Description('List files in the media library so they can be placed with add_image_block or add_lottie_block. Files are uploaded in the web editor; this server does not accept uploads.')]
+#[Description('List files in the media library so they can be placed with add_image_block, add_lottie_block or add_interactive_block. For an interactive graphic, files names the models and textures uploaded with it, which it loads by relative path. Files are uploaded in the web editor; this server does not accept uploads.')]
 class ListMedia extends Tool
 {
     public function handle(Request $request): Response
@@ -28,6 +28,7 @@ class ListMedia extends Tool
         }
 
         $media = Media::query()
+            ->with('assets')
             ->when($validated['type'] ?? null, fn ($query, $type) => $query->where('type', $type))
             ->when($validated['search'] ?? null, fn ($query, $search) => $query
                 ->where(fn ($q) => $q->where('original_filename', 'like', "%{$search}%")
@@ -35,14 +36,23 @@ class ListMedia extends Tool
             ->latest()
             ->limit($validated['limit'] ?? 30)
             ->get()
-            ->map(fn (Media $file) => [
-                'id' => $file->id,
-                'name' => $file->original_filename,
-                'type' => $file->type,
-                'url' => $file->url,
-                'alt' => $file->alt,
-                'size' => $file->human_size,
-            ]);
+            ->map(function (Media $file) {
+                $entry = [
+                    'id' => $file->id,
+                    'name' => $file->original_filename,
+                    'type' => $file->type,
+                    'url' => $file->url,
+                    'alt' => $file->alt,
+                    'size' => $file->human_size,
+                ];
+
+                // Only graphics carry files; on anything else the key would just be noise
+                if ($file->type === 'interactive') {
+                    $entry['files'] = $file->assets->pluck('name')->all();
+                }
+
+                return $entry;
+            });
 
         return Response::json(['media' => $media]);
     }

@@ -222,6 +222,19 @@ it('does not hand out a file under any graphic but its own', function () {
     ]);
 
     get("/interactive/{$image->id}/model.glb")->assertNotFound();
+    get("/interactive/{$image->id}/index.html")->assertNotFound();
+});
+
+it('sends the short address of a graphic with files to where it finds them', function () {
+    uploadWithAssets([assetFile('model.glb', glbBytes())])->assertOk();
+    $media = Media::firstOrFail();
+
+    // A block placed with the id pieced together - by hand or through the MCP
+    // server - would otherwise load the page and 404 on the model without a trace.
+    get("/interactive/{$media->id}")->assertRedirect("/interactive/{$media->id}/index.html");
+
+    // And no loop from there.
+    get("/interactive/{$media->id}/index.html")->assertOk();
 });
 
 it('keeps the files out of reach of the raw storage route', function () {

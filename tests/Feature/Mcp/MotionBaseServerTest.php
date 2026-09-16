@@ -275,6 +275,49 @@ it('treats tables as editable rather than as a rich block', function () {
         ->assertSee('"dropped_rich_blocks":[]', false);
 });
 
+it('tells the client which files a graphic was uploaded with', function () {
+    $owner = User::factory()->create();
+
+    $graphic = Media::create([
+        'filename' => 'g.html', 'original_filename' => 'wuerfel.html', 'path' => 'interactive/g.html',
+        'url' => '/interactive/1/index.html', 'mime_type' => 'text/html', 'type' => 'interactive', 'size' => 10,
+    ]);
+    $graphic->assets()->create([
+        'name' => 'model.glb', 'path' => 'interactive/g/x.glb', 'mime_type' => 'model/gltf-binary', 'size' => 10,
+    ]);
+
+    Media::create([
+        'filename' => 'x.png', 'original_filename' => 'diagramm.png', 'path' => 'editor-images/x.png',
+        'url' => '/storage/editor-images/x.png', 'mime_type' => 'image/png', 'type' => 'image', 'size' => 10,
+    ]);
+
+    // Without this a client writing a 3D graphic has no way to learn what the
+    // author already uploaded, or that the url differs from /interactive/{id}.
+    MotionBaseServer::actingAs($owner)->tool(ListMedia::class, ['type' => 'interactive'])
+        ->assertOk()
+        ->assertSee('"files":["model.glb"]');
+
+    MotionBaseServer::actingAs($owner)->tool(ListMedia::class, ['type' => 'image'])
+        ->assertOk()
+        ->assertSee('diagramm.png')
+        ->assertDontSee('"files"');
+});
+
+it('tells the client how a graphic gets its models', function () {
+    // The package only exposes the instructions through the server class, and
+    // most clients read tool descriptions rather than those - so both carry it.
+    MotionBaseServer::actingAs(User::factory()->create())
+        ->tool(ListBlockTypes::class)
+        ->assertOk()
+        ->assertSee('web editor')
+        ->assertSee('relative path');
+
+    expect((new CreateInteractive)->description())
+        ->toContain('web editor')
+        ->toContain('model.glb')
+        ->not->toContain('must be inline');
+});
+
 it('exposes the block vocabulary as a callable tool', function () {
     // The inventory also lives in the server instructions, but most clients
     // never surface those - a tool is the only discoverable form.

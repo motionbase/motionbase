@@ -51,7 +51,7 @@ class AddInteractiveBlock extends Tool
     {
         return [
             'section_id' => $schema->integer()->description('Section to add the graphic to.')->required(),
-            'url' => $schema->string()->description('Graphic URL, e.g. /interactive/7 from create_interactive.')->required(),
+            'url' => $schema->string()->description('Graphic URL exactly as create_interactive or list_media returns it, e.g. /interactive/7. A graphic uploaded with files is addressed as /interactive/8/index.html, the only place it finds them.')->required(),
             'caption' => $schema->string()->description('Optional caption below the graphic. Leave empty if the graphic has its own heading.'),
             'height' => $schema->integer()->description('Fallback height in px (120-5000, default 480). Overridden once the graphic reports its own height.'),
             'position' => $this->positionSchema($schema),

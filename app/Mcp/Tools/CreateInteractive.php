@@ -12,7 +12,7 @@ use Laravel\Mcp\Response;
 use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
-#[Description('Store a self-contained interactive HTML graphic and return the URL to embed it with add_interactive_block. The graphic runs on an opaque origin (CSP sandbox), so it must not use cookies, localStorage or requests to the app - canvas, SVG, CSS animation and inline JS are fine. To make the embed size itself, post {type:"motionbase:resize", height} to window.parent; see resources/interactives/README.md.')]
+#[Description('Store a self-contained interactive HTML graphic and return the URL to embed it with add_interactive_block. The graphic runs on an opaque origin (CSP sandbox), so it must not use cookies, localStorage or requests to the app - canvas, SVG, WebGL, CSS animation and inline JS are fine, and a library too large to inline, such as three.js, may come from a pinned CDN version through an importmap. This tool stores the HTML and nothing else. A graphic that needs a 3D model or textures cannot be finished here: write it to load them by relative path (loader.load("model.glb")), give the user the HTML, and tell them to upload it together with those files in the web editor interactive block - glb, gltf, bin, png, jpg or webp, flat file names without subfolders, and a model may only reference files uploaded with it. The upload creates the block. To make the embed size itself, post {type:"motionbase:resize", height} to window.parent; see /design.')]
 class CreateInteractive extends Tool
 {
     public function handle(Request $request): Response
@@ -59,7 +59,7 @@ class CreateInteractive extends Tool
     {
         return [
             'name' => $schema->string()->description('Human readable name, used as the filename in the media library.')->required(),
-            'html' => $schema->string()->description('The complete HTML document. All CSS and JS must be inline - external files are not served.')->required(),
+            'html' => $schema->string()->description('The complete HTML document. CSS and JS inline. No files can be attached here - see the tool description for graphics that need a model or textures.')->required(),
         ];
     }
 }
