@@ -107,13 +107,15 @@ export default class InteractiveBlock implements BlockTool {
 
         const fileInput = document.createElement('input');
         fileInput.type = 'file';
-        fileInput.accept = '.html,.htm';
+        // The HTML document, optionally with the models and textures it loads
+        fileInput.accept = '.html,.htm,.glb,.gltf,.bin,.png,.jpg,.jpeg,.webp';
+        fileInput.multiple = true;
         fileInput.style.display = 'none';
         fileInput.addEventListener('change', async (e) => {
             const target = e.target as HTMLInputElement;
-            const file = target.files?.[0];
-            if (file) {
-                await this.uploadFile(file);
+            const files = Array.from(target.files ?? []);
+            if (files.length > 0) {
+                await this.uploadFiles(files);
             }
         });
 
@@ -158,15 +160,53 @@ export default class InteractiveBlock implements BlockTool {
 
         const hint = document.createElement('p');
         hint.className = 'interactive-block__hint';
-        hint.textContent = 'Eigenständige HTML-Datei – läuft isoliert in einer Sandbox';
+        hint.textContent = 'HTML-Datei, optional mit 3D-Modellen und Texturen – läuft isoliert in einer Sandbox';
         inputWrapper.appendChild(hint);
 
         this.wrapper.appendChild(inputWrapper);
     }
 
-    private async uploadFile(file: File): Promise<void> {
+    // Mirrors InteractiveAssets on the server. Checked here as well because
+    // PHP drops every file past max_file_uploads without an error, and a
+    // request past post_max_size arrives empty - either would otherwise
+    // surface as a baffling upload failure.
+    private static readonly MAX_ASSETS = 19;
+    private static readonly MAX_ASSET_BYTES = 25 * 1024 * 1024;
+    private static readonly MAX_TOTAL_ASSET_BYTES = 60 * 1024 * 1024;
+
+    private async uploadFiles(files: File[]): Promise<void> {
+        const isDocument = (file: File) => /\.html?$/i.test(file.name);
+        const documents = files.filter(isDocument);
+        const assets = files.filter((file) => !isDocument(file));
+
+        if (documents.length !== 1) {
+            alert(documents.length === 0
+                ? 'Bitte die HTML-Datei mit auswählen – die anderen Dateien werden zusammen mit ihr hochgeladen.'
+                : 'Bitte genau eine HTML-Datei auswählen. Jede Grafik braucht einen eigenen Block.');
+            return;
+        }
+
+        if (assets.length > InteractiveBlock.MAX_ASSETS) {
+            alert(`Höchstens ${InteractiveBlock.MAX_ASSETS} Dateien pro Grafik.`);
+            return;
+        }
+
+        const tooLarge = assets.find((file) => file.size > InteractiveBlock.MAX_ASSET_BYTES);
+        if (tooLarge) {
+            alert(`„${tooLarge.name}“ ist größer als 25 MB.`);
+            return;
+        }
+
+        if (assets.reduce((total, file) => total + file.size, 0) > InteractiveBlock.MAX_TOTAL_ASSET_BYTES) {
+            alert('Die Dateien sind zusammen größer als 60 MB.');
+            return;
+        }
+
         const formData = new FormData();
-        formData.append('interactive', file);
+        // The document first: should PHP ever cut the list short, it keeps it.
+        formData.append('interactive', documents[0]);
+        assets.forEach((file) => formData.append('assets[]', file));
+        formData.append('asset_count', String(assets.length));
 
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
 
@@ -192,8 +232,15 @@ export default class InteractiveBlock implements BlockTool {
 
             if (!response.ok) {
                 const errorText = await response.text();
+                let message = errorText;
+                try {
+                    // The server explains what is wrong with which file
+                    message = JSON.parse(errorText).message ?? errorText;
+                } catch {
+                    // Not JSON - show it as it came
+                }
                 console.error('Interactive upload failed with status:', response.status, errorText);
-                alert(`Upload fehlgeschlagen (${response.status}): ${errorText || 'Unbekannter Fehler'}`);
+                alert(`Upload fehlgeschlagen (${response.status}): ${message || 'Unbekannter Fehler'}`);
                 this.renderInput();
                 return;
             }

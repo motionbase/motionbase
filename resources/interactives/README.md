@@ -2,7 +2,8 @@
 
 Quellen der interaktiven Grafiken, die über den **Interaktiv**-Block in Kurse
 eingebunden werden. Jede Grafik ist eine eigenständige HTML-Datei – alles CSS
-und JS inline, keine Build-Schritte, keine relativen Asset-Pfade.
+und JS inline, keine Build-Schritte. Relative Pfade nur auf Dateien, die mit der
+Grafik hochgeladen werden (siehe *Dateien mitliefern*).
 
 ## Einbinden
 
@@ -17,7 +18,54 @@ Opaque Origin und kommt weder an Session-Cookie noch an localStorage der App –
 auch dann nicht, wenn jemand die URL direkt aufruft.
 
 Konsequenz für die Grafik: **kein** `localStorage`, `sessionStorage`, `cookie`
-oder `fetch` auf App-Endpunkte. Canvas, SVG, CSS-Animationen, Inline-JS: alles ok.
+oder `fetch` auf App-Endpunkte. Canvas, SVG, WebGL, CSS-Animationen, Inline-JS:
+alles ok.
+
+## Dateien mitliefern (3D-Modelle, Texturen)
+
+Braucht die Grafik Dateien, die nicht sinnvoll inline gehen – ein 3D-Modell,
+Texturen –, werden sie **zusammen mit der HTML-Datei** hochgeladen: im Block
+auf *HTML-Datei hochladen* klicken und alle Dateien gemeinsam auswählen.
+
+Im HTML relativ darauf verweisen, genau wie im lokalen Ordner:
+
+```html
+<script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+    }
+  }
+</script>
+<script type="module">
+  import * as THREE from 'three';
+  import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+  new GLTFLoader().load('model.glb', (gltf) => scene.add(gltf.scene));
+</script>
+```
+
+Die Grafik liegt dann unter `/interactive/{id}/index.html`, die Dateien direkt
+daneben. Deshalb funktioniert derselbe Ordner lokal und im Kurs unverändert.
+
+| Regel | Warum |
+|---|---|
+| Erlaubt: `glb`, `gltf`, `bin`, `png`, `jpg`, `jpeg`, `webp` | Der Typ wird am **Inhalt** geprüft, nicht am Namen – eine Seite kann nicht als `model.glb` durchrutschen. |
+| Alle Dateien nebeneinander, keine Unterordner | Namen nur aus Buchstaben, Ziffern, `.`, `-`, `_`. |
+| Modelle verweisen nur auf mitgeladene Dateien | Eine `.gltf`/`.glb`, die Texturen von einem fremden Server lädt, wird abgelehnt – sonst ruft jeder Browser im Kurs diesen Server auf. |
+| Höchstens 19 Dateien, je 25 MB, zusammen 60 MB | PHP verwirft Dateien über `max_file_uploads` stillschweigend. |
+
+`.glb` ist das bequemste Format: Geometrie und Texturen in einer Datei.
+
+Ausgeliefert werden die Dateien mit `Access-Control-Allow-Origin: *`. Das braucht
+es, weil die Grafik auf einer Opaque Origin läuft – für den Browser ist jeder
+Request zurück zur App eine fremde Origin. Die Alternative, `allow-same-origin`
+am Iframe, gäbe hochgeladenem Markup die Cookies der App. Direkt aufgerufen läuft in
+den Dateien nichts: fester Content-Type, `nosniff`, `sandbox` ohne Skripte.
+
+three.js vom CDN funktioniert in der Sandbox. Die Version im `importmap` fest
+angeben – und bedenken, dass die Grafik damit an jsdelivr hängt.
 
 ## Eingebettet keine zweite Card
 

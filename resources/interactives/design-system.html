@@ -429,8 +429,10 @@
         <b>Sandbox.</b> Grafiken laufen unter
         <code>Content-Security-Policy: sandbox allow-scripts</code> auf einer Opaque Origin:
         kein <code>localStorage</code>, keine Cookies, keine Requests an die App. Canvas, SVG,
-        CSS-Animationen und Inline-JS funktionieren uneingeschränkt. Externe Dateien werden
-        nicht ausgeliefert — alles muss inline sein.
+        WebGL, CSS-Animationen und Inline-JS funktionieren uneingeschränkt. Alles inline —
+        außer 3D-Modellen und Texturen (<code>glb</code>, <code>gltf</code>, <code>bin</code>,
+        <code>png</code>, <code>jpg</code>, <code>webp</code>): die zusammen mit der HTML-Datei
+        hochladen und relativ einbinden, etwa <code>loader.load('model.glb')</code>.
       </div>
     </section>
 

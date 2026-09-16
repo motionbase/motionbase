@@ -77,6 +77,23 @@ Route::get('design', function () {
 // Interactive graphics (served on an opaque origin, see InteractiveController::show)
 Route::get('interactive/{media}', [InteractiveController::class, 'show'])->name('interactive.show');
 
+// Below a graphic: index.html and the files uploaded with it. Addressed as
+// /interactive/7/index.html rather than /interactive/7/ so relative paths
+// resolve next to the document - public/.htaccess redirects trailing slashes
+// away. No session: the files load from an opaque origin without cookies, and
+// a Set-Cookie on a public, cross-origin file has no business being there.
+Route::get('interactive/{media}/{file}', [InteractiveController::class, 'file'])
+    ->where('file', \App\Services\InteractiveAssets::NAME_PATTERN)
+    ->withoutMiddleware([
+        \Illuminate\Session\Middleware\StartSession::class,
+        \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+        \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+        \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
+        \App\Http\Middleware\HandleAppearance::class,
+        \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
+    ])
+    ->name('interactive.file');
+
 // Admin redirect route
 Route::get('/admin', function () {
     if (auth()->check()) {

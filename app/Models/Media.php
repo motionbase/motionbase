@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\Storage;
 
 class Media extends Model
@@ -25,6 +26,14 @@ class Media extends Model
         'width' => 'integer',
         'height' => 'integer',
     ];
+
+    /**
+     * Files uploaded together with an interactive graphic
+     */
+    public function assets(): HasMany
+    {
+        return $this->hasMany(InteractiveAsset::class);
+    }
 
     /**
      * Get the full URL for the media file

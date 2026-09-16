@@ -80,8 +80,29 @@ class MediaController extends Controller
     {
         abort_unless(auth()->user()?->is_admin, 403);
 
-        // Delete the file from storage
-        if (Storage::disk('public')->exists($media->path)) {
+        if ($media->type === 'interactive') {
+            // Graphics live on the private disk, and so do the files uploaded
+            // with them - looking only at the public disk left both behind.
+            $local = Storage::disk('local');
+            $folders = [];
+
+            foreach ($media->assets as $asset) {
+                $local->delete($asset->path);
+                $folders[dirname($asset->path)] = true;
+            }
+
+            $media->assets()->delete();
+            $local->delete($media->path);
+
+            // The folder comes from the assets' own paths, never from a name
+            // pieced together here: one empty segment and it would be
+            // interactive/ itself, holding every graphic there is.
+            foreach (array_keys($folders) as $folder) {
+                if (preg_match('#^interactive/[^/]+$#', $folder)) {
+                    $local->deleteDirectory($folder);
+                }
+            }
+        } elseif (Storage::disk('public')->exists($media->path)) {
             Storage::disk('public')->delete($media->path);
         }
 
