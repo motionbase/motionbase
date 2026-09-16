@@ -775,18 +775,9 @@ function QuizRenderer({ data }: { data: QuizData }) {
 
         if (correctCount === totalQuestions) {
             celebrate?.({
+                variant: 'high-five',
                 title: 'Alles richtig.',
                 subtitle: `${totalQuestions} von ${totalQuestions} Fragen.`,
-            });
-
-            return;
-        }
-
-        if (correctCount === 0) {
-            celebrate?.({
-                variant: 'zero',
-                title: 'Null Punkte.',
-                subtitle: `0 / ${totalQuestions} · 0 %`,
             });
 
             return;

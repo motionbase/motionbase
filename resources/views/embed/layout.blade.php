@@ -595,14 +595,9 @@
                         if (typeof window.motionbaseCelebrate === 'function') {
                             if (percentage === 100) {
                                 window.motionbaseCelebrate({
+                                    variant: 'high-five',
                                     title: 'Alles richtig.',
                                     subtitle: questions.length + ' von ' + questions.length + ' Fragen.',
-                                });
-                            } else if (percentage === 0) {
-                                window.motionbaseCelebrate({
-                                    variant: 'zero',
-                                    title: 'Null Punkte.',
-                                    subtitle: '0 / ' + questions.length + ' · 0 %',
                                 });
                             } else if (percentage === 67) {
                                 window.motionbaseCelebrate({
