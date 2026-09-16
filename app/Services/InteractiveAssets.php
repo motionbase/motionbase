@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -105,6 +106,36 @@ class InteractiveAssets
     }
 
     /**
+     * A model on its own, as uploaded to the media library. With nothing
+     * uploaded beside it, it has to carry everything it needs.
+     *
+     * @throws ValidationException
+     */
+    public function checkModel(UploadedFile $file, string $name): void
+    {
+        if (strtolower(pathinfo($name, PATHINFO_EXTENSION)) !== 'glb') {
+            $this->fail("„{$name}“ ist keine .glb-Datei. In der Mediathek gehen nur .glb-Modelle – sie enthalten Geometrie und Texturen in einer Datei.");
+        }
+
+        $this->checkGlb($file, $name, []);
+    }
+
+    /**
+     * Turn whatever an author named a file into a name a graphic can load it
+     * by: "Mein Würfel (final).glb" becomes "Mein-Wuerfel-final.glb".
+     */
+    public static function safeName(string $name, string $extension): string
+    {
+        // German rules, so Würfel becomes Wuerfel rather than Wurfel
+        $base = Str::ascii(pathinfo($name, PATHINFO_FILENAME), 'de');
+        $base = preg_replace('/[^A-Za-z0-9._-]+/', '-', $base);
+        $base = trim(preg_replace('/-{2,}/', '-', $base), '.-_');
+        $base = substr($base, 0, 100 - strlen($extension) - 1);
+
+        return ($base !== '' ? $base : 'modell').'.'.$extension;
+    }
+
+    /**
      * A binary glTF: a 12 byte header, then a JSON chunk describing the scene.
      * Only the header and that chunk are read - the geometry after it can be
      * many megabytes and says nothing about whether the file is what it claims.
@@ -170,8 +201,12 @@ class InteractiveAssets
                     continue;
                 }
 
-                $this->fail(preg_match('#^([a-z][a-z0-9+.-]*:|//)#i', $uri)
-                    ? "„{$name}“ lädt „{$uri}“ von außerhalb. Modelle dürfen nur auf Dateien verweisen, die mit hochgeladen werden."
+                if (preg_match('#^([a-z][a-z0-9+.-]*:|//)#i', $uri)) {
+                    $this->fail("„{$name}“ lädt „{$uri}“ von außerhalb. Modelle dürfen nur auf Dateien verweisen, die mit hochgeladen werden.");
+                }
+
+                $this->fail($siblings === []
+                    ? "„{$name}“ lädt „{$uri}“ als eigene Datei nach. Für die Mediathek muss das Modell alles enthalten – beim Export als .glb die Texturen einbetten."
                     : "„{$name}“ verweist auf „{$uri}“, aber diese Datei ist nicht dabei. Unterordner gehen nicht – alle Dateien nebeneinander ablegen.");
             }
         }

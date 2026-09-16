@@ -4,14 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Media;
 use App\Services\InteractiveAssets;
+use App\Services\InteractiveGraphics;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -25,7 +24,7 @@ class InteractiveController extends Controller
      * concerned. It is handed out again only through show(), which pins it to
      * an opaque origin. Uploads are admin-only.
      */
-    public function upload(Request $request, InteractiveAssets $assets): JsonResponse
+    public function upload(Request $request, InteractiveAssets $assets, InteractiveGraphics $graphics): JsonResponse
     {
         try {
             $request->validate([
@@ -73,67 +72,13 @@ class InteractiveController extends Controller
             // Every file is checked before the first one is stored.
             $checked = $assets->check($files);
 
-            $filename = Str::uuid() . '.html';
-            $originalFilename = $file->getClientOriginalName();
-            $stored = [];
-
-            try {
-                $media = DB::transaction(function () use ($file, $filename, $originalFilename, $checked, &$stored) {
-                    $path = $file->storeAs('interactive', $filename, 'local');
-
-                    if (! $path) {
-                        throw new \RuntimeException('Failed to store file');
-                    }
-
-                    $stored[] = $path;
-
-                    $media = Media::create([
-                        'filename' => $filename,
-                        'original_filename' => $originalFilename,
-                        'path' => $path,
-                        'url' => '',
-                        'mime_type' => 'text/html',
-                        'type' => 'interactive',
-                        'size' => $file->getSize(),
-                    ]);
-
-                    // Beside the graphic on the private disk, under a uuid: the
-                    // author's file name is only ever a lookup key.
-                    $folder = 'interactive/' . pathinfo($filename, PATHINFO_FILENAME);
-
-                    foreach ($checked as $asset) {
-                        $assetPath = $asset['file']->storeAs($folder, Str::uuid() . '.' . $asset['extension'], 'local');
-
-                        if (! $assetPath) {
-                            throw new \RuntimeException('Failed to store ' . $asset['name']);
-                        }
-
-                        $stored[] = $assetPath;
-
-                        $media->assets()->create([
-                            'name' => $asset['name'],
-                            'path' => $assetPath,
-                            'mime_type' => $asset['mime'],
-                            'size' => $asset['file']->getSize(),
-                        ]);
-                    }
-
-                    // A graphic with files is addressed one level down, so a
-                    // relative "model.glb" in it resolves next to the document.
-                    $url = $checked
-                        ? route('interactive.file', ['media' => $media, 'file' => 'index.html'], absolute: false)
-                        : route('interactive.show', $media, absolute: false);
-
-                    $media->update(['url' => $url]);
-
-                    return $media;
-                });
-            } catch (\Throwable $e) {
-                // All or nothing: a half stored graphic would be live and broken.
-                Storage::disk('local')->delete($stored);
-
-                throw $e;
-            }
+            $media = $graphics->store($file, $file->getClientOriginalName(), array_map(fn (array $asset) => [
+                'name' => $asset['name'],
+                'extension' => $asset['extension'],
+                'mime' => $asset['mime'],
+                'size' => $asset['file']->getSize(),
+                'source' => $asset['file'],
+            ], $checked));
 
             return response()->json([
                 'success' => 1,

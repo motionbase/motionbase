@@ -21,6 +21,21 @@ Konsequenz für die Grafik: **kein** `localStorage`, `sessionStorage`, `cookie`
 oder `fetch` auf App-Endpunkte. Canvas, SVG, WebGL, CSS-Animationen, Inline-JS:
 alles ok.
 
+## 3D-Modell über die Mediathek (mit Claude / MCP)
+
+Für Grafiken, die Claude über den MCP-Server baut:
+
+1. In der App unter **Medien → 3D-Modell hochladen** die `.glb` hochladen.
+   Sie muss alles enthalten – Texturen beim Export einbetten. Der Name wird
+   bereinigt (`Mein Würfel.glb` → `Mein-Wuerfel.glb`); unter diesem Namen lädt
+   die Grafik das Modell.
+2. Claude findet es mit `list_media` (`type: model`) und übergibt die ID an
+   `create_interactive` in `models`. Das Modell wird neben die Grafik kopiert.
+3. Im HTML relativ laden: `loader.load('Mein-Wuerfel.glb')`.
+
+Die Grafik bekommt eine Kopie: Wird das Modell später aus der Mediathek
+gelöscht, bleibt sie heil.
+
 ## Dateien mitliefern (3D-Modelle, Texturen)
 
 Braucht die Grafik Dateien, die nicht sinnvoll inline gehen – ein 3D-Modell,

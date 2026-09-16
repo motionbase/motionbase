@@ -11,8 +11,8 @@ import {
 import AppLayout from '@/layouts/app-layout';
 import { cn } from '@/lib/utils';
 import { Head } from '@inertiajs/react';
-import { Image, Film, Search, Trash2, Download, Copy, Check } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { Image, Film, Search, Trash2, Download, Copy, Check, Box, Upload } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 interface MediaItem {
     id: number;
@@ -20,13 +20,16 @@ interface MediaItem {
     original_filename: string;
     url: string;
     mime_type: string;
-    type: 'image' | 'lottie';
+    type: 'image' | 'lottie' | 'interactive' | 'model';
     size: number;
     width: number | null;
     height: number | null;
     alt: string | null;
     created_at: string;
 }
+
+// Mirrors InteractiveAssets::MAX_FILE_KB on the server
+const MAX_MODEL_BYTES = 25 * 1024 * 1024;
 
 interface MediaMeta {
     current_page: number;
@@ -40,10 +43,12 @@ export default function MediaIndex() {
     const [meta, setMeta] = useState<MediaMeta | null>(null);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
-    const [activeType, setActiveType] = useState<'all' | 'image' | 'lottie'>('all');
+    const [activeType, setActiveType] = useState<'all' | 'image' | 'lottie' | 'model'>('all');
     const [selectedMedia, setSelectedMedia] = useState<MediaItem | null>(null);
     const [detailsOpen, setDetailsOpen] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [uploading, setUploading] = useState(false);
+    const modelInput = useRef<HTMLInputElement>(null);
 
     const fetchMedia = useCallback(async (page = 1, searchQuery = '', mediaType = activeType) => {
         setLoading(true);
@@ -83,6 +88,49 @@ export default function MediaIndex() {
     useEffect(() => {
         fetchMedia(1, search, activeType);
     }, [fetchMedia, search, activeType]);
+
+    // A model is only ever used inside an interactive graphic, where the MCP
+    // server copies it in. The server checks the contents; the size check here
+    // just saves a long upload that would be refused anyway.
+    const handleModelUpload = useCallback(async (file: File) => {
+        if (file.size > MAX_MODEL_BYTES) {
+            alert(`„${file.name}“ ist größer als 25 MB.`);
+            return;
+        }
+
+        const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
+        const formData = new FormData();
+        formData.append('model', file);
+
+        setUploading(true);
+        try {
+            const response = await fetch('/admin/upload/model', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': csrfToken,
+                },
+                body: formData,
+            });
+
+            const result = await response.json().catch(() => null);
+
+            if (!response.ok || !result?.success) {
+                alert('Modell konnte nicht hochgeladen werden: ' + (result?.message || `Fehler ${response.status}`));
+                return;
+            }
+
+            setSearch('');
+            setActiveType('model');
+            await fetchMedia(1, '', 'model');
+        } catch (error) {
+            console.error('Model upload failed:', error);
+            alert('Netzwerkfehler beim Hochladen. Bitte versuche es erneut.');
+        } finally {
+            setUploading(false);
+        }
+    }, [fetchMedia]);
 
     const handleDelete = useCallback(async (id: number) => {
         if (!confirm('Möchtest du diese Datei wirklich löschen?')) return;
@@ -169,6 +217,27 @@ export default function MediaIndex() {
                                     Alle hochgeladenen Bilder und Dateien
                                 </p>
                             </div>
+                            <div>
+                                <input
+                                    ref={modelInput}
+                                    type="file"
+                                    accept=".glb"
+                                    className="hidden"
+                                    onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        e.target.value = '';
+                                        if (file) handleModelUpload(file);
+                                    }}
+                                />
+                                <Button
+                                    onClick={() => modelInput.current?.click()}
+                                    disabled={uploading}
+                                    className="gap-1.5"
+                                >
+                                    <Upload className="h-4 w-4" />
+                                    {uploading ? 'Wird hochgeladen…' : '3D-Modell hochladen'}
+                                </Button>
+                            </div>
                         </div>
 
                         {/* Search & Filter Bar */}
@@ -209,6 +278,15 @@ export default function MediaIndex() {
                                 >
                                     <Film className="h-4 w-4" />
                                     Lottie
+                                </Button>
+                                <Button
+                                    variant={activeType === 'model' ? 'default' : 'outline'}
+                                    size="sm"
+                                    onClick={() => setActiveType('model')}
+                                    className="h-10 gap-1.5 border-zinc-200"
+                                >
+                                    <Box className="h-4 w-4" />
+                                    3D-Modelle
                                 </Button>
                             </div>
                         </div>
@@ -255,7 +333,11 @@ export default function MediaIndex() {
                                     />
                                 ) : (
                                     <div className="flex h-full w-full items-center justify-center">
-                                        <Film className="h-8 w-8 text-zinc-400" />
+                                        {item.type === 'model' ? (
+                                            <Box className="h-8 w-8 text-zinc-400" />
+                                        ) : (
+                                            <Film className="h-8 w-8 text-zinc-400" />
+                                        )}
                                     </div>
                                 )}
                                 
@@ -334,7 +416,11 @@ export default function MediaIndex() {
                                     />
                                 ) : (
                                     <div className="flex h-32 w-32 items-center justify-center">
-                                        <Film className="h-16 w-16 text-zinc-400" />
+                                        {selectedMedia.type === 'model' ? (
+                                            <Box className="h-16 w-16 text-zinc-400" />
+                                        ) : (
+                                            <Film className="h-16 w-16 text-zinc-400" />
+                                        )}
                                     </div>
                                 )}
                             </div>
@@ -388,6 +474,17 @@ export default function MediaIndex() {
                                     </p>
                                 </div>
 
+                                {selectedMedia.type === 'model' && (
+                                    <div className="rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-600">
+                                        Wird in einer interaktiven Grafik verwendet: Claude übernimmt es über
+                                        {' '}<code className="text-xs">create_interactive</code> mit
+                                        {' '}<code className="text-xs">models: [{selectedMedia.id}]</code>,
+                                        und die Grafik lädt es als
+                                        {' '}<code className="text-xs">{selectedMedia.original_filename}</code>.
+                                    </div>
+                                )}
+
+                                {selectedMedia.url && (
                                 <div>
                                     <label className="text-xs font-medium uppercase text-zinc-500">
                                         URL
@@ -412,19 +509,22 @@ export default function MediaIndex() {
                                         </Button>
                                     </div>
                                 </div>
+                                )}
                             </div>
                         </div>
                     )}
 
                     <DialogFooter className="gap-2 sm:gap-0">
-                        <Button
-                            variant="outline"
-                            onClick={() => selectedMedia && window.open(selectedMedia.url, '_blank')}
-                            className="gap-1.5"
-                        >
-                            <Download className="h-4 w-4" />
-                            Herunterladen
-                        </Button>
+                        {selectedMedia?.url && (
+                            <Button
+                                variant="outline"
+                                onClick={() => window.open(selectedMedia.url, '_blank')}
+                                className="gap-1.5"
+                            >
+                                <Download className="h-4 w-4" />
+                                Herunterladen
+                            </Button>
+                        )}
                         <Button
                             variant="destructive"
                             onClick={() => selectedMedia && handleDelete(selectedMedia.id)}

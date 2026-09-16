@@ -33,7 +33,7 @@ class ListBlockTypes extends Tool
          'notes' => 'The first row is the header and the separator row is required. Cells accept **bold**, *italic* and `code`.'],
 
         ['type' => 'interactive', 'created_by' => 'tool', 'syntax' => 'create_interactive, then add_interactive_block',
-         'notes' => 'Self-contained HTML graphic, sandboxed on an opaque origin. See /design for the house style. 3D models and textures can travel with it, but only when the user uploads them together with the HTML in the web editor; the graphic loads them by relative path.'],
+         'notes' => 'Self-contained HTML graphic, sandboxed on an opaque origin. See /design for the house style. For 3D: the user uploads a .glb under Medien in the web app, list_media type model finds it, create_interactive copies it in via models, and the graphic loads it by name as a relative path.'],
 
         ['type' => 'alert', 'created_by' => 'tool', 'syntax' => 'add_alert_block',
          'notes' => 'Coloured callout: info, warning, danger or neutral. For something a reader must not miss, not for emphasis.'],

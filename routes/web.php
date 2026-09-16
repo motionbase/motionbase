@@ -159,6 +159,9 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
     // Interactive HTML graphic upload for Editor.js
     Route::post('upload/interactive', [InteractiveController::class, 'upload'])->name('upload.interactive');
 
+    // 3D models for the media library, placed into graphics by the MCP server
+    Route::post('upload/model', [\App\Http\Controllers\ModelUploadController::class, 'upload'])->name('upload.model');
+
     // Media Library
     Route::get('media', function (\Illuminate\Http\Request $request) {
         if ($request->header('X-Inertia')) {

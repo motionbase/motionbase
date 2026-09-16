@@ -102,6 +102,10 @@ class MediaController extends Controller
                     $local->deleteDirectory($folder);
                 }
             }
+        } elseif ($media->type === 'model') {
+            // Models sit on the private disk too. Graphics built from one keep
+            // their own copy, so they are unaffected.
+            Storage::disk('local')->delete($media->path);
         } elseif (Storage::disk('public')->exists($media->path)) {
             Storage::disk('public')->delete($media->path);
         }

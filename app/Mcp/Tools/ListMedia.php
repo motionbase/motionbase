@@ -12,13 +12,13 @@ use Laravel\Mcp\Server\Attributes\Description;
 use Laravel\Mcp\Server\Tool;
 
 #[IsReadOnly]
-#[Description('List files in the media library so they can be placed with add_image_block, add_lottie_block or add_interactive_block. For an interactive graphic, files names the models and textures uploaded with it, which it loads by relative path. Files are uploaded in the web editor; this server does not accept uploads.')]
+#[Description('List files in the media library so they can be placed with add_image_block, add_lottie_block or add_interactive_block, or - for type model - passed to create_interactive in models. A model is loaded in the graphic by the name shown here. For an interactive graphic, files names the models and textures it carries. Files are uploaded in the web app; this server does not accept uploads.')]
 class ListMedia extends Tool
 {
     public function handle(Request $request): Response
     {
         $validated = $request->validate([
-            'type' => ['string', 'in:image,lottie,interactive'],
+            'type' => ['string', 'in:image,lottie,interactive,model'],
             'search' => ['string', 'max:100'],
             'limit' => ['integer', 'min:1', 'max:100'],
         ]);
@@ -63,7 +63,7 @@ class ListMedia extends Tool
     public function schema(JsonSchema $schema): array
     {
         return [
-            'type' => $schema->string()->description('Filter by image, lottie or interactive.'),
+            'type' => $schema->string()->description('Filter by image, lottie, interactive or model (3D models for create_interactive).'),
             'search' => $schema->string()->description('Match against filename or alt text.'),
             'limit' => $schema->integer()->description('Defaults to 30, at most 100.'),
         ];
