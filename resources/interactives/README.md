@@ -25,7 +25,7 @@ alles ok.
 
 Für Grafiken, die Claude über den MCP-Server baut:
 
-1. In der App unter **Medien → 3D-Modell hochladen** die `.glb` hochladen.
+1. In der App unter **Medien → Medien hochladen** die `.glb` hochladen.
    Sie muss alles enthalten – Texturen beim Export einbetten. Der Name wird
    bereinigt (`Mein Würfel.glb` → `Mein-Wuerfel.glb`); unter diesem Namen lädt
    die Grafik das Modell.

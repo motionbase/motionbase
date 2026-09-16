@@ -63,7 +63,7 @@ The other six are placed by their own tool:
   interactive   create_interactive stores the HTML, add_interactive_block
                 places it. See /design for the house style. For a 3D
                 graphic the user uploads the .glb in the web app (Medien,
-                "3D-Modell hochladen"); list_media with type model finds it,
+                "Medien hochladen"); list_media with type model finds it,
                 create_interactive takes its id in models and copies it in
                 beside the graphic, and the HTML loads it by its name as a
                 relative path, e.g. loader.load('wuerfel.glb'). Place the

@@ -315,7 +315,7 @@ it('tells the client how a graphic gets its models', function () {
     expect((new CreateInteractive)->description())
         ->toContain('models')
         ->toContain('list_media')
-        ->toContain('3D-Modell hochladen')
+        ->toContain('Medien hochladen')
         ->not->toContain('must be inline');
 });
 

@@ -28,8 +28,16 @@ interface MediaItem {
     created_at: string;
 }
 
-// Mirrors InteractiveAssets::MAX_FILE_KB on the server
-const MAX_MODEL_BYTES = 25 * 1024 * 1024;
+// Where each kind of file goes, with the limit that endpoint enforces. The
+// servers check contents; the size check here only spares a long upload that
+// would be refused anyway.
+const UPLOAD_TARGETS = [
+    { extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'], endpoint: '/admin/upload/image', field: 'image', maxMb: 5 },
+    { extensions: ['json', 'lottie'], endpoint: '/admin/upload/lottie', field: 'lottie', maxMb: 10 },
+    { extensions: ['glb'], endpoint: '/admin/upload/model', field: 'model', maxMb: 25 },
+];
+
+const UPLOAD_ACCEPT = UPLOAD_TARGETS.flatMap((target) => target.extensions.map((ext) => `.${ext}`)).join(',');
 
 interface MediaMeta {
     current_page: number;
@@ -48,7 +56,7 @@ export default function MediaIndex() {
     const [detailsOpen, setDetailsOpen] = useState(false);
     const [copied, setCopied] = useState(false);
     const [uploading, setUploading] = useState(false);
-    const modelInput = useRef<HTMLInputElement>(null);
+    const uploadInput = useRef<HTMLInputElement>(null);
 
     const fetchMedia = useCallback(async (page = 1, searchQuery = '', mediaType = activeType) => {
         setLoading(true);
@@ -89,46 +97,62 @@ export default function MediaIndex() {
         fetchMedia(1, search, activeType);
     }, [fetchMedia, search, activeType]);
 
-    // A model is only ever used inside an interactive graphic, where the MCP
-    // server copies it in. The server checks the contents; the size check here
-    // just saves a long upload that would be refused anyway.
-    const handleModelUpload = useCallback(async (file: File) => {
-        if (file.size > MAX_MODEL_BYTES) {
-            alert(`„${file.name}“ ist größer als 25 MB.`);
-            return;
-        }
-
+    const handleUpload = useCallback(async (files: File[]) => {
         const csrfToken = document.querySelector<HTMLMetaElement>('meta[name="csrf-token"]')?.content ?? '';
-        const formData = new FormData();
-        formData.append('model', file);
+        const failures: string[] = [];
 
         setUploading(true);
         try {
-            const response = await fetch('/admin/upload/model', {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': csrfToken,
-                },
-                body: formData,
-            });
+            // One after another: a batch of large models in parallel would
+            // compete for the same upload and time out together.
+            for (const file of files) {
+                const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
+                const target = UPLOAD_TARGETS.find((candidate) => candidate.extensions.includes(extension));
 
-            const result = await response.json().catch(() => null);
+                if (!target) {
+                    failures.push(`${file.name}: dieser Dateityp geht nicht (erlaubt: ${UPLOAD_ACCEPT.replaceAll(',', ', ')})`);
+                    continue;
+                }
 
-            if (!response.ok || !result?.success) {
-                alert('Modell konnte nicht hochgeladen werden: ' + (result?.message || `Fehler ${response.status}`));
-                return;
+                if (file.size > target.maxMb * 1024 * 1024) {
+                    failures.push(`${file.name}: größer als ${target.maxMb} MB`);
+                    continue;
+                }
+
+                const formData = new FormData();
+                formData.append(target.field, file);
+
+                try {
+                    const response = await fetch(target.endpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': csrfToken,
+                        },
+                        body: formData,
+                    });
+
+                    const result = await response.json().catch(() => null);
+
+                    if (!response.ok || !result?.success) {
+                        failures.push(`${file.name}: ${result?.message || `Fehler ${response.status}`}`);
+                    }
+                } catch (error) {
+                    console.error('Media upload failed:', error);
+                    failures.push(`${file.name}: Netzwerkfehler`);
+                }
             }
 
             setSearch('');
-            setActiveType('model');
-            await fetchMedia(1, '', 'model');
-        } catch (error) {
-            console.error('Model upload failed:', error);
-            alert('Netzwerkfehler beim Hochladen. Bitte versuche es erneut.');
+            setActiveType('all');
+            await fetchMedia(1, '', 'all');
         } finally {
             setUploading(false);
+        }
+
+        if (failures.length > 0) {
+            alert('Nicht hochgeladen:\n\n' + failures.join('\n'));
         }
     }, [fetchMedia]);
 
@@ -219,23 +243,24 @@ export default function MediaIndex() {
                             </div>
                             <div>
                                 <input
-                                    ref={modelInput}
+                                    ref={uploadInput}
                                     type="file"
-                                    accept=".glb"
+                                    accept={UPLOAD_ACCEPT}
+                                    multiple
                                     className="hidden"
                                     onChange={(e) => {
-                                        const file = e.target.files?.[0];
+                                        const files = Array.from(e.target.files ?? []);
                                         e.target.value = '';
-                                        if (file) handleModelUpload(file);
+                                        if (files.length > 0) handleUpload(files);
                                     }}
                                 />
                                 <Button
-                                    onClick={() => modelInput.current?.click()}
+                                    onClick={() => uploadInput.current?.click()}
                                     disabled={uploading}
                                     className="gap-1.5"
                                 >
                                     <Upload className="h-4 w-4" />
-                                    {uploading ? 'Wird hochgeladen…' : '3D-Modell hochladen'}
+                                    {uploading ? 'Wird hochgeladen…' : 'Medien hochladen'}
                                 </Button>
                             </div>
                         </div>
@@ -314,7 +339,7 @@ export default function MediaIndex() {
                         <p className="mt-2 text-sm text-zinc-500">
                             {search || activeType !== 'all'
                                 ? 'Versuche andere Suchbegriffe oder Filter.'
-                                : 'Lade Dateien über den Editor hoch, um sie hier zu sehen.'}
+                                : 'Bilder, Lottie-Dateien und 3D-Modelle über „Medien hochladen“ hinzufügen.'}
                         </p>
                     </div>
                 ) : (
