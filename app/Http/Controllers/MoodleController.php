@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Chapter;
 use App\Models\Section;
 use App\Services\LtiContent;
 use App\Services\LtiService;
@@ -11,7 +12,8 @@ use Illuminate\Http\Request;
 
 /**
  * What the MotionBase plugin for Moodle reads: the catalogue a teacher picks
- * from, and a task as the description of a native Moodle assignment.
+ * from, and lessons, chapters and tasks for the book chapters, pages and
+ * assignments made from them - fetched again each time one is opened.
  *
  * Only a Moodle registered here as an LTI platform gets in. Its plugin signs
  * a short-lived token with the site's own LTI key, and that key is checked
@@ -45,6 +47,53 @@ class MoodleController extends Controller
             'chapter' => $chapter->title,
             'submission' => $section->task_submission,
             'html' => $html->render($section),
+        ]);
+    }
+
+    /**
+     * Any published lesson, as Moodle's MotionBase filter shows it each time
+     * a book chapter, page or assignment made from it is opened.
+     */
+    public function lesson(Request $request, Section $section, MoodleHtml $html): JsonResponse
+    {
+        $this->authenticate($request);
+
+        $chapter = $section->chapter;
+
+        abort_unless($section->is_published && $chapter?->is_published, 404);
+
+        return response()->json([
+            'id' => $section->id,
+            'title' => $section->title,
+            'chapter_id' => $chapter->id,
+            'html' => $html->render($section, embed: $request->boolean('embed'), source: false),
+        ]);
+    }
+
+    /**
+     * A chapter's published lessons in order - what a Moodle book made from it
+     * holds, checked each time the book is opened. With ?html=1 each lesson
+     * comes with its content, for a new book.
+     */
+    public function chapter(Request $request, Chapter $chapter, MoodleHtml $html): JsonResponse
+    {
+        $this->authenticate($request);
+
+        abort_unless($chapter->is_published, 404);
+
+        $withHtml = $request->boolean('html');
+
+        return response()->json([
+            'id' => $chapter->id,
+            'title' => $chapter->title,
+            'topic' => $chapter->topic->title,
+            'lessons' => $chapter->sections()->where('is_published', true)->orderBy('sort_order')->get()
+                ->map(fn (Section $section) => array_filter([
+                    'id' => $section->id,
+                    'title' => $section->title,
+                    'html' => $withHtml ? $html->render($section, source: false) : null,
+                ], fn ($value) => $value !== null))
+                ->values(),
         ]);
     }
 

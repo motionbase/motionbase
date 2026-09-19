@@ -3,19 +3,19 @@
 
 /**
  * "Add from MotionBase": tick what the class should get, pick the section,
- * done. Tasks become native assignments; everything else an activity of the
- * MotionBase external tool.
+ * done. Tasks become assignments, chapters books, lessons pages - Moodle's
+ * own activities, showing MotionBase's current content whenever opened.
  *
- * @package    local_motionbase
+ * @package    filter_motionbase
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 require(__DIR__ . '/../../config.php');
 require_once($CFG->dirroot . '/course/lib.php');
 
-use local_motionbase\catalog;
-use local_motionbase\client;
-use local_motionbase\creator;
+use filter_motionbase\catalog;
+use filter_motionbase\client;
+use filter_motionbase\creator;
 
 $courseid = required_param('course', PARAM_INT);
 $sectionnum = optional_param('section', 0, PARAM_INT);
@@ -25,12 +25,12 @@ require_login($course);
 $context = context_course::instance($course->id);
 require_capability('moodle/course:manageactivities', $context);
 
-$PAGE->set_url(new moodle_url('/local/motionbase/add.php', ['course' => $course->id, 'section' => $sectionnum]));
+$PAGE->set_url(new moodle_url('/filter/motionbase/add.php', ['course' => $course->id, 'section' => $sectionnum]));
 $PAGE->set_context($context);
 $PAGE->set_pagelayout('incourse');
-$PAGE->set_title(get_string('addfrommotionbase', 'local_motionbase'));
+$PAGE->set_title(get_string('addfrommotionbase', 'filter_motionbase'));
 $PAGE->set_heading($course->fullname);
-$PAGE->navbar->add(get_string('addfrommotionbase', 'local_motionbase'));
+$PAGE->navbar->add(get_string('addfrommotionbase', 'filter_motionbase'));
 
 $tool = client::tool();
 $error = null;
@@ -65,34 +65,53 @@ if ($tool && !$error && data_submitted() && confirm_sesskey()) {
         }
 
         try {
-            if ($type === 'task') {
-                require_capability('mod/assign:addinstance', $context);
-                $task = client::get('tasks/' . (int) $id);
-                creator::assignment($course, $target, $task);
-            } else {
-                require_capability('mod/lti:addpreconfiguredinstance', $context);
-                creator::activity($course, $target, $tool, $item, $option['title'], $option['summary']);
-            }
+            switch ($type) {
+                case 'task':
+                    require_capability('mod/assign:addinstance', $context);
+                    creator::assignment($course, $target, client::get('tasks/' . (int) $id));
+                    $added[] = $option['title'];
+                    break;
 
-            $added[] = $option['title'];
+                case 'section':
+                    require_capability('mod/page:addinstance', $context);
+                    creator::page($course, $target, client::get('lessons/' . (int) $id));
+                    $added[] = $option['title'];
+                    break;
+
+                case 'chapter':
+                case 'topic':
+                    require_capability('mod/book:addinstance', $context);
+                    foreach ($type === 'topic' ? $catalog->chapters((int) $id) : [(int) $id] as $chapterid) {
+                        $chapter = client::get('chapters/' . $chapterid . '?html=1');
+                        creator::book($course, $target, $chapter);
+                        $added[] = $chapter['title'];
+                    }
+                    break;
+
+                case 'chat':
+                    require_capability('mod/lti:addpreconfiguredinstance', $context);
+                    creator::activity($course, $target, $tool, $item, $option['title'], $option['summary']);
+                    $added[] = $option['title'];
+                    break;
+            }
         } catch (moodle_exception $e) {
             $failed[] = $option['title'] . ' (' . $e->getMessage() . ')';
         }
     }
 
     if ($failed) {
-        \core\notification::warning(get_string('failed', 'local_motionbase', implode(', ', $failed)));
+        \core\notification::warning(get_string('failed', 'filter_motionbase', implode(', ', $failed)));
     }
 
     if ($added) {
         $message = count($added) === 1
-            ? get_string('addedone', 'local_motionbase', reset($added))
-            : get_string('added', 'local_motionbase', count($added));
+            ? get_string('addedone', 'filter_motionbase', reset($added))
+            : get_string('added', 'filter_motionbase', count($added));
         redirect(course_get_url($course, $target), $message, null, \core\output\notification::NOTIFY_SUCCESS);
     }
 
     if (!$failed) {
-        \core\notification::info(get_string('nothingselected', 'local_motionbase'));
+        \core\notification::info(get_string('nothingselected', 'filter_motionbase'));
     }
 }
 
@@ -120,7 +139,7 @@ foreach ($sections as &$section) {
 unset($section);
 
 $data = [
-    'action' => (new moodle_url('/local/motionbase/add.php'))->out(false),
+    'action' => (new moodle_url('/filter/motionbase/add.php'))->out(false),
     'courseid' => $course->id,
     'sesskey' => sesskey(),
     'sections' => $sections,
@@ -130,8 +149,8 @@ $data = [
     'empty' => !$error && !$topics,
 ];
 
-$PAGE->requires->js_call_amd('local_motionbase/picker', 'init');
+$PAGE->requires->js_call_amd('filter_motionbase/picker', 'init');
 
 echo $OUTPUT->header();
-echo $OUTPUT->render_from_template('local_motionbase/picker', $data);
+echo $OUTPUT->render_from_template('filter_motionbase/picker', $data);
 echo $OUTPUT->footer();

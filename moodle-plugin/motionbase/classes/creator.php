@@ -1,17 +1,26 @@
 <?php
 // This file is part of the MotionBase plugin for Moodle.
 
-namespace local_motionbase;
+namespace filter_motionbase;
 
 /**
- * Turns a choice from MotionBase into a Moodle activity.
+ * Turns a choice from MotionBase into Moodle's own activities:
  *
- * A task becomes a native assignment: its lesson is the description, the
- * submission is set up the way the author chose, grading is Moodle's alone.
- * Everything else - a whole course, a chapter, a lesson, the assistant -
- * becomes an activity of the MotionBase external tool, pointed at its content.
+ * - a task into an assignment - its lesson is the description, the
+ *   submission set up the way the author chose, grading Moodle's alone;
+ * - a chapter into a book, one book chapter per lesson;
+ * - a lesson into a page.
  *
- * @package    local_motionbase
+ * Each keeps the lesson in a marked block that the filter fills with the
+ * current content whenever it is shown. Only the AI assistant, which has no
+ * counterpart in Moodle, becomes an activity of the MotionBase external tool.
+ *
+ * Each activity's ID number says what it was made from - it survives backup
+ * and restore, lets the picker say what a course already has, and tells a
+ * book which chapter to follow. It is unique within a course, so a second
+ * copy of the same thing goes without.
+ *
+ * @package    filter_motionbase
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class creator {
@@ -24,21 +33,14 @@ class creator {
      * @return \stdClass The created module info
      */
     public static function assignment(\stdClass $course, int $section, array $task): \stdClass {
-        global $CFG, $DB;
+        global $CFG;
         require_once($CFG->dirroot . '/course/modlib.php');
 
         $submission = $task['submission'] ?? 'none';
         $defaults = get_config('assign');
 
-        $info = self::common($course, $section, 'assign', $task['title'], $task['html']);
-
-        // Marks the assignment as this task's, so the picker can say it is
-        // already in the course. An ID number is unique within a course: a
-        // second copy of the same task goes without.
-        $idnumber = catalog::task_idnumber((int) $task['id']);
-        if (!$DB->record_exists('course_modules', ['course' => $course->id, 'idnumber' => $idnumber])) {
-            $info->cmidnumber = $idnumber;
-        }
+        $info = self::common($course, $section, 'assign', $task['title'],
+            text_filter::block((int) $task['id'], $task['html']), 'task:' . (int) $task['id']);
 
         // The site's own defaults for assignments, so this one behaves like
         // any other the teacher would have made by hand.
@@ -80,6 +82,54 @@ class creator {
         $info->assignfeedback_comments_enabled = 1;
 
         return create_module($info);
+    }
+
+    /**
+     * A page from a MotionBase lesson.
+     *
+     * @param \stdClass $course
+     * @param int $section Section number
+     * @param array $lesson As returned by MotionBase: id, title, html
+     * @return \stdClass The created module info
+     */
+    public static function page(\stdClass $course, int $section, array $lesson): \stdClass {
+        global $CFG;
+        require_once($CFG->dirroot . '/course/modlib.php');
+        require_once($CFG->libdir . '/resourcelib.php');
+
+        $info = self::common($course, $section, 'page', $lesson['title'], '', 'section:' . (int) $lesson['id']);
+        $info->content = text_filter::block((int) $lesson['id'], $lesson['html']);
+        $info->contentformat = FORMAT_HTML;
+        $info->display = RESOURCELIB_DISPLAY_OPEN;
+        $info->printintro = 0;
+        $info->printlastmodified = 0;
+        $info->revision = 1;
+
+        return create_module($info);
+    }
+
+    /**
+     * A book from a MotionBase chapter, one book chapter per lesson.
+     *
+     * @param \stdClass $course
+     * @param int $section Section number
+     * @param array $chapter As returned by MotionBase: id, title, lessons [{id, title, html}]
+     * @return \stdClass The created module info
+     */
+    public static function book(\stdClass $course, int $section, array $chapter): \stdClass {
+        global $CFG;
+        require_once($CFG->dirroot . '/course/modlib.php');
+        require_once($CFG->dirroot . '/mod/book/locallib.php');
+
+        $info = self::common($course, $section, 'book', $chapter['title'], '', 'chapter:' . (int) $chapter['id']);
+        $info->numbering = BOOK_NUM_NUMBERS;
+        $info->navstyle = 1; // Arrows, as Moodle sets it for a new book.
+        $info->customtitles = 0;
+
+        $cm = create_module($info);
+        books::apply((int) $cm->instance, $chapter['lessons']);
+
+        return $cm;
     }
 
     /**
@@ -133,9 +183,11 @@ class creator {
      * @param string $modname
      * @param string $name
      * @param string $intro HTML
+     * @param string $source What it is made from, e.g. "chapter:39"
      * @return \stdClass
      */
-    private static function common(\stdClass $course, int $section, string $modname, string $name, string $intro): \stdClass {
+    private static function common(\stdClass $course, int $section, string $modname, string $name, string $intro,
+            string $source = ''): \stdClass {
         global $DB;
 
         $module = $DB->get_record('modules', ['name' => $modname], '*', MUST_EXIST);
@@ -156,6 +208,12 @@ class creator {
         $info->visible = 1;
         $info->visibleoncoursepage = 1;
         $info->cmidnumber = '';
+        if ($source !== '') {
+            $idnumber = catalog::idnumber($source);
+            if (!$DB->record_exists('course_modules', ['course' => $course->id, 'idnumber' => $idnumber])) {
+                $info->cmidnumber = $idnumber;
+            }
+        }
         $info->groupmode = 0;
         $info->groupingid = 0;
 

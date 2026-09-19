@@ -24,9 +24,24 @@ class MoodleHtml
         'code' => [], 'mark' => [], 'br' => [], 'a' => ['href'],
     ];
 
-    public function render(Section $section): string
+    /** Interactive graphics as frames rather than links - see render(). */
+    private bool $embed = false;
+
+    /**
+     * @param  bool  $embed  For Moodle's MotionBase filter, whose output Moodle
+     *                       does not clean: interactive graphics as frames.
+     *                       What is stored in Moodle goes through its cleaning,
+     *                       which would drop a frame without a trace.
+     * @param  bool  $source  End with a link to the lesson in MotionBase.
+     */
+    public function render(Section $section, bool $embed = false, bool $source = true): string
     {
+        $this->embed = $embed;
         $html = $this->blocks($section->content['blocks'] ?? []);
+
+        if (! $source) {
+            return $html;
+        }
 
         $chapter = $section->chapter;
         $url = route('public.topics.show', [
@@ -66,15 +81,35 @@ class MoodleHtml
                 ? '<p><a href="https://www.youtube.com/watch?v='.e(rawurlencode($data['videoId'])).'">'
                     .e($this->text($data['caption'] ?? '') ?: 'Video auf YouTube').'</a></p>'
                 : '',
-            'interactive' => ($url = $this->url($data['url'] ?? ''))
-                ? '<p><a href="'.e($url).'">Interaktive Grafik öffnen'
-                    .(($caption = $this->text($data['caption'] ?? '')) ? ': '.e($caption) : '').'</a></p>'
-                : '',
+            'interactive' => $this->interactive($data),
             // Neither plays in a Moodle description; the link to the lesson
             // at the end leads to them.
             'quiz', 'lottie' => '',
             default => '',
         };
+    }
+
+    private function interactive(array $data): string
+    {
+        $url = $this->url($data['url'] ?? '');
+
+        if (! $url) {
+            return '';
+        }
+
+        $caption = $this->text($data['caption'] ?? '');
+
+        if (! $this->embed) {
+            return '<p><a href="'.e($url).'">Interaktive Grafik öffnen'.($caption ? ': '.e($caption) : '').'</a></p>';
+        }
+
+        $height = min(max((int) ($data['height'] ?? 480), 120), 5000);
+
+        // The graphic keeps running on MotionBase, sandboxed there as well.
+        return '<figure class="mb-interactive"><iframe src="'.e($url).'" title="'.e($caption ?: 'Interaktive Grafik').'"'
+            .' sandbox="allow-scripts" loading="lazy" allowfullscreen'
+            .' style="display: block; width: 100%; height: '.$height.'px; border: 0; border-radius: 0.5rem;"></iframe>'
+            .($caption ? '<figcaption>'.e($caption).'</figcaption>' : '').'</figure>';
     }
 
     private function listItems(array $items, bool $ordered): string

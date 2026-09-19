@@ -2,7 +2,7 @@
     This file is part of the MotionBase plugin for Moodle.
 }}
 {{!
-    @template local_motionbase/option
+    @template filter_motionbase/option
 
     One thing that can be added: a checkbox and what it becomes.
 
@@ -16,11 +16,11 @@
         "present": true
     }
 }}
-<label class="local-motionbase-option" data-option data-search="{{search}}">
+<label class="mbpicker-option" data-option data-search="{{search}}">
     <input type="checkbox" class="form-check-input" name="items[]" value="{{value}}" data-label="{{label}}">
-    <span class="local-motionbase-option__text">
-        <span class="local-motionbase-option__name">{{name}}</span>
-        {{#meta}}<span class="local-motionbase-option__meta">{{meta}}</span>{{/meta}}
+    <span class="mbpicker-option__text">
+        <span class="mbpicker-option__name">{{name}}</span>
+        {{#meta}}<span class="mbpicker-option__meta">{{meta}}</span>{{/meta}}
     </span>
-    {{#present}}<span class="local-motionbase-present">{{#str}} alreadypresent, local_motionbase {{/str}}</span>{{/present}}
+    {{#present}}<span class="mbpicker-present">{{#str}} alreadypresent, filter_motionbase {{/str}}</span>{{/present}}
 </label>

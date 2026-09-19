@@ -88,6 +88,10 @@ as its description. Write it like an assignment sheet: what to do,
 requirements, example input and output. Grading happens in Moodle, never
 here - do not add quizzes to a task.
 
+The plugin also turns chapters into Moodle books and lessons into pages.
+Moodle shows every one of them - task, book, page - with the content as it
+is here at that moment, so an edit here is live in Moodle at once.
+
 get_section renders those six as "> [...]" placeholders in the body and lists
 them under rich_blocks with their full data, so anything removed can be put
 back.

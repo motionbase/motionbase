@@ -204,6 +204,8 @@ Route::prefix('moodle')->name('moodle.')
     ->group(function () {
         Route::get('catalog', [\App\Http\Controllers\MoodleController::class, 'catalog'])->name('catalog');
         Route::get('tasks/{section}', [\App\Http\Controllers\MoodleController::class, 'task'])->name('task');
+        Route::get('lessons/{section}', [\App\Http\Controllers\MoodleController::class, 'lesson'])->name('lesson');
+        Route::get('chapters/{chapter}', [\App\Http\Controllers\MoodleController::class, 'chapter'])->name('chapter');
     });
 
 // LTI 1.3 Routes

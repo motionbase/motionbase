@@ -143,6 +143,64 @@ it('hands over only published tasks', function (array $attributes, bool $chapter
     'unpublished chapter' => [[], false],
 ]);
 
+// -------------------------------------------------- Lektionen, Kapitel ---
+
+it('hands over any published lesson, with graphics embedded when asked', function () {
+    $lesson = moodleTask(['task_submission' => null], [
+        ['type' => 'paragraph', 'data' => ['text' => 'Schau dir die Kurve an.']],
+        ['type' => 'interactive', 'data' => ['url' => '/interactive/7', 'caption' => 'Simulator', 'height' => 640]],
+    ]);
+    $auth = ['Authorization' => 'Bearer '.moodlePluginToken($this->moodleKey)];
+    $app = rtrim(config('app.url'), '/');
+
+    $stored = getJson("/moodle/lessons/{$lesson->id}", $auth)->assertOk()
+        ->assertJson(['id' => $lesson->id, 'chapter_id' => $lesson->chapter_id])->json('html');
+    $live = getJson("/moodle/lessons/{$lesson->id}?embed=1", $auth)->assertOk()->json('html');
+
+    // What Moodle stores goes through its cleaning, which drops frames: a link
+    expect($stored)->toContain('<a href="'.$app.'/interactive/7">Interaktive Grafik öffnen: Simulator</a>')
+        ->and($stored)->not->toContain('<iframe')
+        // What the filter shows is not cleaned again: the graphic itself, sandboxed
+        ->and($live)->toContain('<iframe src="'.$app.'/interactive/7" title="Simulator" sandbox="allow-scripts"')
+        ->and($live)->toContain('height: 640px')
+        // No link back: the content is current anyway
+        ->and($live)->not->toContain('mb-source');
+});
+
+it('hands over only published lessons', function () {
+    $lesson = moodleTask(['is_published' => false]);
+
+    getJson("/moodle/lessons/{$lesson->id}", ['Authorization' => 'Bearer '.moodlePluginToken($this->moodleKey)])
+        ->assertNotFound();
+});
+
+it('describes a chapter as its published lessons, in order', function () {
+    $chapter = Chapter::factory()->for(Topic::factory()->create(['title' => 'Easing']))->create(['title' => 'Grundlagen']);
+    $second = Section::factory()->for($chapter)->create(['title' => 'Zweite', 'sort_order' => 2]);
+    $first = Section::factory()->for($chapter)->create(['title' => 'Erste', 'sort_order' => 1]);
+    Section::factory()->for($chapter)->unpublished()->create(['title' => 'Entwurf', 'sort_order' => 3]);
+    $auth = ['Authorization' => 'Bearer '.moodlePluginToken($this->moodleKey)];
+
+    // Checked each time a book is opened: kept light
+    getJson("/moodle/chapters/{$chapter->id}", $auth)->assertOk()
+        ->assertExactJson([
+            'id' => $chapter->id,
+            'title' => 'Grundlagen',
+            'topic' => 'Easing',
+            'lessons' => [
+                ['id' => $first->id, 'title' => 'Erste'],
+                ['id' => $second->id, 'title' => 'Zweite'],
+            ],
+        ]);
+
+    // For a new book, with the content
+    expect(getJson("/moodle/chapters/{$chapter->id}?html=1", $auth)->json('lessons.0.html'))
+        ->toContain('<p>'.e($first->content['blocks'][0]['data']['text']).'</p>');
+
+    $chapter->update(['is_published' => false]);
+    getJson("/moodle/chapters/{$chapter->id}", $auth)->assertNotFound();
+});
+
 // ---------------------------------------------------------------- HTML ---
 
 it('renders a task as plain HTML for Moodle', function () {
@@ -257,7 +315,8 @@ it('gives admins the plugin, with this MotionBase already set', function () {
     expect($zip->locateName('motionbase/version.php'))->not->toBeFalse()
         ->and($zip->locateName('motionbase/lib.php'))->not->toBeFalse()
         ->and($zip->locateName('motionbase/amd/build/picker.min.js'))->not->toBeFalse()
-        ->and($zip->getFromName('motionbase/version.php'))->toContain("'local_motionbase'")
+        ->and($zip->locateName('motionbase/classes/text_filter.php'))->not->toBeFalse()
+        ->and($zip->getFromName('motionbase/version.php'))->toContain("'filter_motionbase'")
         ->and($zip->getFromName('motionbase/settings.php'))->toContain(var_export(rtrim(config('app.url'), '/'), true));
 
     $zip->close();

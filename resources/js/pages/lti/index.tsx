@@ -329,7 +329,7 @@ export default function LtiIndex({ platforms, toolConfig }: Props) {
                                     <div>
                                         <h2 className="font-semibold text-zinc-900">Moodle-Plugin</h2>
                                         <p className="text-sm text-zinc-500">
-                                            Aufgaben als echte Moodle-Aufgaben, Kapitel und KI-Assistent mit einem Klick
+                                            Kapitel als Bücher, Lektionen als Textseiten, Aufgaben als Moodle-Aufgaben – immer aktuell
                                         </p>
                                     </div>
                                 </div>
@@ -353,8 +353,9 @@ export default function LtiIndex({ platforms, toolConfig }: Props) {
                                     </>,
                                     <>
                                         Lehrpersonen finden <span className="font-medium text-zinc-900">„Aus MotionBase hinzufügen“</span> unten in der
-                                        Aktivitätsauswahl und im Kurs unter <span className="font-medium text-zinc-900">Mehr</span>. Lektionen, die in
-                                        MotionBase als Aufgabe markiert sind, werden dort zu Moodle-Aufgaben mit Abgabe; bewertet wird in Moodle.
+                                        Aktivitätsauswahl und im Kurs unter <span className="font-medium text-zinc-900">Mehr</span>. Kapitel werden
+                                        Bücher, Lektionen Textseiten, als Aufgabe markierte Lektionen Moodle-Aufgaben mit Abgabe. Moodle zeigt sie
+                                        immer so, wie sie gerade in MotionBase stehen; bewertet wird in Moodle.
                                     </>,
                                 ].map((step, index) => (
                                     <li key={index} className="flex gap-3">

@@ -3,7 +3,7 @@
 /**
  * The activity chooser footer needs a module; the link in it works on its own.
  *
- * @module     local_motionbase/footer
+ * @module     filter_motionbase/footer
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 

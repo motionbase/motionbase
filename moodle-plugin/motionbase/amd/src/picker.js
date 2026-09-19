@@ -4,14 +4,14 @@
  * "Add from MotionBase": count what is ticked, keep the button off until
  * something is, and narrow the list while typing.
  *
- * @module     local_motionbase/picker
+ * @module     filter_motionbase/picker
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 import {getString} from 'core/str';
 
 export const init = () => {
-    const form = document.getElementById('local-motionbase-picker');
+    const form = document.getElementById('mbpicker-picker');
     if (!form) {
         return;
     }
@@ -31,7 +31,7 @@ export const init = () => {
             submit.disabled = n === 0;
         }
         const key = n === 0 ? 'selectednone' : (n === 1 ? 'selectedone' : 'selected');
-        getString(key, 'local_motionbase', n).then(text => {
+        getString(key, 'filter_motionbase', n).then(text => {
             if (mine === latest) {
                 count.textContent = text;
             }
@@ -48,7 +48,7 @@ export const init = () => {
         }
         // Creating assignments takes a moment; a second click would add them twice.
         submit.disabled = true;
-        getString('adding', 'local_motionbase').then(text => {
+        getString('adding', 'filter_motionbase').then(text => {
             submit.textContent = text;
             return text;
         }).catch(() => null);

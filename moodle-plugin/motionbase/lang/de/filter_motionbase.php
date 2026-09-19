@@ -4,7 +4,7 @@
 /**
  * Deutsche Texte.
  *
- * @package    local_motionbase
+ * @package    filter_motionbase
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -20,7 +20,9 @@ $string['assistant'] = 'KI-Assistent';
 $string['assistantmeta'] = 'Beantwortet Fragen der Klasse zu {$a}';
 $string['assistantsummary'] = 'KI-Assistent, der Fragen zu {$a} beantwortet.';
 $string['assistanttitle'] = '{$a} – KI-Assistent';
-$string['chaptermeta'] = 'Kapitel · {$a}';
+$string['bookmeta'] = 'Buch · {$a}';
+$string['cachedef_books'] = 'Bücher aus MotionBase, zuletzt abgeglichen';
+$string['cachedef_lessons'] = 'Lektionen aus MotionBase, zuletzt abgerufen';
 $string['content'] = 'Inhalte';
 $string['empty'] = 'In MotionBase ist noch nichts veröffentlicht';
 $string['emptyhint'] = 'Sobald in MotionBase ein Kapitel veröffentlicht ist, erscheint es hier.';
@@ -28,16 +30,17 @@ $string['error:notool'] = 'MotionBase ist in diesem Moodle noch nicht eingericht
 $string['error:unknownsite'] = 'MotionBase kennt dieses Moodle noch nicht. Bitte die Moodle-Administration bitten, es in MotionBase unter „Moodle & LTI“ einzutragen.';
 $string['error:unreachable'] = 'MotionBase ({$a}) ist gerade nicht erreichbar. Bitte in einem Moment nochmals versuchen.';
 $string['failed'] = 'Konnte nicht hinzugefügt werden: {$a}';
+$string['filtername'] = 'MotionBase';
 $string['footertext'] = 'Aufgaben, Kapitel und KI-Assistent';
-$string['intro'] = 'Alles ankreuzen, was die Klasse in diesem Abschnitt finden soll. Aufgaben werden zu normalen Moodle-Aufgaben – Abgabe und Bewertung bleiben in Moodle.';
+$string['intro'] = 'Alles ankreuzen, was die Klasse in diesem Abschnitt finden soll. Aufgaben werden zu Moodle-Aufgaben, Kapitel zu Büchern, Lektionen zu Textseiten – und zeigen immer den Inhalt, wie er gerade in MotionBase steht. Abgabe und Bewertung bleiben in Moodle.';
 $string['lesson'] = '1 Lektion';
-$string['lessonmeta'] = 'Einzelne Lektion, als Seite';
 $string['lessons'] = '{$a} Lektionen';
 $string['nomatch'] = 'Nichts gefunden';
 $string['nomatchhint'] = 'Mit einem anderen Wort versuchen.';
 $string['nothingselected'] = 'Es war nichts ausgewählt.';
+$string['pagemeta'] = 'Textseite';
 $string['pluginname'] = 'MotionBase';
-$string['privacy:metadata'] = 'Das MotionBase-Plugin speichert keine personenbezogenen Daten. Wenn eine Lehrperson Inhalte hinzufügt, fragt es MotionBase nach diesen Inhalten; Angaben zu Personen werden nicht übermittelt.';
+$string['privacy:metadata'] = 'Das MotionBase-Plugin speichert keine personenbezogenen Daten. Es fragt MotionBase nach Inhalten; Angaben zu Personen werden nicht übermittelt.';
 $string['search'] = 'Suchen, z. B. „Easing“';
 $string['selected'] = '{$a} ausgewählt';
 $string['selectednone'] = 'Noch nichts ausgewählt';
@@ -51,6 +54,6 @@ $string['task_text'] = 'Aufgabe · Abgabe als Text';
 $string['tasks'] = 'Aufgaben';
 $string['tasksintro'] = 'Werden zu Moodle-Aufgaben';
 $string['url'] = 'Adresse von MotionBase';
-$string['url_desc'] = 'Wo MotionBase läuft. MotionBase muss in diesem Moodle ausserdem als externes Tool (LTI 1.3) eingerichtet sein, und dieses Moodle in MotionBase unter „Moodle & LTI“ eingetragen.';
+$string['url_desc'] = 'Wo MotionBase läuft. MotionBase muss in diesem Moodle ausserdem als externes Tool (LTI 1.3) eingerichtet sein, und dieses Moodle in MotionBase unter „Moodle & LTI“ eingetragen: Darüber weist sich das Plugin aus.';
 $string['wholecourse'] = 'Ganzer Kurs';
-$string['wholecoursemeta'] = 'Alle Kapitel, mit Navigation';
+$string['wholecoursemeta'] = 'Ein Buch pro Kapitel · {$a} Kapitel';

@@ -4,7 +4,7 @@
 /**
  * Uninstallation.
  *
- * @package    local_motionbase
+ * @package    filter_motionbase
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -13,8 +13,8 @@
  *
  * @return bool
  */
-function xmldb_local_motionbase_uninstall() {
-    if (get_config('core', 'activitychooseractivefooter') === 'local_motionbase') {
+function xmldb_filter_motionbase_uninstall() {
+    if (get_config('core', 'activitychooseractivefooter') === 'filter_motionbase') {
         set_config('activitychooseractivefooter', 'hidden');
     }
 

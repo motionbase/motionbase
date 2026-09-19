@@ -103,7 +103,7 @@ class LtiAdminController extends Controller
 
         $zip->close();
 
-        return response()->download($path, 'moodle-local_motionbase.zip', ['Content-Type' => 'application/zip'])
+        return response()->download($path, 'moodle-filter_motionbase.zip', ['Content-Type' => 'application/zip'])
             ->deleteFileAfterSend();
     }
 

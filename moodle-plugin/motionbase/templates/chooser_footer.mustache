@@ -2,16 +2,16 @@
     This file is part of the MotionBase plugin for Moodle.
 }}
 {{!
-    @template local_motionbase/chooser_footer
+    @template filter_motionbase/chooser_footer
 
     Foot of the activity chooser: the way into the MotionBase picker.
 
     Example context (json):
     {
-        "url": "https://moodle.example/local/motionbase/add.php?course=2&section=1"
+        "url": "https://moodle.example/filter/motionbase/add.php?course=2&section=1"
     }
 }}
-<div class="w-100 d-flex flex-wrap align-items-center px-2 activitychooserfooter local-motionbase-footer">
-    <span class="my-auto me-2 mr-2 text-muted">{{#str}} footertext, local_motionbase {{/str}}</span>
-    <a class="btn btn-primary ms-auto ml-auto" href="{{url}}">{{#str}} addfrommotionbase, local_motionbase {{/str}}</a>
+<div class="w-100 d-flex flex-wrap align-items-center px-2 activitychooserfooter mbpicker-footer">
+    <span class="my-auto me-2 mr-2 text-muted">{{#str}} footertext, filter_motionbase {{/str}}</span>
+    <a class="btn btn-primary ms-auto ml-auto" href="{{url}}">{{#str}} addfrommotionbase, filter_motionbase {{/str}}</a>
 </div>

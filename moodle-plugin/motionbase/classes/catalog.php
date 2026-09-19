@@ -1,13 +1,13 @@
 <?php
 // This file is part of the MotionBase plugin for Moodle.
 
-namespace local_motionbase;
+namespace filter_motionbase;
 
 /**
  * MotionBase's catalogue as the picker shows it: every option with the name
  * and description its activity will get, and whether the course has it yet.
  *
- * @package    local_motionbase
+ * @package    filter_motionbase
  * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class catalog {
@@ -24,16 +24,15 @@ class catalog {
      */
     public function __construct(private array $topics, \stdClass $course, ?\stdClass $tool) {
         foreach ($topics as $topic) {
-            $this->add('topic:' . $topic['id'], $topic['title'], self::lessons($topic['lessons']));
-            $this->add('chat:' . $topic['id'], get_string('assistanttitle', 'local_motionbase', $topic['title']),
-                get_string('assistantsummary', 'local_motionbase', $topic['title']));
+            $this->add('topic:' . $topic['id'], $topic['title'], '');
+            $this->add('chat:' . $topic['id'], get_string('assistanttitle', 'filter_motionbase', $topic['title']),
+                get_string('assistantsummary', 'filter_motionbase', $topic['title']));
 
             foreach ($topic['chapters'] as $chapter) {
-                $this->add('chapter:' . $chapter['id'], $topic['title'] . ' – ' . $chapter['title'],
-                    self::lessons($chapter['lessons']));
+                $this->add('chapter:' . $chapter['id'], $chapter['title'], '');
 
                 foreach ($chapter['sections'] as $section) {
-                    $this->add('section:' . $section['id'], $topic['title'] . ' – ' . $section['title'], self::lessons(1));
+                    $this->add('section:' . $section['id'], $section['title'], '');
 
                     if (!empty($section['task'])) {
                         $this->add('task:' . $section['id'], $section['title'], '');
@@ -43,6 +42,22 @@ class catalog {
         }
 
         $this->present = self::present($course, $tool);
+    }
+
+    /**
+     * The chapters of a topic, for "whole course": one book each.
+     *
+     * @param int $topicid
+     * @return int[]
+     */
+    public function chapters(int $topicid): array {
+        foreach ($this->topics as $topic) {
+            if ((int) $topic['id'] === $topicid) {
+                return array_map(fn($chapter) => (int) $chapter['id'], $topic['chapters']);
+            }
+        }
+
+        return [];
     }
 
     /**
@@ -56,13 +71,13 @@ class catalog {
     }
 
     /**
-     * The ID number an assignment made from a task carries.
+     * The ID number of an activity made from MotionBase, e.g. motionbase-chapter-39.
      *
-     * @param int $sectionid
+     * @param string $source "task:67", "section:63" or "chapter:39"
      * @return string
      */
-    public static function task_idnumber(int $sectionid): string {
-        return 'motionbase-task-' . $sectionid;
+    public static function idnumber(string $source): string {
+        return 'motionbase-' . str_replace(':', '-', $source);
     }
 
     /**
@@ -80,19 +95,19 @@ class catalog {
 
                 foreach ($chapter['sections'] as $section) {
                     $lessons[] = $this->item('section:' . $section['id'], $section['title'],
-                        get_string('lessonmeta', 'local_motionbase'),
+                        get_string('pagemeta', 'filter_motionbase'),
                         $topic['title'] . ' ' . $chapter['title'] . ' ' . $section['title']);
 
                     if (!empty($section['task'])) {
                         $tasks[] = $this->item('task:' . $section['id'], $section['title'],
-                            get_string('task_' . $section['task'], 'local_motionbase') . ' · ' . $chapter['title'],
+                            get_string('task_' . $section['task'], 'filter_motionbase') . ' · ' . $chapter['title'],
                             $topic['title'] . ' ' . $chapter['title'] . ' ' . $section['title'] . ' '
-                                . get_string('tasks', 'local_motionbase'));
+                                . get_string('tasks', 'filter_motionbase'));
                     }
                 }
 
                 $chapters[] = $this->item('chapter:' . $chapter['id'], $chapter['title'],
-                    get_string('chaptermeta', 'local_motionbase', self::lessons($chapter['lessons'])),
+                    get_string('bookmeta', 'filter_motionbase', self::lessons($chapter['lessons'])),
                     $topic['title'] . ' ' . $chapter['title'],
                     ['lessons' => $lessons, 'haslessons' => count($lessons) > 1]);
             }
@@ -103,12 +118,15 @@ class catalog {
                 'meta' => self::lessons($topic['lessons']),
                 'tasks' => $tasks,
                 'hastasks' => (bool) $tasks,
-                'whole' => $this->item('topic:' . $topic['id'], get_string('wholecourse', 'local_motionbase'),
-                    get_string('wholecoursemeta', 'local_motionbase'), $topic['title']),
+                // A whole course is there when a book for each of its chapters is.
+                'whole' => ['present' => $topic['chapters'] && !array_diff(
+                    array_map(fn($chapter) => 'chapter:' . $chapter['id'], $topic['chapters']), $this->present),
+                ] + $this->item('topic:' . $topic['id'], get_string('wholecourse', 'filter_motionbase'),
+                    get_string('wholecoursemeta', 'filter_motionbase', count($topic['chapters'])), $topic['title']),
                 'chapters' => $chapters,
-                'assistant' => $this->item('chat:' . $topic['id'], get_string('assistant', 'local_motionbase'),
-                    get_string('assistantmeta', 'local_motionbase', $topic['title']),
-                    $topic['title'] . ' ' . get_string('assistant', 'local_motionbase') . ' chat ki ai'),
+                'assistant' => $this->item('chat:' . $topic['id'], get_string('assistant', 'filter_motionbase'),
+                    get_string('assistantmeta', 'filter_motionbase', $topic['title']),
+                    $topic['title'] . ' ' . get_string('assistant', 'filter_motionbase') . ' chat ki ai'),
             ];
         }, $this->topics);
     }
@@ -150,7 +168,7 @@ class catalog {
      * @return string
      */
     private static function lessons(int $count): string {
-        return $count === 1 ? get_string('lesson', 'local_motionbase') : get_string('lessons', 'local_motionbase', $count);
+        return $count === 1 ? get_string('lesson', 'filter_motionbase') : get_string('lessons', 'filter_motionbase', $count);
     }
 
     /**
@@ -165,6 +183,18 @@ class catalog {
 
         $present = [];
 
+        $idnumbers = $DB->get_fieldset_sql(
+            "SELECT idnumber FROM {course_modules} WHERE course = ? AND deletioninprogress = 0 AND idnumber LIKE ?",
+            [$course->id, 'motionbase-%']
+        );
+
+        foreach ($idnumbers as $idnumber) {
+            if (preg_match('/^motionbase-(task|section|chapter)-(\d+)$/', $idnumber, $m)) {
+                $present[] = $m[1] . ':' . $m[2];
+            }
+        }
+
+        // The assistant is an activity of the external tool, found by what it launches.
         if ($tool) {
             $params = $DB->get_fieldset_sql(
                 "SELECT l.instructorcustomparameters
@@ -176,30 +206,10 @@ class catalog {
             );
 
             foreach ($params as $text) {
-                $custom = [];
-                foreach (preg_split('/[\r\n;]+/', (string) $text) as $line) {
-                    if (str_contains($line, '=')) {
-                        [$key, $value] = array_map('trim', explode('=', $line, 2));
-                        $custom[$key] = $value;
-                    }
-                }
-
-                $type = $custom['content_type'] ?? null;
-                $key = ['topic' => 'topic_id', 'chat' => 'topic_id', 'chapter' => 'chapter_id', 'section' => 'section_id'][$type] ?? null;
-
-                if ($key && isset($custom[$key])) {
-                    $present[] = $type . ':' . (int) $custom[$key];
+                if (preg_match('/content_type=chat\b/', (string) $text) && preg_match('/topic_id=(\d+)/', (string) $text, $m)) {
+                    $present[] = 'chat:' . $m[1];
                 }
             }
-        }
-
-        $idnumbers = $DB->get_fieldset_sql(
-            "SELECT idnumber FROM {course_modules} WHERE course = ? AND deletioninprogress = 0 AND idnumber LIKE ?",
-            [$course->id, 'motionbase-task-%']
-        );
-
-        foreach ($idnumbers as $idnumber) {
-            $present[] = 'task:' . (int) substr($idnumber, strlen('motionbase-task-'));
         }
 
         return $present;
