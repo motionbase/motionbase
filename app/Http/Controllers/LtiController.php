@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\LtiResourceLink;
 use App\Services\LtiContent;
-use App\Services\LtiGrades;
 use App\Services\LtiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -201,16 +200,6 @@ class LtiController extends Controller
             'custom' => $content->customParams(),
         ];
 
-        // With questions in it, Moodle creates the grade column on its own -
-        // nothing for the teacher to set up.
-        if ($questions = $content->questionCount()) {
-            $item['lineItem'] = [
-                'scoreMaximum' => $questions,
-                'label' => $content->title(),
-                'resourceId' => 'motionbase-'.str_replace(':', '-', $content->choice()),
-            ];
-        }
-
         $jwt = $this->ltiService->createDeepLinkingResponse($session->platform, $claims, [$item]);
 
         return View::make('lti.deep-linking-return', [
@@ -233,7 +222,7 @@ class LtiController extends Controller
         ]);
     }
 
-    public function bindStore(Request $request, LtiGrades $grades)
+    public function bindStore(Request $request)
     {
         $request->validate([
             'lti_session' => 'required|string',
@@ -265,22 +254,6 @@ class LtiController extends Controller
             'chapter_id' => $content->chapter?->id,
             'section_id' => $content->section?->id,
         ]);
-
-        // Moodle made no grade column for an activity saved without a choice,
-        // so MotionBase asks for one - if Moodle lets tools manage columns.
-        if (($questions = $content->questionCount()) && ! $grades->lineitem($session)) {
-            // Named like the activity the teacher created, so the gradebook
-            // column is recognisable - two checks on the same chapter would
-            // otherwise sit there under one name.
-            $activityName = $session->claims['https://purl.imsglobal.org/spec/lti/claim/resource_link']['title'] ?? null;
-
-            $link->lineitem_url = $grades->createLineitem(
-                $session,
-                $activityName ?: $content->title(),
-                $questions,
-                'motionbase-'.str_replace(':', '-', $content->choice()),
-            );
-        }
 
         $link->save();
 

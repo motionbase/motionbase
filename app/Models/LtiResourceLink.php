@@ -13,6 +13,5 @@ class LtiResourceLink extends Model
         'topic_id',
         'chapter_id',
         'section_id',
-        'lineitem_url',
     ];
 }

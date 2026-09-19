@@ -161,8 +161,8 @@ class LtiService
     }
 
     /**
-     * Teachers, course designers and admins. They see the teacher view, may
-     * choose content for an activity, and their quiz runs are never graded.
+     * Teachers, course designers and admins. They see the teacher view and
+     * may choose content for an activity.
      */
     public function isInstructor(LtiSession $session): bool
     {

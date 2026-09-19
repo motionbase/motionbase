@@ -296,7 +296,7 @@ export default function LtiIndex({ platforms, toolConfig }: Props) {
                             <div className="mt-6 rounded-xl border border-zinc-100 bg-zinc-50 p-4">
                                 <h3 className="text-sm font-semibold text-zinc-900">Ausserdem in Moodle einstellen</h3>
                                 <p className="mt-1 text-sm text-zinc-500">
-                                    Damit Lehrpersonen Inhalte mit einem Klick auswählen und Wissenschecks automatisch in den Bewertungen landen.
+                                    Damit Lehrpersonen Inhalte mit einem Klick auswählen können.
                                 </p>
                                 <dl className="mt-3 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[minmax(0,18rem)_1fr]">
                                     {[
@@ -304,10 +304,8 @@ export default function LtiIndex({ platforms, toolConfig }: Props) {
                                         ['Öffentlicher Schlüsseltyp', 'Schlüsselsatz-URL'],
                                         ['Unterstützt Deep Linking (Content-Item Message)', 'aktivieren'],
                                         ['Verwendung der Toolkonfiguration', 'In Aktivitätsauswahl und als vorkonfiguriertes Tool anzeigen.'],
-                                        ['Services › LTI Aufgaben und Bewertungsservice', 'Service für die Synchronisation von Bewertungen und die Verwaltung der Spalten nutzen.'],
                                         ['Datenschutz › Anwendername an Tool übergeben', 'Nie'],
                                         ['Datenschutz › E-Mail des Anwenders an Tool übergeben', 'Nie'],
-                                        ['Datenschutz › Bewertungen aus dem Tool akzeptieren', 'An Trainer/in zuweisen'],
                                     ].map(([field, value]) => (
                                         <div key={field} className="contents">
                                             <dt className="text-zinc-500">{field}</dt>
@@ -316,7 +314,7 @@ export default function LtiIndex({ platforms, toolConfig }: Props) {
                                     ))}
                                 </dl>
                                 <p className="mt-3 text-xs text-zinc-500">
-                                    Name und E-Mail braucht MotionBase nicht. „An Trainer/in zuweisen“ heisst: Moodle legt eine Bewertung genau dann an, wenn der gewählte Inhalt einen Wissenscheck enthält.
+                                    Name und E-Mail braucht MotionBase nicht.
                                 </p>
                             </div>
                         </div>

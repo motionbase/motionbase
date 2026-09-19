@@ -103,19 +103,6 @@
         .alert-neutral { background-color: #ffffff; border-color: #e4e4e7; color: #18181b; }
 
         /* Quiz styles */
-        .quiz-note {
-            margin: 0 0 0.75rem;
-            font-size: 0.8125rem;
-            color: #71717a;
-        }
-        .quiz-report {
-            margin: 0.25rem 0 1rem;
-            font-size: 0.875rem;
-            line-height: 1.5;
-        }
-        .quiz-report--ok { color: #047857; font-weight: 600; }
-        .quiz-report--muted { color: #71717a; }
-        .quiz-report--warn { color: #b45309; }
         .quiz-container {
             background: #fafafa;
             border: 1px solid #e4e4e7;
@@ -490,84 +477,6 @@
                     .replace(/'/g, '&#39;');
             }
 
-            /*
-             * Knowledge checks inside Moodle: the chosen answers go to
-             * MotionBase, which scores them itself and passes the grade on.
-             * Only when this activity is graded - and never for teachers.
-             */
-            function launchFor(container) {
-                var lti = window.MB_LTI;
-                var lesson = container.closest('[data-section-id]');
-                if (!lti || !lesson || !container.dataset.blockId) return null;
-                return { lti: lti, sectionId: lesson.dataset.sectionId, blockId: container.dataset.blockId };
-            }
-
-            function gradedFor(container) {
-                var launch = launchFor(container);
-                return !!(launch && launch.lti.graded && !launch.lti.instructor);
-            }
-
-            function showReport(container, text, tone) {
-                var result = container.querySelector('.quiz-result');
-                if (!result) return;
-                var line = result.querySelector('.quiz-report') || document.createElement('p');
-                line.className = 'quiz-report quiz-report--' + tone;
-                line.setAttribute('role', 'status');
-                line.textContent = text;
-                result.insertBefore(line, result.querySelector('[data-action="restart"]'));
-                if (typeof window.sendHeight === 'function') window.sendHeight(true);
-            }
-
-            function reportResult(container, answers) {
-                var launch = launchFor(container);
-                if (!launch) return;
-
-                if (launch.lti.instructor) {
-                    if (launch.lti.graded) showReport(container, 'Lehrpersonen-Ansicht: Dein Ergebnis zählt nicht für die Bewertungen.', 'muted');
-                    return;
-                }
-                if (!launch.lti.graded) return;
-
-                showReport(container, 'Ergebnis wird an Moodle übertragen…', 'muted');
-
-                var tries = 0;
-                var counted = null;
-
-                (function send() {
-                    tries++;
-                    fetch(launch.lti.report, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                        body: JSON.stringify({
-                            lti_session: launch.lti.session,
-                            section_id: Number(launch.sectionId),
-                            block_id: launch.blockId,
-                            answers: answers
-                        })
-                    }).then(function(response) {
-                        if (!response.ok) throw new Error(response.status);
-                        return response.json();
-                    }).then(function(data) {
-                        // A retry is never the counted run - remember the first answer
-                        if (counted === null) counted = data.counted;
-                        var first = data.first.score + ' von ' + data.first.max;
-
-                        if (!data.sent) throw new Error('not sent');
-
-                        showReport(container, counted
-                            ? '✓ In Moodle eingetragen – dieser Wissenscheck zählt mit ' + first + ' Punkten.'
-                            : 'Übungsdurchgang. Für die Note zählt dein erster Durchgang mit ' + first + ' Punkten.', counted ? 'ok' : 'muted');
-                    }).catch(function() {
-                        if (tries < 4) {
-                            showReport(container, 'Moodle antwortet gerade nicht – neuer Versuch…', 'muted');
-                            setTimeout(send, tries * 3000);
-                        } else {
-                            showReport(container, 'Dein Ergebnis ist gespeichert, Moodle war aber nicht erreichbar. Es wird beim nächsten Wissenscheck mit übertragen.', 'warn');
-                        }
-                    });
-                })();
-            }
-
             function initQuizzes() {
                 document.querySelectorAll('.quiz-container').forEach(function(container) {
                     if (container.dataset.initialized) return;
@@ -575,17 +484,6 @@
 
                     var questions = JSON.parse(container.dataset.questions);
                     if (!questions || questions.length === 0) return;
-
-                    // Keys the server scores by: ids where the content has them,
-                    // otherwise the position - fixed before any shuffling.
-                    questions = questions.map(function(q, qi) {
-                        return Object.assign({}, q, {
-                            _key: q.id || ('q' + qi),
-                            answers: q.answers.map(function(a, ai) {
-                                return Object.assign({}, a, { _key: a.id || ('a' + ai) });
-                            })
-                        });
-                    });
 
                     // Shuffle answers for each question
                     questions = questions.map(function(q) {
@@ -604,8 +502,7 @@
                         selectedAnswer: null,
                         answered: false,
                         score: 0,
-                        finished: false,
-                        answers: {}
+                        finished: false
                     };
 
                     function render() {
@@ -630,9 +527,6 @@
                         html += '</div></div>';
 
                         html += '<div class="quiz-body">';
-                        if (state.currentQuestion === 0 && gradedFor(container)) {
-                            html += '<p class="quiz-note">Für die Note in Moodle zählt dein erster Durchgang.</p>';
-                        }
                         html += '<div class="quiz-question">' + escapeHtml(q.question) + '</div>';
 
                         if (q.imageUrl) {
@@ -745,7 +639,6 @@
                                 if (selected && selected.isCorrect) {
                                     state.score++;
                                 }
-                                state.answers[q._key] = selected ? selected._key : null;
                                 state.answered = true;
                                 render();
                             });
@@ -766,7 +659,6 @@
                             finishBtn.addEventListener('click', function() {
                                 state.finished = true;
                                 render();
-                                reportResult(container, state.answers);
                             });
                         }
 
@@ -778,7 +670,6 @@
                                 state.answered = false;
                                 state.score = 0;
                                 state.finished = false;
-                                state.answers = {};
                                 // Re-shuffle answers
                                 questions = questions.map(function(q) {
                                     var shuffled = q.answers.slice();

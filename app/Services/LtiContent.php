@@ -11,8 +11,7 @@ use Illuminate\Support\Collection;
 
 /**
  * What a Moodle activity shows: a whole topic, one chapter, a single lesson or
- * a topic's assistant - and, derived from that, which knowledge checks count
- * towards its grade.
+ * a topic's assistant.
  *
  * Resolved by id wherever an id is known. Links made before ids travelled
  * with them carry only slugs, and a slug changes when an author renames a
@@ -154,39 +153,9 @@ class LtiContent
     }
 
     /**
-     * Every knowledge check in scope.
-     *
-     * @return Collection<int, array{section_id: int, block_id: string, questions: array}>
-     */
-    public function quizzes(): Collection
-    {
-        return $this->sections()->flatMap(fn (Section $section) => self::quizBlocks($section)
-            ->map(fn ($block) => [
-                'section_id' => $section->id,
-                'block_id' => (string) $block['id'],
-                'questions' => array_values($block['data']['questions']),
-            ])
-        )->values();
-    }
-
-    /**
-     * Knowledge checks in a lesson that can be graded: those with questions
-     * and an id to recognise them by. The picker counts with the same rule,
-     * so what it promises is what the grade is out of.
-     */
-    private static function quizBlocks(Section $section): Collection
-    {
-        return collect($section->content['blocks'] ?? [])
-            ->filter(fn ($block) => ($block['type'] ?? null) === 'quiz'
-                && ! empty($block['id'])
-                && ! empty($block['data']['questions']))
-            ->values();
-    }
-
-    /**
-     * Everything a teacher can choose, with what is inside: lessons and
-     * graded questions per topic, chapter and lesson. Empty chapters and
-     * topics are left out - choosing one would show the class nothing.
+     * Everything a teacher can choose, with how many lessons each holds.
+     * Empty chapters and topics are left out - choosing one would show the
+     * class nothing.
      */
     public static function catalog(): array
     {
@@ -202,14 +171,12 @@ class LtiContent
                     $sections = $chapter->sections->map(fn (Section $section) => [
                         'id' => $section->id,
                         'title' => $section->title,
-                        'questions' => self::quizBlocks($section)->sum(fn ($block) => count($block['data']['questions'])),
                     ])->values();
 
                     return [
                         'id' => $chapter->id,
                         'title' => $chapter->title,
                         'lessons' => $sections->count(),
-                        'questions' => $sections->sum('questions'),
                         'sections' => $sections->all(),
                     ];
                 })->values();
@@ -218,15 +185,9 @@ class LtiContent
                 'id' => $topic->id,
                 'title' => $topic->title,
                 'lessons' => $chapters->sum('lessons'),
-                'questions' => $chapters->sum('questions'),
                 'chapters' => $chapters->all(),
             ];
         })->filter(fn ($topic) => $topic['lessons'] > 0)->values()->all();
-    }
-
-    public function questionCount(): int
-    {
-        return $this->quizzes()->sum(fn ($quiz) => count($quiz['questions']));
     }
 
     public function title(): string
@@ -247,13 +208,8 @@ class LtiContent
         }
 
         $lessons = $this->sections()->count();
-        $parts = [$lessons === 1 ? '1 Lektion' : $lessons.' Lektionen'];
 
-        if ($questions = $this->questionCount()) {
-            $parts[] = 'Wissenscheck mit '.$questions.($questions === 1 ? ' Frage' : ' Fragen').' – wird automatisch bewertet';
-        }
-
-        return 'MotionBase: '.implode(' · ', $parts).'.';
+        return 'MotionBase: '.($lessons === 1 ? '1 Lektion' : $lessons.' Lektionen').'.';
     }
 
     /** Stored with the activity in Moodle and handed back on every launch. */
@@ -268,11 +224,6 @@ class LtiContent
             'chapter_slug' => $this->chapter?->slug,
             'section_slug' => $this->section?->slug,
         ], fn ($value) => $value !== null);
-    }
-
-    public function contains(Section $section): bool
-    {
-        return $this->sections()->contains('id', $section->id);
     }
 
     /** Where a launch lands, by the current slugs. */

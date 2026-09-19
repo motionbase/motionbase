@@ -6,7 +6,6 @@ use App\Models\Chapter;
 use App\Models\Section;
 use App\Models\Topic;
 use App\Services\LtiContent;
-use App\Services\LtiGrades;
 use App\Services\LtiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
@@ -14,8 +13,7 @@ use Illuminate\Support\Facades\View;
 class LtiEmbedController extends Controller
 {
     public function __construct(
-        private LtiService $ltiService,
-        private LtiGrades $grades,
+        private LtiService $ltiService
     ) {}
 
     public function topic(Request $request, Topic $topic)
@@ -152,18 +150,15 @@ class LtiEmbedController extends Controller
 
     /**
      * What every embedded page needs to know about the launch: whether a
-     * teacher is looking, what the activity shows, and whether its knowledge
-     * checks go to Moodle's gradebook.
+     * teacher is looking, and what the activity shows.
      */
     private function context($session): array
     {
         $content = LtiContent::forSession($session);
-        $graded = $content && $content->questionCount() > 0 && (bool) $this->grades->lineitem($session);
 
         return [
             'isInstructor' => $this->ltiService->isInstructor($session),
             'activity' => $content,
-            'graded' => $graded,
             // Only an activity chosen here - not through "Inhalt auswählen" - can be changed here
             'canRebind' => $content && ! empty(LtiContent::binding($session))
                 && empty($session->claims['https://purl.imsglobal.org/spec/lti/claim/custom']['content_type']),

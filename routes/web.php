@@ -206,11 +206,6 @@ Route::prefix('lti')->name('lti.')->group(function () {
     Route::get('bind', [LtiController::class, 'bind'])->name('bind');
     Route::post('bind', [LtiController::class, 'bindStore'])->name('bind.store');
 
-    // A finished knowledge check - scored here and passed on to Moodle's gradebook
-    Route::post('quiz-attempts', [\App\Http\Controllers\LtiQuizController::class, 'store'])
-        ->middleware('throttle:60,1')
-        ->name('quiz-attempts');
-
     // Embedded content views (accessed after LTI launch)
     Route::prefix('embed')->name('embed.')->group(function () {
         Route::get('topic/{topic:slug}', [LtiEmbedController::class, 'topic'])->name('topic');

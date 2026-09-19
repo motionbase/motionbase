@@ -185,9 +185,7 @@
                 }
                 $quizId = 'quiz-' . md5(json_encode($questions) . $index);
                 $quizData = htmlspecialchars(json_encode($questions), ENT_QUOTES, 'UTF-8');
-                // The block id identifies the check when its result is reported
-                $blockId = htmlspecialchars((string) ($block['id'] ?? ''), ENT_QUOTES, 'UTF-8');
-                return "<div class=\"quiz-container mb-6\" id=\"{$quizId}\" data-block-id=\"{$blockId}\" data-questions=\"{$quizData}\"></div>";
+                return "<div class=\"quiz-container mb-6\" id=\"{$quizId}\" data-questions=\"{$quizData}\"></div>";
 
             default:
                 return '';

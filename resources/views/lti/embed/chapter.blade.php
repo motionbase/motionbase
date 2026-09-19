@@ -60,7 +60,7 @@
                 </a>
             </header>
 
-            <article class="prose prose-zinc max-w-none" data-section-id="{{ $activeSection->id }}">
+            <article class="prose prose-zinc max-w-none">
                 @include('lti.partials.content-blocks', ['blocks' => $activeSection->content['blocks'] ?? []])
             </article>
 

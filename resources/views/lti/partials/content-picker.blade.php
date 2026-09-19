@@ -8,7 +8,6 @@
 --}}
 @php
     $lessons = fn (int $n) => $n === 1 ? '1 Lektion' : $n.' Lektionen';
-    $graded = fn (int $n) => $n === 1 ? '1 Frage' : $n.' Fragen';
 @endphp
 
 <form method="POST" action="{{ $action }}" class="mb-picker" id="mb-picker">
@@ -38,16 +37,13 @@
                     <h2 class="mb-topic__title">{{ $topic['title'] }}</h2>
                     <span class="mb-meta">
                         {{ $lessons($topic['lessons']) }}
-                        @if ($topic['questions'])
-                            <span class="mb-graded">Bewertet · {{ $graded($topic['questions']) }}</span>
-                        @endif
                     </span>
                 </div>
 
                 <label class="mb-option mb-option--whole" data-option data-search="{{ mb_strtolower($topic['title']) }}">
                     <input type="radio" name="choice" value="topic:{{ $topic['id'] }}"
                         data-label="{{ $topic['title'] }} – ganzer Kurs"
-                        data-note="{{ $lessons($topic['lessons']) }}{{ $topic['questions'] ? ' · Moodle legt die Bewertung automatisch an ('.$graded($topic['questions']).')' : '' }}"
+                        data-note="{{ $lessons($topic['lessons']) }} · alle Kapitel, mit Navigation"
                         @checked(($current ?? null) === 'topic:'.$topic['id'])>
                     <span class="mb-radio" aria-hidden="true"></span>
                     <span class="mb-option__text">
@@ -61,16 +57,13 @@
                         <label class="mb-option" data-option data-search="{{ mb_strtolower($topic['title'].' '.$chapter['title']) }}">
                             <input type="radio" name="choice" value="chapter:{{ $chapter['id'] }}"
                                 data-label="{{ $topic['title'] }} – {{ $chapter['title'] }}"
-                                data-note="{{ $lessons($chapter['lessons']) }}{{ $chapter['questions'] ? ' · Moodle legt die Bewertung automatisch an ('.$graded($chapter['questions']).')' : '' }}"
+                                data-note="Kapitel · {{ $lessons($chapter['lessons']) }}"
                                 @checked(($current ?? null) === 'chapter:'.$chapter['id'])>
                             <span class="mb-radio" aria-hidden="true"></span>
                             <span class="mb-option__text">
                                 <span class="mb-option__name">{{ $chapter['title'] }}</span>
                                 <span class="mb-meta">
                                     Kapitel · {{ $lessons($chapter['lessons']) }}
-                                    @if ($chapter['questions'])
-                                        <span class="mb-graded">Bewertet · {{ $graded($chapter['questions']) }}</span>
-                                    @endif
                                 </span>
                             </span>
                         </label>
@@ -82,14 +75,11 @@
                                     <label class="mb-option mb-option--lesson" data-option data-search="{{ mb_strtolower($topic['title'].' '.$chapter['title'].' '.$section['title']) }}">
                                         <input type="radio" name="choice" value="section:{{ $section['id'] }}"
                                             data-label="{{ $topic['title'] }} – {{ $section['title'] }}"
-                                            data-note="1 Lektion{{ $section['questions'] ? ' · Moodle legt die Bewertung automatisch an ('.$graded($section['questions']).')' : '' }}"
+                                            data-note="Eine einzelne Lektion, ohne den Rest des Kapitels"
                                             @checked(($current ?? null) === 'section:'.$section['id'])>
                                         <span class="mb-radio" aria-hidden="true"></span>
                                         <span class="mb-option__text">
                                             <span class="mb-option__name">{{ $section['title'] }}</span>
-                                            @if ($section['questions'])
-                                                <span class="mb-meta"><span class="mb-graded">Bewertet · {{ $graded($section['questions']) }}</span></span>
-                                            @endif
                                         </span>
                                     </label>
                                 @endforeach
@@ -101,7 +91,7 @@
                 <label class="mb-option mb-option--assistant" data-option data-search="{{ mb_strtolower($topic['title'].' ki assistent chat') }}">
                     <input type="radio" name="choice" value="chat:{{ $topic['id'] }}"
                         data-label="{{ $topic['title'] }} – KI-Assistent"
-                        data-note="Beantwortet Fragen der Klasse zu diesem Kurs · ohne Bewertung"
+                        data-note="Beantwortet Fragen der Klasse zu diesem Kurs"
                         @checked(($current ?? null) === 'chat:'.$topic['id'])>
                     <span class="mb-radio" aria-hidden="true"></span>
                     <span class="mb-option__text">
@@ -147,7 +137,6 @@
     .mb-topic__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.25rem 1rem; padding: 0.125rem 0.25rem 0.5rem; }
     .mb-topic__title { margin: 0; font-size: 1.0625rem; font-weight: 700; letter-spacing: -0.01em; }
     .mb-meta { font-size: 0.8125rem; color: #71717a; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.25rem 0.5rem; }
-    .mb-graded { display: inline-flex; align-items: center; padding: 0.0625rem 0.5rem; border-radius: 999px; background: #fff0f5; color: #c8003f; font-weight: 600; font-size: 0.75rem; }
     .mb-option { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 0.875rem; border: 1px solid #e4e4e7; border-radius: 0.75rem; cursor: pointer; transition: border-color 120ms, background-color 120ms; }
     .mb-option:hover { border-color: #a1a1aa; }
     .mb-option input { position: absolute; opacity: 0; pointer-events: none; }
