@@ -44,6 +44,10 @@ class text_filter extends \core_filters\text_filter {
 
             $html = self::lesson((int) $match[1][0]);
 
+            if ($html !== null && str_contains($html, 'motionbase-frame')) {
+                self::size_frames();
+            }
+
             if ($html !== null) {
                 $text = substr($text, 0, $open) . $html . substr($text, $close);
                 $close = $open + strlen($html);
@@ -64,6 +68,22 @@ class text_filter extends \core_filters\text_filter {
      */
     public static function block(int $sectionid, string $html): string {
         return '<div class="motionbase-live motionbase-section-' . $sectionid . '">' . $html . '</div>';
+    }
+
+    /**
+     * Have the page size embedded graphics to the height they report - once
+     * per page, and only where there is a page to add a script to.
+     */
+    private static function size_frames(): void {
+        global $PAGE;
+        static $added = false;
+
+        if ($added || !$PAGE || (defined('AJAX_SCRIPT') && AJAX_SCRIPT) || (defined('WS_SERVER') && WS_SERVER)) {
+            return;
+        }
+
+        $PAGE->requires->js_call_amd('filter_motionbase/frames', 'init');
+        $added = true;
     }
 
     /**

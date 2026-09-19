@@ -29,14 +29,13 @@ class catalog {
                 get_string('assistantsummary', 'filter_motionbase', $topic['title']));
 
             foreach ($topic['chapters'] as $chapter) {
-                $this->add('chapter:' . $chapter['id'], $chapter['title'], '');
+                if (self::theory($chapter)) {
+                    $this->add('chapter:' . $chapter['id'], $chapter['title'], '');
+                }
 
                 foreach ($chapter['sections'] as $section) {
-                    $this->add('section:' . $section['id'], $section['title'], '');
-
-                    if (!empty($section['task'])) {
-                        $this->add('task:' . $section['id'], $section['title'], '');
-                    }
+                    $kind = empty($section['task']) ? 'section' : 'task';
+                    $this->add($kind . ':' . $section['id'], $section['title'], '');
                 }
             }
         }
@@ -53,11 +52,23 @@ class catalog {
     public function chapters(int $topicid): array {
         foreach ($this->topics as $topic) {
             if ((int) $topic['id'] === $topicid) {
-                return array_map(fn($chapter) => (int) $chapter['id'], $topic['chapters']);
+                $books = array_filter($topic['chapters'], fn($chapter) => self::theory($chapter) !== []);
+                return array_values(array_map(fn($chapter) => (int) $chapter['id'], $books));
             }
         }
 
         return [];
+    }
+
+    /**
+     * A chapter's lessons that are not tasks - what its book and pages are made
+     * of. Tasks become assignments of their own.
+     *
+     * @param array $chapter
+     * @return array
+     */
+    private static function theory(array $chapter): array {
+        return array_values(array_filter($chapter['sections'], fn($section) => empty($section['task'])));
     }
 
     /**
@@ -89,15 +100,10 @@ class catalog {
         return array_map(function(array $topic) {
             $tasks = [];
             $chapters = [];
+            $books = [];
 
             foreach ($topic['chapters'] as $chapter) {
-                $lessons = [];
-
                 foreach ($chapter['sections'] as $section) {
-                    $lessons[] = $this->item('section:' . $section['id'], $section['title'],
-                        get_string('pagemeta', 'filter_motionbase'),
-                        $topic['title'] . ' ' . $chapter['title'] . ' ' . $section['title']);
-
                     if (!empty($section['task'])) {
                         $tasks[] = $this->item('task:' . $section['id'], $section['title'],
                             get_string('task_' . $section['task'], 'filter_motionbase') . ' · ' . $chapter['title'],
@@ -106,8 +112,19 @@ class catalog {
                     }
                 }
 
+                // Theory only: a chapter of nothing but tasks makes no book.
+                $theory = self::theory($chapter);
+                if (!$theory) {
+                    continue;
+                }
+
+                $lessons = array_map(fn($section) => $this->item('section:' . $section['id'], $section['title'],
+                    get_string('pagemeta', 'filter_motionbase'),
+                    $topic['title'] . ' ' . $chapter['title'] . ' ' . $section['title']), $theory);
+
+                $books[] = 'chapter:' . $chapter['id'];
                 $chapters[] = $this->item('chapter:' . $chapter['id'], $chapter['title'],
-                    get_string('bookmeta', 'filter_motionbase', self::lessons($chapter['lessons'])),
+                    get_string('bookmeta', 'filter_motionbase', self::lessons(count($theory))),
                     $topic['title'] . ' ' . $chapter['title'],
                     ['lessons' => $lessons, 'haslessons' => count($lessons) > 1]);
             }
@@ -119,10 +136,9 @@ class catalog {
                 'tasks' => $tasks,
                 'hastasks' => (bool) $tasks,
                 // A whole course is there when a book for each of its chapters is.
-                'whole' => ['present' => $topic['chapters'] && !array_diff(
-                    array_map(fn($chapter) => 'chapter:' . $chapter['id'], $topic['chapters']), $this->present),
-                ] + $this->item('topic:' . $topic['id'], get_string('wholecourse', 'filter_motionbase'),
-                    get_string('wholecoursemeta', 'filter_motionbase', count($topic['chapters'])), $topic['title']),
+                'whole' => $books ? ['present' => !array_diff($books, $this->present)]
+                    + $this->item('topic:' . $topic['id'], get_string('wholecourse', 'filter_motionbase'),
+                        get_string('wholecoursemeta', 'filter_motionbase', count($books)), $topic['title']) : null,
                 'chapters' => $chapters,
                 'assistant' => $this->item('chat:' . $topic['id'], get_string('assistant', 'filter_motionbase'),
                     get_string('assistantmeta', 'filter_motionbase', $topic['title']),

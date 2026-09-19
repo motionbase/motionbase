@@ -74,6 +74,9 @@ class MoodleController extends Controller
      * A chapter's published lessons in order - what a Moodle book made from it
      * holds, checked each time the book is opened. With ?html=1 each lesson
      * comes with its content, for a new book.
+     *
+     * Tasks are left out: in Moodle they are assignments of their own, and
+     * a book chapter besides would put each one in the course twice.
      */
     public function chapter(Request $request, Chapter $chapter, MoodleHtml $html): JsonResponse
     {
@@ -87,7 +90,7 @@ class MoodleController extends Controller
             'id' => $chapter->id,
             'title' => $chapter->title,
             'topic' => $chapter->topic->title,
-            'lessons' => $chapter->sections()->where('is_published', true)->orderBy('sort_order')->get()
+            'lessons' => $chapter->sections()->where('is_published', true)->whereNull('task_submission')->orderBy('sort_order')->get()
                 ->map(fn (Section $section) => array_filter([
                     'id' => $section->id,
                     'title' => $section->title,

@@ -161,7 +161,7 @@ it('hands over any published lesson, with graphics embedded when asked', functio
     expect($stored)->toContain('<a href="'.$app.'/interactive/7">Interaktive Grafik öffnen: Simulator</a>')
         ->and($stored)->not->toContain('<iframe')
         // What the filter shows is not cleaned again: the graphic itself, sandboxed
-        ->and($live)->toContain('<iframe src="'.$app.'/interactive/7" title="Simulator" sandbox="allow-scripts"')
+        ->and($live)->toContain('<iframe class="motionbase-frame" src="'.$app.'/interactive/7" title="Simulator" sandbox="allow-scripts"')
         ->and($live)->toContain('height: 640px')
         // No link back: the content is current anyway
         ->and($live)->not->toContain('mb-source');
@@ -174,11 +174,13 @@ it('hands over only published lessons', function () {
         ->assertNotFound();
 });
 
-it('describes a chapter as its published lessons, in order', function () {
+it('describes a chapter as its published lessons without tasks, in order', function () {
     $chapter = Chapter::factory()->for(Topic::factory()->create(['title' => 'Easing']))->create(['title' => 'Grundlagen']);
     $second = Section::factory()->for($chapter)->create(['title' => 'Zweite', 'sort_order' => 2]);
     $first = Section::factory()->for($chapter)->create(['title' => 'Erste', 'sort_order' => 1]);
     Section::factory()->for($chapter)->unpublished()->create(['title' => 'Entwurf', 'sort_order' => 3]);
+    // An assignment of its own in Moodle, not a book chapter as well
+    Section::factory()->for($chapter)->create(['title' => 'Aufgabe', 'sort_order' => 4, 'task_submission' => 'file']);
     $auth = ['Authorization' => 'Bearer '.moodlePluginToken($this->moodleKey)];
 
     // Checked each time a book is opened: kept light
