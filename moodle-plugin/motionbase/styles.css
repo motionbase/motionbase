@@ -1,9 +1,5 @@
 /* This file is part of the MotionBase plugin for Moodle. */
 
-.mbpicker {
-    max-width: 52rem;
-}
-
 .mbpicker__intro {
     color: #495057;
     max-width: 42rem;
