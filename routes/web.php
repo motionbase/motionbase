@@ -202,13 +202,23 @@ Route::prefix('lti')->name('lti.')->group(function () {
     // Deep Linking return
     Route::post('deep-linking/return', [LtiController::class, 'deepLinkingReturn'])->name('deep-linking.return');
 
+    // A teacher choosing content for an activity saved without it
+    Route::get('bind', [LtiController::class, 'bind'])->name('bind');
+    Route::post('bind', [LtiController::class, 'bindStore'])->name('bind.store');
+
+    // A finished knowledge check - scored here and passed on to Moodle's gradebook
+    Route::post('quiz-attempts', [\App\Http\Controllers\LtiQuizController::class, 'store'])
+        ->middleware('throttle:60,1')
+        ->name('quiz-attempts');
+
     // Embedded content views (accessed after LTI launch)
     Route::prefix('embed')->name('embed.')->group(function () {
         Route::get('topic/{topic:slug}', [LtiEmbedController::class, 'topic'])->name('topic');
         Route::get('topic/{topic:slug}/chapter/{chapter:slug}', [LtiEmbedController::class, 'chapter'])->name('chapter');
         Route::get('topic/{topic:slug}/chapter/{chapter:slug}/section/{section:slug}', [LtiEmbedController::class, 'chapterSection'])->name('chapter.section');
         Route::get('topic/{topic:slug}/section/{section:slug}', [LtiEmbedController::class, 'section'])->name('section');
+        // A single lesson chosen on its own: shown without the rest of the topic around it
+        Route::get('topic/{topic:slug}/lesson/{section:slug}', [LtiEmbedController::class, 'lesson'])->name('lesson');
         Route::get('topic/{topic:slug}/chat', [LtiEmbedController::class, 'chat'])->name('chat');
-        Route::get('picker', [LtiEmbedController::class, 'picker'])->name('picker');
     });
 });

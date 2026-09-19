@@ -3,6 +3,7 @@
 @section('title', $topic->title . ' - ' . ($activeSection->title ?? 'Inhalt'))
 
 @section('content')
+@include('lti.partials.activity')
 <div class="flex flex-col lg:flex-row">
     {{-- Sidebar Navigation --}}
     <aside class="w-full lg:w-72 border-b lg:border-b-0 lg:border-r border-zinc-100 bg-white p-4 lg:p-6">
@@ -51,7 +52,7 @@
                 </h2>
             </header>
 
-            <article class="prose prose-zinc max-w-none">
+            <article class="prose prose-zinc max-w-none" data-section-id="{{ $activeSection->id }}">
                 @include('lti.partials.content-blocks', ['blocks' => $activeSection->content['blocks'] ?? []])
             </article>
         @else

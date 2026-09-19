@@ -160,6 +160,21 @@ class LtiService
         return $session;
     }
 
+    /**
+     * Teachers, course designers and admins. They see the teacher view, may
+     * choose content for an activity, and their quiz runs are never graded.
+     */
+    public function isInstructor(LtiSession $session): bool
+    {
+        foreach ($session->claims['https://purl.imsglobal.org/spec/lti/claim/roles'] ?? [] as $role) {
+            if (preg_match('/#(Instructor|ContentDeveloper|Administrator|TeachingAssistant)$/', (string) $role)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function generateStateToken(): string
     {
         $state = Str::random(32);

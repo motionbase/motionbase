@@ -253,12 +253,12 @@ export default function LtiIndex({ platforms, toolConfig }: Props) {
                                 <DialogTrigger asChild>
                                     <Button className="h-10 gap-2 bg-zinc-900 px-5 text-white hover:bg-zinc-800">
                                         <Plus className="h-4 w-4" />
-                                        Plattform hinzufuegen
+                                        Plattform hinzufügen
                                     </Button>
                                 </DialogTrigger>
                                 <DialogContent className="max-w-lg">
                                     <DialogHeader>
-                                        <DialogTitle>LTI-Plattform hinzufuegen</DialogTitle>
+                                        <DialogTitle>LTI-Plattform hinzufügen</DialogTitle>
                                         <DialogDescription>
                                             Trage die Daten ein, die du von deiner Moodle-Installation erhalten hast.
                                         </DialogDescription>
@@ -284,10 +284,40 @@ export default function LtiIndex({ platforms, toolConfig }: Props) {
                                     <p className="text-sm text-zinc-500">Diese Werte in Moodle eintragen</p>
                                 </div>
                             </div>
+                            {/* Moodle's own German labels, so an admin finds each field as it is written */}
                             <div className="grid gap-3">
-                                <ConfigField label="Tool URL / Launch URL" value={toolConfig.target_link_uri} fieldKey="launch" />
-                                <ConfigField label="Initiate Login URL" value={toolConfig.oidc_initiation_url} fieldKey="login" />
-                                <ConfigField label="Public Keyset URL (JWKS)" value={toolConfig.jwks_url} fieldKey="jwks" />
+                                <ConfigField label="Tool URL" value={toolConfig.target_link_uri} fieldKey="launch" />
+                                <ConfigField label="Öffentlicher Schlüsselsatz" value={toolConfig.jwks_url} fieldKey="jwks" />
+                                <ConfigField label="Anmelde-URL" value={toolConfig.oidc_initiation_url} fieldKey="login" />
+                                <ConfigField label="Umleitungs-URI(s)" value={toolConfig.target_link_uri} fieldKey="redirect" />
+                                <ConfigField label="Inhalts-URL" value={toolConfig.target_link_uri} fieldKey="content" />
+                            </div>
+
+                            <div className="mt-6 rounded-xl border border-zinc-100 bg-zinc-50 p-4">
+                                <h3 className="text-sm font-semibold text-zinc-900">Ausserdem in Moodle einstellen</h3>
+                                <p className="mt-1 text-sm text-zinc-500">
+                                    Damit Lehrpersonen Inhalte mit einem Klick auswählen und Wissenschecks automatisch in den Bewertungen landen.
+                                </p>
+                                <dl className="mt-3 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[minmax(0,18rem)_1fr]">
+                                    {[
+                                        ['LTI-Version', 'LTI 1.3'],
+                                        ['Öffentlicher Schlüsseltyp', 'Schlüsselsatz-URL'],
+                                        ['Unterstützt Deep Linking (Content-Item Message)', 'aktivieren'],
+                                        ['Verwendung der Toolkonfiguration', 'In Aktivitätsauswahl und als vorkonfiguriertes Tool anzeigen.'],
+                                        ['Services › LTI Aufgaben und Bewertungsservice', 'Service für die Synchronisation von Bewertungen und die Verwaltung der Spalten nutzen.'],
+                                        ['Datenschutz › Anwendername an Tool übergeben', 'Nie'],
+                                        ['Datenschutz › E-Mail des Anwenders an Tool übergeben', 'Nie'],
+                                        ['Datenschutz › Bewertungen aus dem Tool akzeptieren', 'An Trainer/in zuweisen'],
+                                    ].map(([field, value]) => (
+                                        <div key={field} className="contents">
+                                            <dt className="text-zinc-500">{field}</dt>
+                                            <dd className="font-medium text-zinc-900">{value}</dd>
+                                        </div>
+                                    ))}
+                                </dl>
+                                <p className="mt-3 text-xs text-zinc-500">
+                                    Name und E-Mail braucht MotionBase nicht. „An Trainer/in zuweisen“ heisst: Moodle legt eine Bewertung genau dann an, wenn der gewählte Inhalt einen Wissenscheck enthält.
+                                </p>
                             </div>
                         </div>
 

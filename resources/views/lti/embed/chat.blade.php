@@ -3,6 +3,7 @@
 @section('title', 'Chat - ' . $topic->title)
 
 @section('content')
+@include('lti.partials.activity')
 <div class="flex flex-col" style="min-height: 500px;">
     {{-- Header --}}
     <header class="border-b border-zinc-100 bg-white px-4 py-3">

@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Chapter;
 use App\Models\Section;
 use App\Models\Topic;
+use App\Services\LtiContent;
+use App\Services\LtiGrades;
 use App\Services\LtiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\View;
@@ -12,7 +14,8 @@ use Illuminate\Support\Facades\View;
 class LtiEmbedController extends Controller
 {
     public function __construct(
-        private LtiService $ltiService
+        private LtiService $ltiService,
+        private LtiGrades $grades,
     ) {}
 
     public function topic(Request $request, Topic $topic)
@@ -30,12 +33,30 @@ class LtiEmbedController extends Controller
             'topic' => $topic,
             'activeSection' => $firstSection,
             'session' => $session,
-        ]);
+        ] + $this->context($session));
+    }
+
+    public function lesson(Request $request, Topic $topic, Section $section)
+    {
+        $session = $this->validateSession($request);
+        $chapter = $section->chapter;
+
+        abort_unless($section->is_published && $chapter?->is_published && $chapter->topic_id === $topic->id, 404);
+
+        return View::make('lti.embed.chapter', [
+            'topic' => $topic,
+            'chapter' => $chapter,
+            'activeSection' => $section,
+            'lessonOnly' => true,
+            'session' => $session,
+        ] + $this->context($session));
     }
 
     public function section(Request $request, Topic $topic, Section $section)
     {
         $session = $this->validateSession($request);
+
+        abort_unless($section->is_published && $section->chapter?->is_published && $section->chapter->topic_id === $topic->id, 404);
 
         // Load topic navigation
         $topic->loadMissing([
@@ -47,7 +68,7 @@ class LtiEmbedController extends Controller
             'topic' => $topic,
             'activeSection' => $section,
             'session' => $session,
-        ]);
+        ] + $this->context($session));
     }
 
     public function chapter(Request $request, Topic $topic, Chapter $chapter)
@@ -81,7 +102,7 @@ class LtiEmbedController extends Controller
             'chapter' => $chapter,
             'activeSection' => null,
             'session' => $session,
-        ]);
+        ] + $this->context($session));
     }
 
     public function chapterSection(Request $request, Topic $topic, Chapter $chapter, Section $section)
@@ -94,7 +115,7 @@ class LtiEmbedController extends Controller
         }
 
         // Ensure section belongs to chapter
-        if ($section->chapter_id !== $chapter->id) {
+        if ($section->chapter_id !== $chapter->id || ! $section->is_published) {
             abort(404);
         }
 
@@ -116,7 +137,7 @@ class LtiEmbedController extends Controller
             'prevSection' => $prevSection,
             'nextSection' => $nextSection,
             'session' => $session,
-        ]);
+        ] + $this->context($session));
     }
 
     public function chat(Request $request, Topic $topic)
@@ -126,22 +147,27 @@ class LtiEmbedController extends Controller
         return View::make('lti.embed.chat', [
             'topic' => $topic,
             'session' => $session,
-        ]);
+        ] + $this->context($session));
     }
 
-    public function picker(Request $request)
+    /**
+     * What every embedded page needs to know about the launch: whether a
+     * teacher is looking, what the activity shows, and whether its knowledge
+     * checks go to Moodle's gradebook.
+     */
+    private function context($session): array
     {
-        $session = $this->validateSession($request);
+        $content = LtiContent::forSession($session);
+        $graded = $content && $content->questionCount() > 0 && (bool) $this->grades->lineitem($session);
 
-        $topics = Topic::with([
-            'chapters' => fn ($q) => $q->where('is_published', true)->orderBy('sort_order')
-                ->with(['sections' => fn ($sq) => $sq->where('is_published', true)->orderBy('sort_order')]),
-        ])->get();
-
-        return View::make('lti.embed.picker', [
-            'topics' => $topics,
-            'session' => $session,
-        ]);
+        return [
+            'isInstructor' => $this->ltiService->isInstructor($session),
+            'activity' => $content,
+            'graded' => $graded,
+            // Only an activity chosen here - not through "Inhalt auswählen" - can be changed here
+            'canRebind' => $content && ! empty(LtiContent::binding($session))
+                && empty($session->claims['https://purl.imsglobal.org/spec/lti/claim/custom']['content_type']),
+        ];
     }
 
     private function validateSession(Request $request)

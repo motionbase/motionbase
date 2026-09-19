@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\LtiPlatform;
-use App\Models\Topic;
+use App\Models\LtiResourceLink;
+use App\Services\LtiContent;
+use App\Services\LtiGrades;
 use App\Services\LtiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -139,66 +140,33 @@ class LtiController extends Controller
     }
 
     /**
-     * Handle Deep Linking request - content selection
+     * Handle Deep Linking request - the teacher picks content in Moodle's
+     * "Inhalt auswählen" dialog.
      */
     private function handleDeepLinking($session, array $claims)
     {
-        $topics = Topic::with(['chapters' => fn ($q) => $q->where('is_published', true)->orderBy('sort_order')
-            ->with(['sections' => fn ($sq) => $sq->where('is_published', true)->orderBy('sort_order')]),
-        ])->get();
-
         return View::make('lti.deep-linking', [
             'session' => $session,
-            'claims' => $claims,
-            'topics' => $topics,
-            'returnUrl' => $claims['https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings']['deep_link_return_url'] ?? null,
+            'catalog' => LtiContent::catalog(),
         ]);
     }
 
     /**
-     * Handle Resource Link request - display content
+     * Handle Resource Link request - show what the activity was set up with.
      */
     private function handleResourceLink($session, array $claims)
     {
-        // Get custom parameters to determine what to show
-        $custom = $claims['https://purl.imsglobal.org/spec/lti/claim/custom'] ?? [];
-        $contentType = $custom['content_type'] ?? 'topic';
-        $contentId = $custom['content_id'] ?? null;
-        $topicSlug = $custom['topic_slug'] ?? null;
-        $chapterSlug = $custom['chapter_slug'] ?? null;
-        $sectionSlug = $custom['section_slug'] ?? null;
-
-        // Redirect to embedded view with session token
-        $params = ['lti_session' => $session->session_token];
-
-        if ($contentType === 'chapter' && $topicSlug && $chapterSlug) {
-            return redirect()->route('lti.embed.chapter', array_merge($params, [
-                'topic' => $topicSlug,
-                'chapter' => $chapterSlug,
-            ]));
+        if ($content = LtiContent::forSession($session)) {
+            return redirect($content->url($session->session_token));
         }
 
-        if ($contentType === 'section' && $topicSlug && $sectionSlug) {
-            return redirect()->route('lti.embed.section', array_merge($params, [
-                'topic' => $topicSlug,
-                'section' => $sectionSlug,
-            ]));
+        // Saved without "Inhalt auswählen": the teacher gets to choose right
+        // here, the class gets a message instead of a picker it cannot use.
+        if ($this->ltiService->isInstructor($session)) {
+            return redirect()->route('lti.bind', ['lti_session' => $session->session_token]);
         }
 
-        if ($contentType === 'chat' && $topicSlug) {
-            return redirect()->route('lti.embed.chat', array_merge($params, [
-                'topic' => $topicSlug,
-            ]));
-        }
-
-        if ($topicSlug) {
-            return redirect()->route('lti.embed.topic', array_merge($params, [
-                'topic' => $topicSlug,
-            ]));
-        }
-
-        // Fallback: show content picker
-        return redirect()->route('lti.embed.picker', $params);
+        return View::make('lti.waiting');
     }
 
     /**
@@ -206,73 +174,126 @@ class LtiController extends Controller
      */
     public function deepLinkingReturn(Request $request)
     {
-        $this->ltiService->debug('LTI Deep Linking Return', [
-            'lti_session' => $request->input('lti_session'),
-            'selected_count' => count($request->input('selected', [])),
-        ]);
-
         $request->validate([
             'lti_session' => 'required|string',
-            'selected' => 'required|array',
+            'choice' => 'required|string|max:40',
         ]);
 
         $session = $this->ltiService->getSessionByToken($request->input('lti_session'));
-        if (! $session) {
+        $claims = $session?->claims ?? [];
+
+        if (! $session || ($claims['https://purl.imsglobal.org/spec/lti/claim/message_type'] ?? null) !== 'LtiDeepLinkingRequest') {
             Log::error('LTI Deep Linking: Invalid session');
             abort(403, 'Invalid session');
         }
 
-        $platform = $session->platform;
-        $claims = $session->claims;
+        $content = LtiContent::fromChoice($request->input('choice'));
 
-        $this->ltiService->debug('LTI Deep Linking: Building response', [
-            'platform_id' => $platform->id,
-            'app_url' => config('app.url'),
-        ]);
+        if (! $content) {
+            return back()->withErrors(['choice' => 'Dieser Inhalt ist nicht mehr verfügbar. Bitte wähle etwas anderes.']);
+        }
 
-        // Build content items
-        $items = [];
-        foreach ($request->input('selected') as $selection) {
-            $type = $selection['type'] ?? 'topic';
-            $url = match ($type) {
-                'chapter' => route('lti.embed.chapter', [
-                    'topic' => $selection['topic_slug'],
-                    'chapter' => $selection['chapter_slug'],
-                ]),
-                'section' => route('lti.embed.section', [
-                    'topic' => $selection['topic_slug'],
-                    'section' => $selection['section_slug'],
-                ]),
-                'chat' => route('lti.embed.chat', [
-                    'topic' => $selection['topic_slug'],
-                ]),
-                default => route('lti.embed.topic', [
-                    'topic' => $selection['topic_slug'],
-                ]),
-            };
+        $item = [
+            'type' => 'ltiResourceLink',
+            'title' => $content->title(),
+            'text' => $content->summary(),
+            'url' => route('lti.launch'),
+            'custom' => $content->customParams(),
+        ];
 
-            $items[] = [
-                'type' => 'ltiResourceLink',
-                'title' => $selection['title'],
-                'url' => $url,
-                'custom' => [
-                    'content_type' => $type,
-                    'topic_slug' => $selection['topic_slug'],
-                    'chapter_slug' => $selection['chapter_slug'] ?? null,
-                    'section_slug' => $selection['section_slug'] ?? null,
-                ],
+        // With questions in it, Moodle creates the grade column on its own -
+        // nothing for the teacher to set up.
+        if ($questions = $content->questionCount()) {
+            $item['lineItem'] = [
+                'scoreMaximum' => $questions,
+                'label' => $content->title(),
+                'resourceId' => 'motionbase-'.str_replace(':', '-', $content->choice()),
             ];
         }
 
-        // Generate JWT response
-        $jwt = $this->ltiService->createDeepLinkingResponse($platform, $claims, $items);
-
-        $returnUrl = $claims['https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings']['deep_link_return_url'] ?? null;
+        $jwt = $this->ltiService->createDeepLinkingResponse($session->platform, $claims, [$item]);
 
         return View::make('lti.deep-linking-return', [
-            'returnUrl' => $returnUrl,
+            'returnUrl' => $claims['https://purl.imsglobal.org/spec/lti-dl/claim/deep_linking_settings']['deep_link_return_url'] ?? null,
             'jwt' => $jwt,
         ]);
+    }
+
+    /**
+     * A teacher opening an activity that was saved without content.
+     */
+    public function bind(Request $request)
+    {
+        $session = $this->instructorSession($request->query('lti_session'));
+
+        return View::make('lti.bind', [
+            'session' => $session,
+            'catalog' => LtiContent::catalog(),
+            'current' => LtiContent::forSession($session)?->choice(),
+        ]);
+    }
+
+    public function bindStore(Request $request, LtiGrades $grades)
+    {
+        $request->validate([
+            'lti_session' => 'required|string',
+            'choice' => 'required|string|max:40',
+        ]);
+
+        $session = $this->instructorSession($request->input('lti_session'));
+
+        // A link chosen through "Inhalt auswählen" belongs to Moodle - it is
+        // changed there, not overridden from here.
+        if (! empty($session->claims['https://purl.imsglobal.org/spec/lti/claim/custom']['content_type'])) {
+            abort(409, 'Diese Aktivität wird in Moodle über "Inhalt auswählen" geändert.');
+        }
+
+        $content = LtiContent::fromChoice($request->input('choice'));
+
+        if (! $content || ! $session->resource_link_id) {
+            return back()->withErrors(['choice' => 'Dieser Inhalt ist nicht mehr verfügbar. Bitte wähle etwas anderes.']);
+        }
+
+        $link = LtiResourceLink::firstOrNew([
+            'lti_platform_id' => $session->lti_platform_id,
+            'resource_link_id' => $session->resource_link_id,
+        ]);
+
+        $link->fill([
+            'content_type' => $content->type,
+            'topic_id' => $content->topic->id,
+            'chapter_id' => $content->chapter?->id,
+            'section_id' => $content->section?->id,
+        ]);
+
+        // Moodle made no grade column for an activity saved without a choice,
+        // so MotionBase asks for one - if Moodle lets tools manage columns.
+        if (($questions = $content->questionCount()) && ! $grades->lineitem($session)) {
+            // Named like the activity the teacher created, so the gradebook
+            // column is recognisable - two checks on the same chapter would
+            // otherwise sit there under one name.
+            $activityName = $session->claims['https://purl.imsglobal.org/spec/lti/claim/resource_link']['title'] ?? null;
+
+            $link->lineitem_url = $grades->createLineitem(
+                $session,
+                $activityName ?: $content->title(),
+                $questions,
+                'motionbase-'.str_replace(':', '-', $content->choice()),
+            );
+        }
+
+        $link->save();
+
+        return redirect($content->url($session->session_token));
+    }
+
+    private function instructorSession(?string $token)
+    {
+        $session = $token ? $this->ltiService->getSessionByToken($token) : null;
+
+        abort_unless($session && $this->ltiService->isInstructor($session), 403, 'Nur Lehrpersonen können den Inhalt wählen.');
+
+        return $session;
     }
 
     /**

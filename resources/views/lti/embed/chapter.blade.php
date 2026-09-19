@@ -3,8 +3,10 @@
 @section('title', ($activeSection->title ?? $chapter->title) . ' - ' . $topic->title)
 
 @section('content')
+@include('lti.partials.activity')
 <div class="flex flex-col lg:flex-row">
-    {{-- Sidebar Navigation --}}
+    {{-- Sidebar Navigation - not for a single lesson chosen on its own --}}
+    @unless ($lessonOnly ?? false)
     <aside class="w-full lg:w-72 flex-shrink-0 border-b lg:border-b-0 lg:border-r border-zinc-100 bg-white">
         <div class="p-4 lg:p-6">
             <div class="mb-6 pb-4 border-b border-zinc-100">
@@ -36,6 +38,7 @@
             </nav>
         </div>
     </aside>
+    @endunless
 
     {{-- Main Content - Single section --}}
     <main class="flex-1 p-6 lg:p-10">
@@ -57,11 +60,12 @@
                 </a>
             </header>
 
-            <article class="prose prose-zinc max-w-none">
+            <article class="prose prose-zinc max-w-none" data-section-id="{{ $activeSection->id }}">
                 @include('lti.partials.content-blocks', ['blocks' => $activeSection->content['blocks'] ?? []])
             </article>
 
             {{-- Previous / Next Navigation --}}
+            @unless ($lessonOnly ?? false)
             <nav class="mt-12 pt-8 border-t border-zinc-200 flex items-center justify-between gap-4">
                 @if(isset($prevSection) && $prevSection)
                     <a
@@ -97,6 +101,7 @@
                     <div></div>
                 @endif
             </nav>
+            @endunless
         @else
             <div class="flex flex-col items-center justify-center h-full text-zinc-400">
                 <p>Dieses Kapitel hat noch keine Abschnitte.</p>
