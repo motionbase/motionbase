@@ -79,6 +79,15 @@ The other six are placed by their own tool:
 Files are uploaded in the web editor; this server places them but does not
 accept uploads.
 
+# Tasks for Moodle
+
+A lesson can be a task: create_section or update_section with task set to
+none, file, text or both - what learners hand in. A Moodle course with the
+MotionBase plugin then takes it over as a native Moodle assignment, the lesson
+as its description. Write it like an assignment sheet: what to do,
+requirements, example input and output. Grading happens in Moodle, never
+here - do not add quizzes to a task.
+
 get_section renders those six as "> [...]" placeholders in the body and lists
 them under rich_blocks with their full data, so anything removed can be put
 back.

@@ -51,6 +51,7 @@ class SectionController extends Controller
             'slug' => ['sometimes', 'string', 'max:255'],
             'content' => ['sometimes', 'array'],
             'is_published' => ['sometimes', 'boolean'],
+            'task_submission' => ['sometimes', 'nullable', 'in:'.implode(',', Section::TASK_SUBMISSIONS)],
         ]);
 
         if (isset($validated['slug'])) {

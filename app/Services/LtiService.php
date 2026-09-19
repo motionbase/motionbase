@@ -246,6 +246,44 @@ class LtiService
         return JWT::encode($payload, $privateKey, 'RS256', config('lti.key_id'));
     }
 
+    /**
+     * A token a platform signed itself - how the Moodle plugin identifies its
+     * site. Checked against the key set the platform already publishes for
+     * LTI, so the plugin needs no secret of its own.
+     */
+    public function decodePlatformToken(string $token, string $audience): ?array
+    {
+        $parts = explode('.', $token);
+
+        if (count($parts) !== 3) {
+            return null;
+        }
+
+        $unverified = json_decode(base64_decode(strtr($parts[1], '-_', '+/')), true);
+        $platform = is_array($unverified)
+            ? $this->findPlatformByIssuer((string) ($unverified['iss'] ?? ''), (string) ($unverified['sub'] ?? ''))
+            : null;
+
+        if (! $platform || ! $platform->is_active) {
+            return null;
+        }
+
+        try {
+            $claims = $this->objectToArray(JWT::decode($token, JWK::parseKeySet($this->getPlatformJwks($platform))));
+        } catch (\Throwable $e) {
+            return null;
+        }
+
+        $aud = (array) ($claims['aud'] ?? []);
+
+        // Short-lived and meant for this endpoint only
+        if (! in_array($audience, $aud, true) || ! isset($claims['exp']) || $claims['exp'] - time() > 300) {
+            return null;
+        }
+
+        return ['platform' => $platform, 'claims' => $claims];
+    }
+
     private function getPlatformJwks(LtiPlatform $platform): array
     {
         $cacheKey = "lti_jwks_{$platform->id}";

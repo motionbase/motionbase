@@ -38,6 +38,8 @@ class GetSection extends Tool
             'title' => $section->title,
             'slug' => $section->slug,
             'is_published' => $section->is_published,
+            // Set when a Moodle course can take this lesson over as an assignment
+            'task' => $section->task_submission,
             'chapter' => ['id' => $section->chapter->id, 'title' => $section->chapter->title],
             'markdown' => MarkdownBlocks::toMarkdown($blocks),
             // The data comes along on purpose: these blocks are destroyed by an

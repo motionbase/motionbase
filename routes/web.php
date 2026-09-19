@@ -181,12 +181,30 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->group(function () {
 
     // LTI Platform Management (Admin only)
     Route::get('lti', [LtiAdminController::class, 'index'])->name('lti.index');
+    Route::get('lti/moodle-plugin.zip', [LtiAdminController::class, 'moodlePlugin'])->name('lti.moodle-plugin');
     Route::post('lti', [LtiAdminController::class, 'store'])->name('lti.store');
     Route::patch('lti/{platform}', [LtiAdminController::class, 'update'])->name('lti.update');
     Route::delete('lti/{platform}', [LtiAdminController::class, 'destroy'])->name('lti.destroy');
 });
 
 require __DIR__.'/settings.php';
+
+// For the MotionBase plugin in Moodle - authenticated by the site's own LTI
+// key, so no session and no cookies.
+Route::prefix('moodle')->name('moodle.')
+    ->withoutMiddleware([
+        \Illuminate\Session\Middleware\StartSession::class,
+        \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+        \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+        \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
+        \App\Http\Middleware\HandleAppearance::class,
+        \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
+    ])
+    ->middleware('throttle:120,1')
+    ->group(function () {
+        Route::get('catalog', [\App\Http\Controllers\MoodleController::class, 'catalog'])->name('catalog');
+        Route::get('tasks/{section}', [\App\Http\Controllers\MoodleController::class, 'task'])->name('task');
+    });
 
 // LTI 1.3 Routes
 Route::prefix('lti')->name('lti.')->group(function () {

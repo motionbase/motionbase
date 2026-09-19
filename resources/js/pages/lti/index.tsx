@@ -20,12 +20,12 @@ import { Label } from '@/components/ui/label';
 import AppLayout from '@/layouts/app-layout';
 import { type BreadcrumbItem } from '@/types';
 import { Head, router, useForm } from '@inertiajs/react';
-import { Check, Copy, ExternalLink, MoreHorizontal, Pencil, Plus, Server, Trash2, X } from 'lucide-react';
+import { Check, Copy, Download, ExternalLink, MoreHorizontal, Pencil, Plus, Puzzle, Server, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'LTI-Plattformen',
+        title: 'Moodle & LTI',
         href: '/admin/lti',
     },
 ];
@@ -234,7 +234,7 @@ export default function LtiIndex({ platforms, toolConfig }: Props) {
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="LTI-Plattformen" />
+            <Head title="Moodle & LTI" />
 
             <div className="min-h-[calc(100vh-80px)] bg-zinc-50/50">
                 {/* Header */}
@@ -317,6 +317,54 @@ export default function LtiIndex({ platforms, toolConfig }: Props) {
                                     Name und E-Mail braucht MotionBase nicht.
                                 </p>
                             </div>
+                        </div>
+
+                        {/* Moodle plugin */}
+                        <div className="rounded-2xl border border-zinc-100 bg-white p-6 shadow-sm">
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-900">
+                                        <Puzzle className="h-5 w-5 text-white" />
+                                    </div>
+                                    <div>
+                                        <h2 className="font-semibold text-zinc-900">Moodle-Plugin</h2>
+                                        <p className="text-sm text-zinc-500">
+                                            Aufgaben als echte Moodle-Aufgaben, Kapitel und KI-Assistent mit einem Klick
+                                        </p>
+                                    </div>
+                                </div>
+                                <Button asChild className="h-10 shrink-0 gap-2 bg-zinc-900 px-5 text-white hover:bg-zinc-800">
+                                    <a href="/admin/lti/moodle-plugin.zip" download>
+                                        <Download className="h-4 w-4" />
+                                        Plugin herunterladen
+                                    </a>
+                                </Button>
+                            </div>
+
+                            <ol className="mt-5 grid gap-3 text-sm text-zinc-600">
+                                {[
+                                    <>
+                                        Oben das externe Tool einrichten und diese Moodle-Plattform unten eintragen. Das Plugin
+                                        braucht keine weiteren Schlüssel, es weist sich mit dem LTI-Schlüssel von Moodle aus.
+                                    </>,
+                                    <>
+                                        In Moodle unter <span className="font-medium text-zinc-900">Website-Administration › Plugins › Plugin installieren</span>{' '}
+                                        die ZIP-Datei hochladen und der Aktualisierung folgen. Die Adresse von MotionBase ist schon eingetragen.
+                                    </>,
+                                    <>
+                                        Lehrpersonen finden <span className="font-medium text-zinc-900">„Aus MotionBase hinzufügen“</span> unten in der
+                                        Aktivitätsauswahl und im Kurs unter <span className="font-medium text-zinc-900">Mehr</span>. Lektionen, die in
+                                        MotionBase als Aufgabe markiert sind, werden dort zu Moodle-Aufgaben mit Abgabe; bewertet wird in Moodle.
+                                    </>,
+                                ].map((step, index) => (
+                                    <li key={index} className="flex gap-3">
+                                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-xs font-semibold text-zinc-700">
+                                            {index + 1}
+                                        </span>
+                                        <span className="pt-0.5">{step}</span>
+                                    </li>
+                                ))}
+                            </ol>
                         </div>
 
                         {/* Platforms List */}

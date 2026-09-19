@@ -171,6 +171,8 @@ class LtiContent
                     $sections = $chapter->sections->map(fn (Section $section) => [
                         'id' => $section->id,
                         'title' => $section->title,
+                        // Set when Moodle can take the lesson over as an assignment
+                        'task' => $section->task_submission,
                     ])->values();
 
                     return [

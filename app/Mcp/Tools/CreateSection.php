@@ -24,6 +24,7 @@ class CreateSection extends Tool
             'title' => ['required', 'string', 'max:255'],
             'markdown' => ['string'],
             'is_published' => ['boolean'],
+            'task' => ['string', 'in:none,file,text,both,off'],
         ]);
 
         $chapter = $this->findChapter($request->user(), $validated['chapter_id']);
@@ -36,6 +37,7 @@ class CreateSection extends Tool
             'chapter_id' => $chapter->id,
             'title' => $validated['title'],
             'is_published' => $validated['is_published'] ?? true,
+            'task_submission' => ($validated['task'] ?? 'off') === 'off' ? null : $validated['task'],
             'sort_order' => (int) $chapter->sections()->max('sort_order') + 1,
             'content' => [
                 'time' => now()->getTimestampMs(),
@@ -66,6 +68,7 @@ class CreateSection extends Tool
             'title' => $schema->string()->description('Section title, shown as the page heading.')->required(),
             'markdown' => $schema->string()->description('Section body as Markdown.'),
             'is_published' => $schema->boolean()->description('Defaults to true.'),
+            'task' => $schema->string()->enum(['none', 'file', 'text', 'both', 'off'])->description('Make this lesson a task that a Moodle course with the MotionBase plugin takes over as a native assignment. The value is what learners hand in there: none, a file, text, or both (either). "off" makes it a plain lesson again. Grading happens in Moodle, never here.'),
         ];
     }
 }

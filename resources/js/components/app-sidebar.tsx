@@ -13,7 +13,7 @@ import {
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { BookOpen, Github, Image, LayoutGrid, Layers, NotebookPen, Users } from 'lucide-react';
+import { BookOpen, Github, GraduationCap, Image, LayoutGrid, Layers, NotebookPen, Users } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const footerNavItems: NavItem[] = [
@@ -64,6 +64,11 @@ export function AppSidebar() {
             title: 'Benutzer',
             href: '/admin/users',
             icon: Users,
+        },
+        {
+            title: 'Moodle & LTI',
+            href: '/admin/lti',
+            icon: GraduationCap,
         },
     ];
 

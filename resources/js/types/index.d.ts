@@ -60,6 +60,8 @@ export interface Section {
     content: OutputData;
     is_published: boolean;
     sort_order: number;
+    /** Set when the lesson is a task a Moodle course can take over as an assignment */
+    task_submission: 'none' | 'file' | 'text' | 'both' | null;
     created_at: string;
     updated_at: string;
 }

@@ -23,6 +23,7 @@ class UpdateSection extends Tool
             'title' => ['string', 'max:255'],
             'markdown' => ['string'],
             'is_published' => ['boolean'],
+            'task' => ['string', 'in:none,file,text,both,off'],
         ]);
 
         $section = $this->findSection($request->user(), $validated['section_id']);
@@ -39,6 +40,10 @@ class UpdateSection extends Tool
 
         if (array_key_exists('is_published', $validated)) {
             $section->is_published = $validated['is_published'];
+        }
+
+        if (array_key_exists('task', $validated)) {
+            $section->task_submission = $validated['task'] === 'off' ? null : $validated['task'];
         }
 
         if (array_key_exists('markdown', $validated)) {
@@ -63,6 +68,7 @@ class UpdateSection extends Tool
             'id' => $section->id,
             'title' => $section->title,
             'is_published' => $section->is_published,
+            'task' => $section->task_submission,
             'blocks' => count($section->content['blocks'] ?? []),
             'dropped_rich_blocks' => $droppedRichBlocks,
         ]);
@@ -78,6 +84,7 @@ class UpdateSection extends Tool
             'title' => $schema->string()->description('New title. Omit to keep.'),
             'markdown' => $schema->string()->description('New body, replacing the current one entirely. Omit to keep.'),
             'is_published' => $schema->boolean()->description('New publish state. Omit to keep.'),
+            'task' => $schema->string()->enum(['none', 'file', 'text', 'both', 'off'])->description('Omit to keep. Make this lesson a task that a Moodle course with the MotionBase plugin takes over as a native assignment. The value is what learners hand in there: none, a file, text, or both (either). "off" makes it a plain lesson again. Grading happens in Moodle, never here.'),
         ];
     }
 }

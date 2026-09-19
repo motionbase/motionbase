@@ -26,7 +26,14 @@ class Section extends Model
         'content',
         'is_published',
         'sort_order',
+        'task_submission',
     ];
+
+    /**
+     * What learners hand in when a Moodle course takes this lesson over as an
+     * assignment. A lesson with none of these is not a task.
+     */
+    public const TASK_SUBMISSIONS = ['none', 'file', 'text', 'both'];
 
     /**
      * The attributes that should be cast.

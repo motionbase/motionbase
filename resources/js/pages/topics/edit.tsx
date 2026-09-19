@@ -195,9 +195,14 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
         chapterSettings.slug !== chapterSettingsOriginal.slug ||
         chapterSettings.is_published !== chapterSettingsOriginal.is_published;
 
-    const sectionSettingsForm = useForm({
+    const sectionSettingsForm = useForm<{
+        slug: string;
+        is_published: boolean;
+        task_submission: Section['task_submission'];
+    }>({
         slug: activeSection?.slug ?? '',
         is_published: activeSection?.is_published ?? false,
+        task_submission: activeSection?.task_submission ?? null,
     });
 
     // --- Section editing state -------------------------------------------
@@ -291,6 +296,7 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
             sectionSettingsForm.setDefaults({
                 slug: activeSection.slug,
                 is_published: activeSection.is_published,
+                task_submission: activeSection.task_submission ?? null,
             });
             sectionSettingsForm.reset();
         }
@@ -975,6 +981,31 @@ export default function TopicsEdit({ topic, activeSection, categories }: TopicsE
                                             >
                                                 Veröffentlicht
                                             </Label>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label className="text-xs font-semibold">Moodle-Aufgabe</Label>
+                                            <Select
+                                                value={sectionSettingsForm.data.task_submission ?? 'no'}
+                                                onValueChange={(value) => sectionSettingsForm.setData(
+                                                    'task_submission',
+                                                    value === 'no' ? null : (value as Section['task_submission']),
+                                                )}
+                                            >
+                                                <SelectTrigger className="h-9 text-sm">
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="no">Keine Aufgabe</SelectItem>
+                                                    <SelectItem value="none">Aufgabe ohne Abgabe</SelectItem>
+                                                    <SelectItem value="file">Aufgabe, Abgabe als Datei</SelectItem>
+                                                    <SelectItem value="text">Aufgabe, Abgabe als Text</SelectItem>
+                                                    <SelectItem value="both">Aufgabe, Abgabe als Datei oder Text</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                            <p className="text-xs text-muted-foreground">
+                                                Mit dem MotionBase-Plugin übernimmt Moodle diese Lektion als Aufgabe. Bewertet wird in Moodle.
+                                            </p>
                                         </div>
 
                                         {sectionSettingsForm.isDirty && (

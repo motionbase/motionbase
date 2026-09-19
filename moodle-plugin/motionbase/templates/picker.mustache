@@ -1,0 +1,110 @@
+{{!
+    This file is part of the MotionBase plugin for Moodle.
+}}
+{{!
+    @template local_motionbase/picker
+
+    "Add from MotionBase": everything MotionBase offers, as checkboxes, with
+    the section it goes into and one button.
+
+    Example context (json):
+    {
+        "action": "https://moodle.example/local/motionbase/add.php",
+        "courseid": 2,
+        "sesskey": "abc",
+        "sections": [{"num": 0, "name": "Allgemeines", "selected": true}],
+        "cancelurl": "https://moodle.example/course/view.php?id=2",
+        "error": null,
+        "empty": false,
+        "topics": [{
+            "id": 1, "title": "Easing", "meta": "4 Lektionen", "hastasks": true,
+            "tasks": [{"value": "task:7", "name": "Bubblesort", "meta": "Aufgabe · Abgabe als Datei · Grundlagen", "label": "Bubblesort", "search": "bubblesort", "present": false}],
+            "whole": {"value": "topic:1", "name": "Ganzer Kurs", "meta": "Alle Kapitel", "label": "Easing", "search": "easing", "present": false},
+            "chapters": [{"value": "chapter:3", "name": "Grundlagen", "meta": "Kapitel · 4 Lektionen", "label": "Easing – Grundlagen", "search": "easing grundlagen", "present": true, "haslessons": false, "lessons": []}],
+            "assistant": {"value": "chat:1", "name": "KI-Assistent", "meta": "Beantwortet Fragen", "label": "Easing – KI-Assistent", "search": "easing ki", "present": false}
+        }]
+    }
+}}
+<form method="post" action="{{action}}" class="local-motionbase" id="local-motionbase-picker">
+    <input type="hidden" name="course" value="{{courseid}}">
+    <input type="hidden" name="sesskey" value="{{sesskey}}">
+
+    <h2 class="h3 mb-2">{{#str}} addfrommotionbase, local_motionbase {{/str}}</h2>
+    <p class="local-motionbase__intro">{{#str}} intro, local_motionbase {{/str}}</p>
+
+    {{#error}}
+        <div class="alert alert-warning" role="alert">{{error}}</div>
+    {{/error}}
+
+    {{^error}}
+    <div class="local-motionbase__tools">
+        <div class="local-motionbase__target">
+            <label for="local-motionbase-target">{{#str}} target, local_motionbase {{/str}}</label>
+            <select id="local-motionbase-target" name="target" class="form-select custom-select">
+                {{#sections}}
+                    <option value="{{num}}" {{#selected}}selected{{/selected}}>{{name}}</option>
+                {{/sections}}
+            </select>
+        </div>
+        {{^empty}}
+        <div class="local-motionbase__search">
+            <label for="local-motionbase-search" class="visually-hidden sr-only">{{#str}} search {{/str}}</label>
+            <input type="search" id="local-motionbase-search" class="form-control" placeholder="{{#str}} search, local_motionbase {{/str}}" autocomplete="off" data-search-input>
+        </div>
+        {{/empty}}
+    </div>
+    {{/error}}
+
+    {{#empty}}
+        <div class="local-motionbase__empty">
+            <p class="fw-bold font-weight-bold mb-1">{{#str}} empty, local_motionbase {{/str}}</p>
+            <p class="text-muted mb-0">{{#str}} emptyhint, local_motionbase {{/str}}</p>
+        </div>
+    {{/empty}}
+
+    {{#topics}}
+        <section class="local-motionbase-topic" data-topic>
+            <header class="local-motionbase-topic__head">
+                <h3 class="h5 mb-0">{{title}}</h3>
+                <span class="text-muted small">{{meta}}</span>
+            </header>
+
+            {{#hastasks}}
+                <div class="local-motionbase-group" data-group>
+                    <h4 class="local-motionbase-group__title">{{#str}} tasks, local_motionbase {{/str}} <span>{{#str}} tasksintro, local_motionbase {{/str}}</span></h4>
+                    {{#tasks}}{{> local_motionbase/option }}{{/tasks}}
+                </div>
+            {{/hastasks}}
+
+            <div class="local-motionbase-group" data-group>
+                <h4 class="local-motionbase-group__title">{{#str}} content, local_motionbase {{/str}}</h4>
+                {{#whole}}{{> local_motionbase/option }}{{/whole}}
+                {{#chapters}}
+                    <div data-chapter>
+                        {{> local_motionbase/option }}
+                        {{#haslessons}}
+                            <details class="local-motionbase-lessons">
+                                <summary>{{#str}} showlessons, local_motionbase {{/str}}</summary>
+                                {{#lessons}}{{> local_motionbase/option }}{{/lessons}}
+                            </details>
+                        {{/haslessons}}
+                    </div>
+                {{/chapters}}
+                {{#assistant}}{{> local_motionbase/option }}{{/assistant}}
+            </div>
+        </section>
+    {{/topics}}
+
+    <div class="local-motionbase__empty" data-nomatch hidden>
+        <p class="fw-bold font-weight-bold mb-1">{{#str}} nomatch, local_motionbase {{/str}}</p>
+        <p class="text-muted mb-0">{{#str}} nomatchhint, local_motionbase {{/str}}</p>
+    </div>
+
+    <div class="local-motionbase__bar">
+        <span class="local-motionbase__count" data-count aria-live="polite">{{#str}} selectednone, local_motionbase {{/str}}</span>
+        <a href="{{cancelurl}}" class="btn btn-secondary">{{#str}} cancel {{/str}}</a>
+        {{^error}}
+            <button type="submit" class="btn btn-primary" data-submit disabled>{{#str}} add, local_motionbase {{/str}}</button>
+        {{/error}}
+    </div>
+</form>

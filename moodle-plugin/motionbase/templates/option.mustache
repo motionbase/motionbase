@@ -1,0 +1,26 @@
+{{!
+    This file is part of the MotionBase plugin for Moodle.
+}}
+{{!
+    @template local_motionbase/option
+
+    One thing that can be added: a checkbox and what it becomes.
+
+    Example context (json):
+    {
+        "value": "chapter:3",
+        "name": "Grundlagen",
+        "meta": "Kapitel · 4 Lektionen",
+        "label": "Easing – Grundlagen",
+        "search": "easing grundlagen",
+        "present": true
+    }
+}}
+<label class="local-motionbase-option" data-option data-search="{{search}}">
+    <input type="checkbox" class="form-check-input" name="items[]" value="{{value}}" data-label="{{label}}">
+    <span class="local-motionbase-option__text">
+        <span class="local-motionbase-option__name">{{name}}</span>
+        {{#meta}}<span class="local-motionbase-option__meta">{{meta}}</span>{{/meta}}
+    </span>
+    {{#present}}<span class="local-motionbase-present">{{#str}} alreadypresent, local_motionbase {{/str}}</span>{{/present}}
+</label>
