@@ -19,7 +19,8 @@ Auf dem Server bleiben unangetastet: `.env` und `storage/` – dort liegen die M
 Grafiken, die Passport-Schlüssel (MCP-Zugänge) und das LTI-Schlüsselpaar (Moodle).
 
 Die Schritte 1–6 sind **einmalig** und müssen vor dem ersten Push erledigt sein – sonst bricht der erste Deploy
-bei `migrate` ab (keine `.env`). Dann einfach den Workflow nach Schritt 5 erneut starten.
+bei `migrate` ab. Dann einfach den Workflow erneut starten. Erledigt sind: die `.env` liegt auf dem Server
+(Schritt 4, ohne die Datenbankwerte).
 
 | | |
 |---|---|
@@ -56,72 +57,35 @@ notieren.
 
 ## 4. `.env` auf dem Server
 
+Sie liegt bereits unter `~/www/motionbase.ch/.env`, übernommen vom Metanet-Server: `APP_KEY` und
+`OPENAI_API_KEY` sind dieselben wie bisher. Angepasst wurden dabei:
+
+| | Metanet | Hostpoint |
+|---|---|---|
+| `APP_ENV` / `APP_DEBUG` | `local` / `true` | `production` / `false` |
+| `LOG_CHANNEL` / `LOG_LEVEL` | `stack` / `debug` | `daily` / `warning` |
+| `SESSION_ENCRYPT`, `SESSION_SECURE_COOKIE` | aus | an |
+| `QUEUE_CONNECTION` | `database` (ohne Worker) | `sync` |
+| `DB_CONNECTION` | `mysql` | `mariadb` |
+| Redis, Memcached, AWS | eingetragen, unbenutzt | weggelassen |
+
+**Was noch fehlt:** die vier `DB_`-Werte aus Schritt 3. Hostpoint nennt im Panel einen eigenen
+Datenbankserver, `localhost` funktioniert dort nicht.
+
 ```
-mkdir -p ~/www/motionbase.ch
+ssh uhenotav@sl2679.web.hostpoint.ch
 nano ~/www/motionbase.ch/.env
 ```
 
-Inhalt:
-
-```
-APP_NAME=MotionBase
-APP_ENV=production
-APP_KEY=
-APP_DEBUG=false
-APP_URL=https://motionbase.ch
-
-APP_LOCALE=de
-APP_FALLBACK_LOCALE=de
-APP_FAKER_LOCALE=de_CH
-
-LOG_CHANNEL=daily
-LOG_LEVEL=warning
-
-DB_CONNECTION=mariadb
-DB_HOST=
-DB_PORT=3306
-DB_DATABASE=
-DB_USERNAME=
-DB_PASSWORD=
-
-SESSION_DRIVER=database
-SESSION_LIFETIME=120
-SESSION_ENCRYPT=true
-SESSION_SECURE_COOKIE=true
-
-FILESYSTEM_DISK=local
-CACHE_STORE=database
-QUEUE_CONNECTION=sync
-
-# KI-Assistent und Chat
-OPENAI_API_KEY=
-
-# Moodle über LTI 1.3
-LTI_KEY_ID=motionbase-1
-LTI_SESSION_DURATION=120
-LTI_JWKS_CACHE_DURATION=60
-LTI_DEBUG=false
-
-MAIL_MAILER=smtp
-MAIL_HOST=
-MAIL_PORT=587
-MAIL_USERNAME=
-MAIL_PASSWORD=
-MAIL_FROM_ADDRESS="noreply@motionbase.ch"
-MAIL_FROM_NAME="${APP_NAME}"
-```
-
-**`APP_KEY` und `LTI_KEY_ID` vom alten Server übernehmen**, nicht neu erzeugen:
-
-```
-ssh -p 2121 motionbase@motionbase.ch 'grep -E "^(APP_KEY|LTI_KEY_ID|OPENAI_API_KEY|MAIL_)" ~/motionbase/.env'
-```
-
-⚠️ Ein neuer `APP_KEY` macht alle verschlüsselten Werte unlesbar, unter anderem die Zwei-Faktor-Geheimnisse.
-Ein neuer `LTI_KEY_ID` passt nicht mehr zu dem, was die Moodles für die Schlüssel abgelegt haben. Beides
+⚠️ **`APP_KEY` nie ändern.** Damit sind unter anderem die Zwei-Faktor-Geheimnisse verschlüsselt. Den Schlüssel
 zusätzlich im Passwortmanager ablegen.
 
-`QUEUE_CONNECTION=sync`: Auf Hostpoint läuft kein Queue-Worker.
+`LTI_KEY_ID` steht bewusst nicht in der Datei: Auf Metanet fehlte er ebenfalls, es gilt also weiterhin der
+Standard `motionbase-lti-key` aus `config/lti.php`.
+
+**Mails gehen noch nirgendwohin.** `MAIL_MAILER=log` war schon auf Metanet so: Passwort-Zurücksetzen und
+Registrierungsmails landen nur in der Logdatei. Für den Versand `MAIL_MAILER=smtp` setzen und die Zugangsdaten
+des Mailservers eintragen.
 
 ## 5. GitHub-Secrets
 
