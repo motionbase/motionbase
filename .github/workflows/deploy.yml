@@ -1,8 +1,18 @@
 name: Deploy to Production
 
+# Aufbau wie bei Offyce: bauen auf GitHub, per scp nach Hostpoint hochladen,
+# per ssh Composer, Migrationen und Caches auf dem Server.
+# Einrichtung Schritt für Schritt: docs/go-live.md
+
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
+
+# Nie zwei Deploys gleichzeitig – der zweite wartet.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -11,10 +21,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Der Build braucht PHP (Wayfinder erzeugt die Routen-Helfer über artisan) –
+      # dieselbe Version wie auf dem Server.
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, xml, ctype, json, bcmath, curl, gd, intl, zip
+          tools: composer:v2
+          coverage: none
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install Dependencies
@@ -31,9 +51,12 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          port: 2121
-          source: ".,!node_modules,!vendor,!storage,!tests,!phpunit.xml,!package-lock.json"
-          target: ~/motionbase/
+          # composer.lock gehört mit hoch: der Server kommt nicht an GitHub heran,
+          # kann sie also nicht selbst holen. storage bleibt auf dem Server (Medien,
+          # interaktive Grafiken, Schlüssel), .env ebenso – beide nie überschreiben.
+          # moodle-plugin muss mit: /admin/lti gibt es von dort als ZIP aus.
+          source: ".,!.git,!.github,!.ddev,!node_modules,!vendor,!storage,!storage.zip,!tests,!phpunit.xml,!.env"
+          target: ~/www/motionbase.ch
           strip_components: 0
 
       - name: Execute Remote Commands
@@ -42,8 +65,30 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          port: 2121
+          script_stop: true
           script: |
-            cd ~/motionbase/
-            /opt/php83/bin/php /usr/bin/composer install --no-dev --optimize-autoloader
-            /opt/php83/bin/php artisan storage:link
+            cd ~/www/motionbase.ch
+            # Ohne .env migriert Laravel still in eine SQLite-Datei und cacht eine
+            # Config ohne APP_KEY – jede Seite antwortet dann mit 500.
+            test -f .env || { echo "Die .env fehlt auf dem Server – siehe docs/go-live.md, Schritt 4."; exit 1; }
+            # storage kommt per scp nicht mit (!storage), das Gerüst muss also hier
+            # entstehen. Fehlt storage/framework/views, bricht view:cache ab.
+            mkdir -p storage/framework/sessions storage/framework/views storage/framework/cache/data storage/logs storage/app/private storage/app/public storage/lti bootstrap/cache
+            chmod -R ug+rwx storage bootstrap/cache
+            /usr/local/php83/bin/composer install --no-dev --optimize-autoloader --no-interaction
+            # Die Schlüssel bleiben auf dem Server und werden nur erzeugt, wenn
+            # keine da sind: neue Passport-Schlüssel würden alle MCP-Zugänge
+            # abmelden, ein neues LTI-Paar müssten die Moodles neu abholen.
+            test -f storage/oauth-private.key || /usr/local/php83/bin/php artisan passport:keys --no-interaction
+            test -f storage/lti/private.pem || {
+              openssl genrsa -out storage/lti/private.pem 2048
+              openssl rsa -in storage/lti/private.pem -pubout -out storage/lti/public.pem
+              chmod 600 storage/lti/private.pem
+            }
+            /usr/local/php83/bin/php artisan storage:link
+            # Erst den alten Cache weg, sonst migriert Laravel mit veralteten .env-Werten.
+            /usr/local/php83/bin/php artisan config:clear
+            /usr/local/php83/bin/php artisan migrate --force
+            /usr/local/php83/bin/php artisan config:cache
+            /usr/local/php83/bin/php artisan route:cache
+            /usr/local/php83/bin/php artisan view:cache

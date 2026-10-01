@@ -1,3 +1,6 @@
+# Hostpoint: PHP-Version für die Website.
+Use php-fpm php83
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
